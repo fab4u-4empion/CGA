@@ -20,13 +20,14 @@ namespace lab1
         Pbgra32Bitmap bitmap;
         List<Point> setedPixels = new List<Point>();
         Model model = new();
+        Camera camera = new();
 
         float z = 25;
         float x = 0;
         float y = 5;
 
         float camera_x = 0;
-        float camera_y = 5;
+        float camera_y = 0;
         float camera_z = 25;
 
         Point mouse_position;
@@ -86,8 +87,8 @@ namespace lab1
             Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(new Vector3(camera_x, camera_y, camera_z), new Vector3(x, y, z - 25), new Vector3(0, 1, 0));
-            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(float.Pi / 4, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 1000);
+            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
+            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 1000);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(0, 0, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
 
@@ -173,7 +174,7 @@ namespace lab1
                 }
             }*/
 
-            foreach(List<Vector3> face in model.Faces)
+            foreach (List<Vector3> face in model.Faces)
             {
                 DrawLine(
                     new(vertices[(int)face[0].X - 1].X, vertices[(int)face[0].X - 1].Y),
@@ -216,77 +217,13 @@ namespace lab1
             Draw();
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            switch (e.Key)
-            {
-                case Key.W:
-                    {
-                        z--;
-                        camera_z--;
-                        break;
-                    }
-
-                case Key.S:
-                    {
-                        camera_z++;
-                        z++;
-                        break;
-                    }
-
-                case Key.A:
-                    {
-                        x--;
-                        camera_x--;
-                        break;
-                    }
-
-                case Key.D:
-                    {
-                        x++;
-                        camera_x++;
-                        break;
-                    }
-
-                case Key.Q:
-                    {
-                        y--;
-                        camera_y--;
-                        break;
-                    }
-                case Key.E:
-                    {
-                        y++;
-                        camera_y++;
-                        break;
-                    }
-
-
-            }
-            Draw();
-        }
-
         private void Window_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 Point current_position = e.GetPosition(this);
-                if (current_position.X < mouse_position.X)
-                {
-                    camera_x += 1;
-                } else
-                {
-                    camera_x -= 1;
-                }
-                if (current_position.Y < mouse_position.Y)
-                {
-                    camera_y += 1;
-                }
-                else
-                {
-                    camera_y -= 1;
-                }
-
+                camera.UpdatePosition(0, 0, (float)(current_position.X - mouse_position.X) * -0.5f);
+                camera.UpdatePosition(0, (float)(current_position.Y - mouse_position.Y) * -0.5f, 0);
             }
             mouse_position = e.GetPosition(this);
             Draw();
@@ -301,10 +238,10 @@ namespace lab1
         {
             if (e.Delta > 0)
             {
-                model.Scale += 0.1f;
+                camera.UpdatePosition(-1f, 0, 0);
             } else
             {
-                model.Scale -= 0.1f;
+                camera.UpdatePosition(1f, 0, 0);
             }
             Draw();
         }

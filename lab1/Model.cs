@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
 
 namespace lab1
 {
@@ -23,7 +18,7 @@ namespace lab1
 
         public Model() {
             Scale = 1.0f;
-            Translation = new Vector3(0, 0, 0);
+            Translation = new Vector3(0, -6, -2);
             Yaw = 0.0f;
             Pitch = 0.0f;
             Roll = 0.0f;
