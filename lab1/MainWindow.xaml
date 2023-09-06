@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800"
-        Loaded="Window_Loaded">
+        Title="MainWindow" Height="700" Width="900"
+        Loaded="Window_Loaded"
+        KeyDown="Window_KeyDown"
+        >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas"/>
     </Grid>
