@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Threading.Tasks;
 
 namespace lab1
 {
@@ -153,7 +154,7 @@ namespace lab1
 
             bitmap.Source.Lock();
 
-            for (int i = 0; i < vertices.Length; i++)
+            /*for (int i = 0; i < vertices.Length; i++)
             {
                 int x = (int)vertices[i].X;
                 int y = (int)vertices[i].Y;
@@ -162,20 +163,34 @@ namespace lab1
                     bitmap.SetPixel(x, y, Vector3.Zero);
                     setedPixels.Add(new(x, y));
                 }
-            }
+            }*/
 
-            foreach (List<Vector3> face in model.Faces)
+            foreach(List<Vector3> face in model.Faces)
             {
-                for (int i = 0; i < face.Count - 1; i++)
-                {
-                    DrawLine(
-                        new(vertices[(int)face[i].X - 1].X, vertices[(int)face[i].X - 1].Y),
-                        new(vertices[(int)face[i + 1].X - 1].X, vertices[(int)face[i + 1].X - 1].Y)
-                    );
-                }
                 DrawLine(
-                    new(vertices[(int)face[face.Count - 1].X - 1].X, vertices[(int)face[face.Count - 1].X - 1].Y),
+                    new(vertices[(int)face[0].X - 1].X, vertices[(int)face[0].X - 1].Y),
+                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y)
+                );
+                DrawLine(
+                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y),
+                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y)
+                );
+                DrawLine(
+                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y),
                     new(vertices[(int)face[0].X - 1].X, vertices[(int)face[0].X - 1].Y)
+                );
+
+                DrawLine(
+                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y),
+                    new(vertices[(int)face[2].X - 1].X, vertices[(int)face[2].X - 1].Y)
+                );
+                DrawLine(
+                    new(vertices[(int)face[2].X - 1].X, vertices[(int)face[2].X - 1].Y),
+                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y)
+                );
+                DrawLine(
+                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y),
+                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y)
                 );
             }
 
@@ -189,6 +204,7 @@ namespace lab1
             bitmap = new((int)Grid.ActualWidth, (int)Grid.ActualHeight);
             Canvas.Source = bitmap.Source;
             ParseModelFromFile("./model/shovel_low.obj");
+            //ParseModelFromFile("./model/cube.obj");
             Draw();
         }
 
