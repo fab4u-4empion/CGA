@@ -8,6 +8,9 @@
         Title="MainWindow" Height="700" Width="900"
         Loaded="Window_Loaded"
         KeyDown="Window_KeyDown"
+        MouseMove="Window_MouseMove"
+        MouseDown="Window_MouseDown"
+        MouseWheel="Window_MouseWheel"
         >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas"/>
