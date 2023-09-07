@@ -18,7 +18,7 @@ namespace lab1
 
         public Model() {
             Scale = 1.0f;
-            Translation = new Vector3(0, -6, -2);
+            Translation = new Vector3(0, 0, 0);
             Yaw = 0.0f;
             Pitch = 0.0f;
             Roll = 0.0f;

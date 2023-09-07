@@ -22,18 +22,8 @@ namespace lab1
         Model model = new();
         Camera camera = new();
 
-        float z = 25;
-        float x = 0;
-        float y = 5;
-
-        float camera_x = 0;
-        float camera_y = 0;
-        float camera_z = 25;
-
         Point mouse_position;
         
- 
-
         public MainWindow()
         {
             InitializeComponent();
@@ -212,6 +202,7 @@ namespace lab1
 
             bitmap = new((int)Grid.ActualWidth, (int)Grid.ActualHeight);
             Canvas.Source = bitmap.Source;
+            model.Translation = new(0, -6, -2);
             ParseModelFromFile("./model/shovel_low.obj");
             //ParseModelFromFile("./model/cube.obj");
             Draw();
