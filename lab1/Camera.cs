@@ -13,6 +13,7 @@ namespace lab1
         public Vector3 Position { get; set; }
         public Vector3 Up { get; set; }
         public float FoV { get; set; }
+        public Vector3 LookVector { get; set; }
 
         private float r;
         private float o;
@@ -26,6 +27,7 @@ namespace lab1
             Position = GetPosition();
             FoV = float.Pi / 4;
             Up = new Vector3(0, 1, 0);
+            LookVector = GetLookVector();
         }
 
         private float DegToRad(float deg)
@@ -41,11 +43,16 @@ namespace lab1
             );
         }
 
+        private Vector3 GetLookVector() { 
+            return Vector3.Normalize(new(Target.X - Position.X, Target.Y - Position.Y, Target.Z - Position.Z));
+        }
+
         public void UpdatePosition(float dR, float dO, float dF) {
             r = Math.Max(r + dR, 10);
             o = Math.Min(179, Math.Max(1, o + dO)); 
             f += dF;
             Position = GetPosition();
+            LookVector = GetLookVector();
         }
     }
 }

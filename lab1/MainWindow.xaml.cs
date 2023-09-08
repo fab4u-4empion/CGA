@@ -8,7 +8,6 @@ using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Media3D;
 
 namespace lab1
 {
@@ -21,6 +20,8 @@ namespace lab1
         List<Point> setedPixels = new List<Point>();
         Model model = new();
         Camera camera = new();
+        ZBuffer ZBuffer;
+        Vector3 Light = Vector3.Normalize(new(17, 18, 19));
 
         Point mouse_position;
         
@@ -51,8 +52,7 @@ namespace lab1
 
                     if (line.StartsWith("f "))
                     {
-                        model.AddFace(
-                            line
+                        List<Vector3> vertices = line
                                 .Remove(0, 2)
                                 .Split(" ")
                                 .Select(v =>
@@ -64,8 +64,27 @@ namespace lab1
                                     return new Vector3(indexes[0], indexes[1], indexes[2]);
                                 }
                                 )
-                                .ToList()
-                        );
+                                .ToList();
+                        for (int i = 0; i < vertices.Count - 2;  i++)
+                        {
+                            model.AddFace(new() {
+                                vertices[0],
+                                vertices[i + 1],
+                                vertices[i + 2]
+                            });
+                        }
+                    }
+
+                    if (line.StartsWith("vn "))
+                    {
+                        List<float> coordinates = line
+                            .Remove(0, 3)
+                            .Split(" ")
+                            .Select(c =>
+                                float.Parse(c, CultureInfo.InvariantCulture)
+                             )
+                            .ToList();
+                        model.AddNormal(coordinates[0], coordinates[1], coordinates[2]);
                     }
                 }
             }
@@ -101,96 +120,196 @@ namespace lab1
             }
         }
 
-        private void DrawLine(Point a, Point b)
+        private Vector3 GetColor(Vector3 normal, Vector3 color)
         {
-            double x1 = a.X;
-            double y1 = a.Y;
-            double x2 = b.X;
-            double y2 = b.Y;
+            float c = Math.Max(Vector3.Dot(normal, Light), 0);
+            return Vector3.Multiply(color, c);
+        }
 
-            int deltaX = Math.Abs((int)(x1 - x2));
-            int deltaY = Math.Abs((int)(y1 - y2));
+        public static Vector3 GetAverageColor(Vector3 color1, Vector3 color2, Vector3 color3)
+        {
+            float sumR = color1.X + color2.X + color3.X;
+            float sumG = color1.Y + color2.Y + color3.Y;
+            float sumB = color1.Z + color2.Z + color3.Z;
 
-            int L = (int)Math.Max(deltaX, deltaY);
+            return Vector3.Divide(new(sumR, sumG, sumB), 3);
+        }
 
-            if (L == 0)
+        private Vector3 GetFaceColor(List<Vector3> face, Vector3 color)
+        {
+            Vector3 normal1 = model.Normals[(int)face[0].Z - 1];
+            Vector3 normal2 = model.Normals[(int)face[1].Z - 1];
+            Vector3 normal3 = model.Normals[(int)face[2].Z - 1];
+
+            Vector3 color1 = GetColor(normal1, color);
+            Vector3 color2 = GetColor(normal2, color);
+            Vector3 color3 = GetColor(normal3, color);
+
+            return GetAverageColor(color1, color2, color3);
+        }
+
+        private Vector3 GetNormal(List<Vector3> face, Vector4[] vertices)
+        {
+            Vector4 v1 = vertices[(int)face[0].X - 1];
+            Vector4 v2 = vertices[(int)face[1].X - 1];
+            Vector4 v3 = vertices[(int)face[2].X - 1];
+
+            Vector3 s1 = new(v2.X - v1.X, v2.Y - v1.Y, v2.Z - v1.Z);
+            Vector3 s2 = new(v3.X - v2.X, v3.Y - v2.Y, v3.Z - v2.Z);
+            return Vector3.Normalize(Vector3.Cross(s1, s2));
+        }
+
+        private void DrawLine(Pixel a, Pixel b, Vector3 color, bool isSide = false, List<Pixel> sides = null)
+        {
+            // разница координат начальной и конечной точек
+            int dx = Math.Abs(b.X - a.X);
+            int dy = Math.Abs(b.Y - a.Y);
+            float dz = Math.Abs(b.Z - a.Z);
+
+            // учитываем квадрант
+            int signX = a.X < b.X ? 1 : -1;
+            int signY = a.Y < b.Y ? 1 : -1;
+            float signZ = a.Z < b.Z ? 1 : -1;
+
+            // текущий пиксель
+            Pixel p = a;
+
+            float curZ = a.Z;  // текущее z
+            float deltaZ = dz / dy;  // при изменении y будем менять z
+
+            int err = dx - dy;   // ошибка
+
+            // пока не достигнем конца
+            while (p.X != b.X || p.Y != b.Y)
             {
-                if (x1 >= 0 && y1 >= 0 && x1 < bitmap.PixelWidth && y1 < bitmap.PixelHeight)
+                // пиксель внутри окна
+                DrawPixel(p, color);
+                if (isSide)
+                    sides.Add(p.Copy());
+
+                int err2 = err * 2;      // модифицированное значение ошибки
+
+                if (err2 > -dy)
                 {
-                    bitmap.SetPixel((int)x1, (int)y1, Vector3.Zero);
-                    setedPixels.Add(new(x1, y1));
+                    p.X += signX;        // изменияем x на единицу
+                    err -= dy;           // корректируем ошибку
                 }
+
+                if (err2 < dx)
+                {
+                    p.Y += signY;            // изменяем y на единицу
+                    curZ += signZ * deltaZ;  // меняем z
+                    err += dx;               // корректируем ошибку   
+                }
+            }
+
+            // отрисовывем последний пиксель
+            DrawPixel(b, color);
+            if (isSide)
+                sides.Add(b.Copy());
+        }
+
+        private void FillFace(List<Pixel> sidesPixels, Vector3 color) // список всех точек ребер грани
+        {
+            (int? minY, int? maxY) = GetMinMaxY(sidesPixels);
+            if (minY is null || maxY is null)
+            {
                 return;
             }
 
-            double dX = (x2 - x1) / L;
-            double dY = (y2 - y1) / L;
-
-            double x = x1;
-            double y = y1;
-
-            L++;
-            while (L > 0)
+            for (int y = (int)minY; y < maxY; y++)      // по очереди отрисовываем линии для каждой y-координаты
             {
-                if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight)
+                (Pixel? startPixel, Pixel? endPixel) = GetStartEndXForY(sidesPixels, y);
+                if (startPixel is null || endPixel is null)
                 {
-                    bitmap.SetPixel((int)x, (int)y, Vector3.Zero);
-                    setedPixels.Add(new(x, y));
+                    continue;
                 }
-                x += dX;
-                y += dY;
-                L--;
+
+                Pixel start = (Pixel)startPixel;
+                Pixel end = (Pixel)endPixel;
+
+                float z = start.Z;                                       // в какую сторону приращение z
+                float dz = (end.Z - start.Z) / Math.Abs((float)(end.X - start.X));  // z += dz при изменении x
+
+                // отрисовываем линию
+                for (int x = start.X; x < end.X; x++, z += dz)
+                {
+                    DrawPixel(new Pixel(x, y, z), color);
+                }
+            }
+        }
+
+        // Сортируем точки по Y-координате и находим min & max
+        private static (int? min, int? max) GetMinMaxY(List<Pixel> pixels)
+        {
+            List<Pixel> sorted = pixels.OrderBy(x => x.Y).ToList();
+            return sorted.Count == 0 ? (min: null, max: null) : (min: sorted.First().Y, max: sorted.Last().Y);
+        }
+
+        // Находим стартовый и конечный X для определенного Y 
+        private static (Pixel? start, Pixel? end) GetStartEndXForY(List<Pixel> pixels, int y)
+        {
+            // Фильтруем пиксели с нужным Y и сортируем по X
+            List<Pixel> filtered = pixels.Where(pixel => pixel.Y == y).OrderBy(pixel => pixel.X).ToList();
+            return filtered.Count == 0 ? (start: null, end: null) : (start: filtered.First(), end: filtered.Last());
+        }
+
+        private void DrawFace(List<Vector3> face, Vector4[] vertices)
+        {
+            List<Pixel> sides = new();
+
+            Vector3 color = GetFaceColor(face, new(255, 0, 255));
+
+            for (int i = 0; i < face.Count - 1; i++)
+            {
+                DrawLine(
+                    new(vertices[(int)face[i].X - 1]),
+                    new(vertices[(int)face[i + 1].X - 1]),
+                    color,
+                    true,
+                    sides
+                );
+            }
+
+            DrawLine(
+                new(vertices[(int)face[0].X - 1]),
+                new(vertices[(int)face[^1].X - 1]),
+                color,
+                true,
+                sides
+            );
+
+            FillFace(sides, color);
+        }
+
+        private void DrawPixel(Pixel p, Vector3 color)
+        {
+            if (p.X >= 0 && p.Y >= 0 && p.X < bitmap.PixelWidth && p.Y < bitmap.PixelHeight && p.Z <= ZBuffer[p.X, p.Y])
+            {
+                bitmap.SetPixel(p.X, p.Y, color);
+                setedPixels.Add(new(p.X, p.Y));
+                ZBuffer[p.X, p.Y] = p.Z;
             }
         }
 
         private void Draw()
         {
             Vector4[] vertices = TransformCoordinates();
+            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+
+            bitmap.Source.Lock();
 
             ClearBitmap();
 
             setedPixels.Clear();
 
-            bitmap.Source.Lock();
-
-            /*for (int i = 0; i < vertices.Length; i++)
-            {
-                int x = (int)vertices[i].X;
-                int y = (int)vertices[i].Y;
-                if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight)
-                {
-                    bitmap.SetPixel(x, y, Vector3.Zero);
-                    setedPixels.Add(new(x, y));
-                }
-            }*/
-
             foreach (List<Vector3> face in model.Faces)
             {
-                DrawLine(
-                    new(vertices[(int)face[0].X - 1].X, vertices[(int)face[0].X - 1].Y),
-                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y)
-                );
-                DrawLine(
-                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y),
-                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y)
-                );
-                DrawLine(
-                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y),
-                    new(vertices[(int)face[0].X - 1].X, vertices[(int)face[0].X - 1].Y)
-                );
-
-                DrawLine(
-                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y),
-                    new(vertices[(int)face[2].X - 1].X, vertices[(int)face[2].X - 1].Y)
-                );
-                DrawLine(
-                    new(vertices[(int)face[2].X - 1].X, vertices[(int)face[2].X - 1].Y),
-                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y)
-                );
-                DrawLine(
-                    new(vertices[(int)face[3].X - 1].X, vertices[(int)face[3].X - 1].Y),
-                    new(vertices[(int)face[1].X - 1].X, vertices[(int)face[1].X - 1].Y)
-                );
+                Vector3 normal = GetNormal(face, vertices);
+                if (normal.Z < 0)
+                {
+                    DrawFace(face, vertices);   
+                }
             }
 
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
@@ -202,9 +321,10 @@ namespace lab1
 
             bitmap = new((int)Grid.ActualWidth, (int)Grid.ActualHeight);
             Canvas.Source = bitmap.Source;
-            model.Translation = new(0, -6, -2);
+            model.Translation = new(0, -6, -3);
             ParseModelFromFile("./model/shovel_low.obj");
-            //ParseModelFromFile("./model/cube.obj");
+            /*model.Translation = new(-54, -54, 0);
+            ParseModelFromFile("./model/cube.obj");*/
             Draw();
         }
 

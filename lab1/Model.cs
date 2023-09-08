@@ -7,6 +7,7 @@ namespace lab1
     {
         public List<Vector4> Vertices = new();
         public List<List<Vector3>> Faces = new();
+        public List<Vector3> Normals = new();
 
         public float Scale { get; set; }
 
@@ -29,9 +30,14 @@ namespace lab1
             Vertices.Add(new(x, y, z, 1));
         }
 
-        public void AddFace(List<Vector3> face)
+        public void AddFace(List<Vector3> vertices)
         {
-            Faces.Add(face);
+            Faces.Add(vertices);
+        }
+
+        public void AddNormal(float x, float y, float z)
+        {
+            Normals.Add(new(x, y, z));
         }
     }
 }
