@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -17,11 +18,11 @@ namespace lab1
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
-        List<Point> setedPixels = new List<Point>();
+        HashSet<Point> setedPixels = new();
         Model model = new();
         Camera camera = new();
         ZBuffer ZBuffer;
-        Vector3 Light = Vector3.Normalize(new(17, 18, 19));
+        Vector3 Light = Vector3.Normalize(new(5, 10, 15));
 
         Point mouse_position;
         
@@ -258,7 +259,7 @@ namespace lab1
         {
             List<Pixel> sides = new();
 
-            Vector3 color = GetFaceColor(face, new(255, 0, 255));
+            Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
 
             for (int i = 0; i < face.Count - 1; i++)
             {
@@ -308,7 +309,7 @@ namespace lab1
                 Vector3 normal = GetNormal(face, vertices);
                 if (normal.Z < 0)
                 {
-                    DrawFace(face, vertices);   
+                    DrawFace(face, vertices);
                 }
             }
 
@@ -323,8 +324,8 @@ namespace lab1
             Canvas.Source = bitmap.Source;
             model.Translation = new(0, -6, -3);
             ParseModelFromFile("./model/shovel_low.obj");
-            /*model.Translation = new(-54, -54, 0);
-            ParseModelFromFile("./model/cube.obj");*/
+            /* model.Translation = new(-54, -54, 0);
+             ParseModelFromFile("./model/cube.obj");*/
             Draw();
         }
 
