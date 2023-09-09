@@ -160,7 +160,7 @@ namespace lab1
             return Vector3.Normalize(Vector3.Cross(s1, s2));
         }
 
-        private void DrawLine(Pixel a, Pixel b, Vector3 color, bool isSide = false, List<Pixel> sides = null)
+        private void DrawLine(Pixel a, Pixel b, Vector3 color, List<Pixel> sides = null)
         {
             // разница координат начальной и конечной точек
             int dx = Math.Abs(b.X - a.X);
@@ -172,33 +172,30 @@ namespace lab1
             int signY = a.Y < b.Y ? 1 : -1;
             float signZ = a.Z < b.Z ? 1 : -1;
 
-            // текущий пиксель
-            Pixel p = a;
-
             float curZ = a.Z;  // текущее z
             float deltaZ = dz / dy;  // при изменении y будем менять z
 
             int err = dx - dy;   // ошибка
 
             // пока не достигнем конца
-            while (p.X != b.X || p.Y != b.Y)
+            while (a.X != b.X || a.Y != b.Y)
             {
-                // пиксель внутри окна
-                DrawPixel(p, color);
-                if (isSide)
-                    sides.Add(p.Copy());
+                DrawPixel(new(a.X, a.Y, curZ), color);
+                sides.Add(a.Copy());
+
 
                 int err2 = err * 2;      // модифицированное значение ошибки
 
                 if (err2 > -dy)
                 {
-                    p.X += signX;        // изменияем x на единицу
+                    a.X += signX;
+  
                     err -= dy;           // корректируем ошибку
                 }
 
                 if (err2 < dx)
                 {
-                    p.Y += signY;            // изменяем y на единицу
+                    a.Y += signY;            // изменяем y на единицу
                     curZ += signZ * deltaZ;  // меняем z
                     err += dx;               // корректируем ошибку   
                 }
@@ -206,8 +203,7 @@ namespace lab1
 
             // отрисовывем последний пиксель
             DrawPixel(b, color);
-            if (isSide)
-                sides.Add(b.Copy());
+            sides.Add(b.Copy());
         }
 
         private void FillFace(List<Pixel> sidesPixels, Vector3 color) // список всех точек ребер грани
@@ -226,11 +222,11 @@ namespace lab1
                     continue;
                 }
 
-                Pixel start = (Pixel)startPixel;
-                Pixel end = (Pixel)endPixel;
+                Pixel start = startPixel;
+                Pixel end = endPixel;
 
                 float z = start.Z;                                       // в какую сторону приращение z
-                float dz = (end.Z - start.Z) / Math.Abs((float)(end.X - start.X));  // z += dz при изменении x
+                float dz = (end.Z - start.Z) / Math.Abs(end.X - start.X);  // z += dz при изменении x
 
                 // отрисовываем линию
                 for (int x = start.X; x < end.X; x++, z += dz)
@@ -267,7 +263,6 @@ namespace lab1
                     new(vertices[(int)face[i].X - 1]),
                     new(vertices[(int)face[i + 1].X - 1]),
                     color,
-                    true,
                     sides
                 );
             }
@@ -276,7 +271,6 @@ namespace lab1
                 new(vertices[(int)face[0].X - 1]),
                 new(vertices[(int)face[^1].X - 1]),
                 color,
-                true,
                 sides
             );
 
@@ -285,7 +279,7 @@ namespace lab1
 
         private void DrawPixel(Pixel p, Vector3 color)
         {
-            if (p.X >= 0 && p.Y >= 0 && p.X < bitmap.PixelWidth && p.Y < bitmap.PixelHeight && p.Z <= ZBuffer[p.X, p.Y])
+            if (p.X >= 0 && p.Y >= 0 && p.X < bitmap.PixelWidth && p.Y < bitmap.PixelHeight && p.Z > 0 && p.Z < 1 && p.Z <= ZBuffer[p.X, p.Y])
             {
                 bitmap.SetPixel(p.X, p.Y, color);
                 setedPixels.Add(new(p.X, p.Y));
@@ -322,10 +316,12 @@ namespace lab1
 
             bitmap = new((int)Grid.ActualWidth, (int)Grid.ActualHeight);
             Canvas.Source = bitmap.Source;
-            model.Translation = new(0, -6, -3);
+            /*model.Translation = new(0, -10, 0);
+            ParseModelFromFile("./model/tree.obj");*/
             ParseModelFromFile("./model/shovel_low.obj");
-            /* model.Translation = new(-54, -54, 0);
-             ParseModelFromFile("./model/cube.obj");*/
+            model.Translation = new(0, -6, -3);
+            /*model.Translation = new(-54, -54, 0);
+            ParseModelFromFile("./model/cube.obj");*/
             Draw();
         }
 
