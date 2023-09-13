@@ -1,6 +1,7 @@
 ﻿using Rasterization;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Diagnostics;
 
 namespace lab1
 {
@@ -18,10 +20,11 @@ namespace lab1
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
-        HashSet<Point> setedPixels = new();
+
+        object locker = new object();
         Model model = new();
         Camera camera = new();
-        ZBuffer ZBuffer;
+        ZBuffer ZBuffer = new(1, 2);
         Vector3 Light = Vector3.Normalize(new(5, 10, 15));
 
         Point mouse_position;
@@ -115,9 +118,11 @@ namespace lab1
 
         private void ClearBitmap()
         {
-            foreach(Point p in setedPixels)
+            for (int i = 0; i < bitmap.PixelWidth; i++)
             {
-                bitmap.ClearPixel((int)p.X, (int)p.Y);
+                for (int j = 0; j < bitmap.PixelHeight; j++) {
+                    bitmap.ClearPixel(i, j);
+                }
             }
         }
 
@@ -172,37 +177,36 @@ namespace lab1
             int signY = a.Y < b.Y ? 1 : -1;
             float signZ = a.Z < b.Z ? 1 : -1;
 
-            float curZ = a.Z;  // текущее z
+            //float curZ = a.Z;  // текущее z
             float deltaZ = dz / dy;  // при изменении y будем менять z
 
             int err = dx - dy;   // ошибка
 
             // пока не достигнем конца
+           
             while (a.X != b.X || a.Y != b.Y)
             {
-                DrawPixel(new(a.X, a.Y, curZ), color);
+                DrawPixel(a.X, a.Y, a.Z, color);
                 sides.Add(a.Copy());
-
 
                 int err2 = err * 2;      // модифицированное значение ошибки
 
                 if (err2 > -dy)
                 {
                     a.X += signX;
-  
                     err -= dy;           // корректируем ошибку
                 }
 
                 if (err2 < dx)
                 {
                     a.Y += signY;            // изменяем y на единицу
-                    curZ += signZ * deltaZ;  // меняем z
+                    a.Z += signZ * deltaZ;  // меняем z
                     err += dx;               // корректируем ошибку   
                 }
             }
 
             // отрисовывем последний пиксель
-            DrawPixel(b, color);
+            DrawPixel(b.X, b.Y, b.Z, color);
             sides.Add(b.Copy());
         }
 
@@ -231,7 +235,7 @@ namespace lab1
                 // отрисовываем линию
                 for (int x = start.X; x < end.X; x++, z += dz)
                 {
-                    DrawPixel(new Pixel(x, y, z), color);
+                    DrawPixel(x, y, z, color);
                 }
             }
         }
@@ -251,64 +255,89 @@ namespace lab1
             return filtered.Count == 0 ? (start: null, end: null) : (start: filtered.First(), end: filtered.Last());
         }
 
-        private void DrawFace(List<Vector3> face, Vector4[] vertices)
+        private void DrawFace(List<Vector3> face, List<Vector4> vertices)
         {
+           
             List<Pixel> sides = new();
 
-            Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
+            //Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
+            Vector3 color = Vector3.Zero;
 
-            for (int i = 0; i < face.Count - 1; i++)
-            {
+                for (int i = 0; i < face.Count - 1; i++)
+                {
+                    DrawLine(
+                        new(vertices[i]),
+                        new(vertices[i + 1]),
+                        color,
+                        sides
+                    );
+                }
+
+
                 DrawLine(
-                    new(vertices[(int)face[i].X - 1]),
-                    new(vertices[(int)face[i + 1].X - 1]),
+                    new(vertices[0]),
+                    new(vertices[^1]),
                     color,
                     sides
                 );
-            }
 
-            DrawLine(
-                new(vertices[(int)face[0].X - 1]),
-                new(vertices[(int)face[^1].X - 1]),
-                color,
-                sides
-            );
+            
 
-            FillFace(sides, color);
+         
+            //FillFace(sides, color);
+            
+            
         }
 
-        private void DrawPixel(Pixel p, Vector3 color)
+        private void DrawPixel(int x, int y, float z, Vector3 color)
         {
-            if (p.X >= 0 && p.Y >= 0 && p.X < bitmap.PixelWidth && p.Y < bitmap.PixelHeight && p.Z > 0 && p.Z < 1 && p.Z <= ZBuffer[p.X, p.Y])
+            //&& z > 0 && z < 1 && z <= ZBuffer[x, y]
+
+            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight)
             {
-                bitmap.SetPixel(p.X, p.Y, color);
-                setedPixels.Add(new(p.X, p.Y));
-                ZBuffer[p.X, p.Y] = p.Z;
+                //bitmap.SetPixel(x, y, color);
+                //ZBuffer[x, y] = z;
             }
         }
 
         private void Draw()
         {
+            ClearBitmap();
+            DateTime t = DateTime.Now;
             Vector4[] vertices = TransformCoordinates();
-            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            //ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
 
             bitmap.Source.Lock();
 
-            ClearBitmap();
+            
+            
 
-            setedPixels.Clear();
+            List<Task> tasks = new List<Task>();
 
             foreach (List<Vector3> face in model.Faces)
             {
                 Vector3 normal = GetNormal(face, vertices);
                 if (normal.Z < 0)
                 {
-                    DrawFace(face, vertices);
+                    List<Vector4> faceVertices = new List<Vector4>()
+                    {
+                        vertices[(int)face[0].X - 1],
+                        vertices[(int)face[1].X - 1],
+                        vertices[(int)face[2].X - 1]
+                    };
+                    tasks.Add(
+                        Task
+                            .Run(() =>
+                                {
+                                    DrawFace(face, faceVertices);
+                                }
+                            ));
                 }
             }
-
+            tasks.ForEach(task => task.Wait());
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             bitmap.Source.Unlock();
+            Time.Content = (DateTime.Now - t).Milliseconds.ToString();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -332,9 +361,10 @@ namespace lab1
                 Point current_position = e.GetPosition(this);
                 camera.UpdatePosition(0, 0, (float)(current_position.X - mouse_position.X) * -0.5f);
                 camera.UpdatePosition(0, (float)(current_position.Y - mouse_position.Y) * -0.5f, 0);
+                Draw();
             }
             mouse_position = e.GetPosition(this);
-            Draw();
+            
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
