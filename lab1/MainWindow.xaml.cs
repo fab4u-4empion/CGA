@@ -304,13 +304,9 @@ namespace lab1
 
             bitmap.Source.Lock();
 
-            
-            
+            //List<Task> tasks = new List<Task>();
 
-            List<Task> tasks = new List<Task>();
-
-            foreach (List<Vector3> face in model.Faces)
-            {
+            Parallel.ForEach(model.Faces, face => {
                 List<Vector4> faceVertices = new List<Vector4>()
                             {
                                 vertices[(int)face[0].X - 1],
@@ -319,14 +315,19 @@ namespace lab1
                             };
                 if (GetNormal(faceVertices).Z < 0)
                     DrawFace(face, faceVertices);
-                /*tasks.Add(
+            });
+
+            /*foreach (List<Vector3> face in model.Faces)
+            {
+
+                tasks.Add(
                     Task
                         .Run(() =>
                         {
-                            
+
                         }
-                        ));*/
-            }
+                        ));
+            }*/
             //tasks.ForEach(task => task.Wait());
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             bitmap.Source.Unlock();
