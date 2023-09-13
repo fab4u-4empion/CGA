@@ -13,6 +13,6 @@
         >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas"/>
-        <Label x:Name="Time" Content="Label" HorizontalAlignment="Left" Margin="852,10,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="Time" Content="Label" HorizontalAlignment="Left" Margin="832,10,0,0" VerticalAlignment="Top"/>
     </Grid>
 </Window>

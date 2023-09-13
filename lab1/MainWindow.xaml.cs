@@ -167,6 +167,7 @@ namespace lab1
 
         private void DrawLine(Pixel a, Pixel b, Vector3 color, List<Pixel> sides = null)
         {
+
             // разница координат начальной и конечной точек
             int dx = Math.Abs(b.X - a.X);
             int dy = Math.Abs(b.Y - a.Y);
@@ -208,6 +209,7 @@ namespace lab1
             // отрисовывем последний пиксель
             DrawPixel(b.X, b.Y, b.Z, color);
             sides.Add(b.Copy());
+            
         }
 
         private void FillFace(List<Pixel> sidesPixels, Vector3 color) // список всех точек ребер грани
@@ -260,8 +262,8 @@ namespace lab1
            
             List<Pixel> sides = new();
 
-            //Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
-            Vector3 color = Vector3.Zero;
+            Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
+            //Vector3 color = Vector3.Zero;
 
                 for (int i = 0; i < face.Count - 1; i++)
                 {
@@ -280,33 +282,44 @@ namespace lab1
                     color,
                     sides
                 );
-            //FillFace(sides, color);
+
+           
+            FillFace(sides, color);
+            
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
         {
             //&& z > 0 && z < 1 && z <= ZBuffer[x, y]
 
-            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight)
+
+            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1 && z <= ZBuffer[x, y])
             {
                 bitmap.SetPixel(x, y, color);
-                //ZBuffer[x, y] = z;
+                ZBuffer[x, y] = z;
             }
+
         }
 
         private void Draw()
         {
             DateTime t = DateTime.Now;
+
             ClearBitmap();
+
             
             Vector4[] vertices = TransformCoordinates();
-            //ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
 
+            
+            ZBuffer.Clear();
+            //ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            
             bitmap.Source.Lock();
 
             //List<Task> tasks = new List<Task>();
-
-            Parallel.ForEach(model.Faces, face => {
+            
+            Parallel.ForEach(model.Faces, face =>
+            {
                 List<Vector4> faceVertices = new List<Vector4>()
                             {
                                 vertices[(int)face[0].X - 1],
@@ -316,22 +329,28 @@ namespace lab1
                 if (GetNormal(faceVertices).Z < 0)
                     DrawFace(face, faceVertices);
             });
+            
 
-            /*foreach (List<Vector3> face in model.Faces)
-            {
 
-                tasks.Add(
-                    Task
-                        .Run(() =>
-                        {
+            //foreach (List<Vector3> face in model.Faces)
+            //{
+            //    List<Vector4> faceVertices = new List<Vector4>()
+            //                {
+            //                    vertices[(int)face[0].X - 1],
+            //                    vertices[(int)face[1].X - 1],
+            //                    vertices[(int)face[2].X - 1]
+            //                };
 
-                        }
-                        ));
-            }*/
+            //    if (GetNormal(faceVertices).Z < 0)
+            //        DrawFace(face, faceVertices);
+            //}
             //tasks.ForEach(task => task.Wait());
+
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
+            
             bitmap.Source.Unlock();
-            Time.Content = (DateTime.Now - t).Milliseconds.ToString();
+            Time.Content = (1000 / (DateTime.Now - t).Milliseconds).ToString() + " fps";
+
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -345,6 +364,7 @@ namespace lab1
             model.Translation = new(0, -6, -3);
             /*model.Translation = new(-54, -54, 0);
             ParseModelFromFile("./model/cube.obj");*/
+            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }
 
