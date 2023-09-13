@@ -154,11 +154,11 @@ namespace lab1
             return GetAverageColor(color1, color2, color3);
         }
 
-        private Vector3 GetNormal(List<Vector3> face, Vector4[] vertices)
+        private Vector3 GetNormal(List<Vector4> vertices)
         {
-            Vector4 v1 = vertices[(int)face[0].X - 1];
-            Vector4 v2 = vertices[(int)face[1].X - 1];
-            Vector4 v3 = vertices[(int)face[2].X - 1];
+            Vector4 v1 = vertices[0];
+            Vector4 v2 = vertices[1];
+            Vector4 v3 = vertices[2];
 
             Vector3 s1 = new(v2.X - v1.X, v2.Y - v1.Y, v2.Z - v1.Z);
             Vector3 s2 = new(v3.X - v2.X, v3.Y - v2.Y, v3.Z - v2.Z);
@@ -183,7 +183,7 @@ namespace lab1
             int err = dx - dy;   // ошибка
 
             // пока не достигнем конца
-           
+
             while (a.X != b.X || a.Y != b.Y)
             {
                 DrawPixel(a.X, a.Y, a.Z, color);
@@ -280,13 +280,7 @@ namespace lab1
                     color,
                     sides
                 );
-
-            
-
-         
             //FillFace(sides, color);
-            
-            
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
@@ -295,15 +289,16 @@ namespace lab1
 
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight)
             {
-                //bitmap.SetPixel(x, y, color);
+                bitmap.SetPixel(x, y, color);
                 //ZBuffer[x, y] = z;
             }
         }
 
         private void Draw()
         {
-            ClearBitmap();
             DateTime t = DateTime.Now;
+            ClearBitmap();
+            
             Vector4[] vertices = TransformCoordinates();
             //ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
 
@@ -316,25 +311,23 @@ namespace lab1
 
             foreach (List<Vector3> face in model.Faces)
             {
-                Vector3 normal = GetNormal(face, vertices);
-                if (normal.Z < 0)
-                {
-                    List<Vector4> faceVertices = new List<Vector4>()
-                    {
-                        vertices[(int)face[0].X - 1],
-                        vertices[(int)face[1].X - 1],
-                        vertices[(int)face[2].X - 1]
-                    };
-                    tasks.Add(
-                        Task
-                            .Run(() =>
-                                {
-                                    DrawFace(face, faceVertices);
-                                }
-                            ));
-                }
+                List<Vector4> faceVertices = new List<Vector4>()
+                            {
+                                vertices[(int)face[0].X - 1],
+                                vertices[(int)face[1].X - 1],
+                                vertices[(int)face[2].X - 1]
+                            };
+                if (GetNormal(faceVertices).Z < 0)
+                    DrawFace(face, faceVertices);
+                /*tasks.Add(
+                    Task
+                        .Run(() =>
+                        {
+                            
+                        }
+                        ));*/
             }
-            tasks.ForEach(task => task.Wait());
+            //tasks.ForEach(task => task.Wait());
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             bitmap.Source.Unlock();
             Time.Content = (DateTime.Now - t).Milliseconds.ToString();
