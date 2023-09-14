@@ -158,7 +158,7 @@ namespace lab1
             return GetAverageColor(color1, color2, color3);
         }
 
-        private Vector3 GetNormal(List<Vector4> vertices)
+        private Vector3 GetNormal(Vector4[] vertices)
         {
             Vector4 v1 = vertices[0];
             Vector4 v2 = vertices[1];
@@ -171,12 +171,19 @@ namespace lab1
 
         private List<float> Interpolate(float i0, float d0, float i1, float d1)
         {
-            List<float> result = new();
+
+            List<float> result = null;
             if (i0 == i1)
             {
-                result.Add(d0);
+                result = new(1)
+                {
+                    d0
+                };
                 return result;
             }
+            int size = (int)i1 - (int)i0 + 1;
+            result = new(size);
+            
 
             float a = (d1 - d0) / (i1 - i0);
             float d = d0;
@@ -289,26 +296,26 @@ namespace lab1
             }
         }
 
-        private void DrawFace(List<Vector3> face, List<Vector4> vertices)
+        private void DrawFace(List<Vector3> face, Vector4[] vertices)
         {
             Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
             //Vector3 color = Vector3.Zero;
 
-                for (int i = 0; i < face.Count - 1; i++)
-                {
-                    DrawLine(
-                        vertices[i],
-                        vertices[i + 1],
-                        color
-                    );
-                }
-
-
+            for (int i = 0; i < face.Count - 1; i++)
+            {
                 DrawLine(
-                    vertices[0],                   
-                    vertices[2],
+                    vertices[i],
+                    vertices[i + 1],
                     color
                 );
+            }
+
+
+            DrawLine(
+                vertices[0],                   
+                vertices[2],
+                color
+            );
             FillFace(vertices[0], vertices[1], vertices[2], color);
         }
 
@@ -325,34 +332,35 @@ namespace lab1
         private void Draw()
         {
 
+          
+           
+            
             DateTime t = DateTime.Now;
             bitmap.Clear();
-
-            
             Vector4[] vertices = TransformCoordinates();
             
             ZBuffer.Clear();
             
             bitmap.Source.Lock();
-
-            //List<Task> tasks = new List<Task>();
             
             Parallel.ForEach(model.Faces, face =>
             {
-                List<Vector4> faceVertices = new List<Vector4>()
-                            {
-                                vertices[(int)face[0].X - 1],
-                                vertices[(int)face[1].X - 1],
-                                vertices[(int)face[2].X - 1]
-                            };
-                if (GetNormal(faceVertices).Z < 0)
-                    DrawFace(face, faceVertices);
+
+                Vector4[] faceVerts = new Vector4[3];
+                faceVerts[0] = vertices[(int)face[0].X - 1];
+                faceVerts[1] = vertices[(int)face[1].X - 1];
+                faceVerts[2] = vertices[(int)face[2].X - 1];
+    
+                if (GetNormal(faceVerts).Z < 0)
+                    DrawFace(face, faceVerts);
             });
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
             bitmap.Source.Unlock();
+
             Time.Content = (1000 / (DateTime.Now - t).Milliseconds).ToString() + " fps";
+
 
         }
 
@@ -365,8 +373,8 @@ namespace lab1
             ParseModelFromFile("./model/tree.obj");*/
             ParseModelFromFile("./model/shovel_low.obj");
             model.Translation = new(0, -6, -3);
-            /*model.Translation = new(-54, -54, 0);
-            ParseModelFromFile("./model/cube.obj");*/
+            //model.Translation = new(-54, -54, 0);
+            //ParseModelFromFile("./model/cube.obj");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }
