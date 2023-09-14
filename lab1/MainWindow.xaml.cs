@@ -164,97 +164,147 @@ namespace lab1
             return Vector3.Normalize(Vector3.Cross(s1, s2));
         }
 
-        private void DrawLine(Pixel a, Pixel b, Vector3 color, Dictionary<int, List<Pixel>> sides = null)
+        private List<float> Interpolate(float i0, float d0, float i1, float d1)
         {
-
-            // разница координат начальной и конечной точек
-            int dx = Math.Abs(b.X - a.X);
-            int dy = Math.Abs(b.Y - a.Y);
-            float dz = Math.Abs(b.Z - a.Z);
-
-            // учитываем квадрант
-            int signX = a.X < b.X ? 1 : -1;
-            int signY = a.Y < b.Y ? 1 : -1;
-            float signZ = a.Z < b.Z ? 1 : -1;
-
-            //float curZ = a.Z;  // текущее z
-            float deltaZ = dz / dy;  // при изменении y будем менять z
-
-            int err = dx - dy;   // ошибка
-
-            // пока не достигнем конца
-
-            while (a.X != b.X || a.Y != b.Y)
+            List<float> result = new();
+            if (i0 == i1)
             {
-                DrawPixel(a.X, a.Y, a.Z, color);
-                sides.TryAdd(a.Y, new());
-                sides[a.Y].Add(a.Copy());
-
-                int err2 = err * 2;      // модифицированное значение ошибки
-
-                if (err2 > -dy)
-                {
-                    a.X += signX;
-                    err -= dy;           // корректируем ошибку
-                }
-
-                if (err2 < dx)
-                {
-                    a.Y += signY;            // изменяем y на единицу
-                    a.Z += signZ * deltaZ;  // меняем z
-                    err += dx;               // корректируем ошибку   
-                }
+                result.Add(d0);
+                return result;
             }
 
-            // отрисовывем последний пиксель
-            DrawPixel(b.X, b.Y, b.Z, color);
-            sides.TryAdd(b.Y, new());
-            sides[b.Y].Add(b.Copy());
+            float a = (d1 - d0) / (i1 - i0);
+            float d = d0;
+            for (int i = (int)i0; i <= (int)i1; i++)
+            {
+                result.Add(d);
+                d += a;
+            }
+            return result;
         }
 
-        private void FillFace(Dictionary<int, List<Pixel>> sidesPixels, Vector3 color) // список всех точек ребер грани
+        private void DrawLine(Vector4 a, Vector4 b, Vector3 color)
         {
-            foreach (int y in sidesPixels.Keys) {
-                List<Pixel> points = sidesPixels[y].OrderBy(s => s.X).ToList();
-                Pixel start = points.First();
-                Pixel end = points.Last();
+            if (Math.Abs(b.X - a.X) > Math.Abs(b.Y - a.Y))
+            {
+                if (a.X > b.X)
+                    (b, a) = (a, b);
+                List<float> ys = Interpolate(a.X, a.Y, b.X, b.Y);
+                float dz = (b.Z - a.Z) / (b.X - a.X);
+                float z = a.Z;
+                for (int x = (int)a.X; x <= (int)b.X; x++)
+                {
+                    DrawPixel(x, (int)ys[x - (int)a.X], z, color);
+                    z += dz;
+                }
+            } 
+            else
+            {
+                if (a.Y > b.Y)
+                    (b, a) = (a, b);
+                List<float> xs = Interpolate(a.Y, a.X, b.Y, b.X);
+                float dz = (b.Z - a.Z) / (b.Y - a.Y);
+                float z = a.Z;
+                for (int y = (int)a.Y; y <= (int)b.Y; y++)
+                {
+                    DrawPixel((int)xs[y - (int)a.Y], y, z, color);
+                    z += dz;
+                }
+            }
+        }
 
-                float z = start.Z;                                       // в какую сторону приращение z
-                float dz = (end.Z - start.Z) / Math.Abs(end.X - start.X);  // z += dz при изменении x
+        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 color) // список всех точек ребер грани
+        {
+            if (b.Y < a.Y)
+                (a, b) = (b, a);
+            if (c.Y < a.Y)
+                (a, c) = (c, a);
+            if (c.Y < b.Y)
+                (b, c) = (c, b);
 
-                for (int x = start.X; x < end.X; x++, z += dz)
+            List<float> x01 = Interpolate(a.Y, a.X, b.Y, b.X);
+            List<float> x12 = Interpolate(b.Y, b.X, c.Y, c.X);
+            List<float> x02 = Interpolate(a.Y, a.X, c.Y, c.X);
+
+            x01.RemoveAt(x01.Count - 1);
+            List<float> x012 = new();
+            x012.AddRange(x01);
+            x012.AddRange(x12);
+
+            int m = x012.Count / 2;
+
+            List<float> x_left;
+            List<float> x_right;
+
+            if (x02[m] < x012[m])
+            {
+                x_left = x02;
+                x_right = x012;
+            }
+            else
+            {
+                x_left = x012;
+                x_right = x02;
+            }
+
+            List<float> z01 = Interpolate(a.Y, a.Z, b.Y, b.Z);
+            List<float> z12 = Interpolate(b.Y, b.Z, c.Y, c.Z);
+            List<float> z02 = Interpolate(a.Y, a.Z, c.Y, c.Z);
+
+            z01.RemoveAt(z01.Count - 1);
+            List<float> z012 = new();
+            z012.AddRange(z01);
+            z012.AddRange(z12);
+
+            m = z012.Count / 2;
+
+            List<float> z_left;
+            List<float> z_right;
+
+            if (z02[m] < z012[m])
+            {
+                z_left = z02;
+                z_right = z012;
+            }
+            else
+            {
+                z_left = z012;
+                z_right = z02;
+            }
+
+            for (int y = (int)a.Y; y < (int)c.Y; y++)
+            {
+                float z = z_left[y - (int)a.Y];
+                float dz = (z_right[y - (int)a.Y] - z_left[y - (int)a.Y]) / (x_right[y - (int)a.Y] - x_left[y - (int)a.Y]);
+                for (int x = (int)x_left[y - (int)a.Y]; x < (int)x_right[y - (int)a.Y]; x++)
                 {
                     DrawPixel(x, y, z, color);
+                    z += dz;
                 }
             }
         }
 
         private void DrawFace(List<Vector3> face, List<Vector4> vertices)
         {
-           
-            Dictionary<int, List<Pixel>> sides = new();
-
             Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
             //Vector3 color = Vector3.Zero;
 
                 for (int i = 0; i < face.Count - 1; i++)
                 {
                     DrawLine(
-                        new(vertices[i]),
-                        new(vertices[i + 1]),
-                        color,
-                        sides
+                        vertices[i],
+                        vertices[i + 1],
+                        color
                     );
                 }
 
 
                 DrawLine(
-                    new(vertices[0]),
-                    new(vertices[^1]),
-                    color,
-                    sides
+                    vertices[0],                   
+                    vertices[2],
+                    color
                 );
-            FillFace(sides, color);
+            FillFace(vertices[0], vertices[1], vertices[2], color);
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
