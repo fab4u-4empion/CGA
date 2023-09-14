@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using static System.Windows.Media.PixelFormats;
 
@@ -18,6 +19,17 @@ namespace Rasterization
         {
             Source = new(pixelWidth, pixelHeight, 96, 96, Pbgra32, null);
             InitializeProperties();
+        }
+
+
+        public void Clear()
+        {
+            for (int i = 0; i < PixelHeight * PixelWidth; i++)
+            {
+                *(int*)(BackBuffer + i * BytesPerPixel) = 0;
+            }
+
+
         }
 
         public Pbgra32Bitmap(BitmapSource source)

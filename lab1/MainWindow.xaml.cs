@@ -117,12 +117,17 @@ namespace lab1
 
         private void ClearBitmap()
         {
-            for (int i = 0; i < bitmap.PixelWidth; i++)
-            {
-                for (int j = 0; j < bitmap.PixelHeight; j++) {
-                    bitmap.ClearPixel(i, j);
-                }
-            }
+
+
+            bitmap.Clear();
+
+            //for (int i = 0; i < bitmap.PixelWidth; i++)
+            //{
+            //    for (int j = 0; j < bitmap.PixelHeight; j++)
+            //    {
+            //        bitmap.ClearPixel(i, j);
+            //    }
+            //}
         }
 
         private Vector3 GetColor(Vector3 normal, Vector3 color)
@@ -319,9 +324,9 @@ namespace lab1
 
         private void Draw()
         {
-            DateTime t = DateTime.Now;
 
-            ClearBitmap();
+            DateTime t = DateTime.Now;
+            bitmap.Clear();
 
             
             Vector4[] vertices = TransformCoordinates();
