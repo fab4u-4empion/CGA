@@ -21,10 +21,9 @@ namespace lab1
     {
         Pbgra32Bitmap bitmap;
 
-        object locker = new object();
         Model model = new();
         Camera camera = new();
-        ZBuffer ZBuffer = new(1, 2);
+        ZBuffer ZBuffer;
         Vector3 Light = Vector3.Normalize(new(5, 10, 15));
 
         Point mouse_position;
@@ -165,7 +164,7 @@ namespace lab1
             return Vector3.Normalize(Vector3.Cross(s1, s2));
         }
 
-        private void DrawLine(Pixel a, Pixel b, Vector3 color, List<Pixel> sides = null)
+        private void DrawLine(Pixel a, Pixel b, Vector3 color, Dictionary<int, List<Pixel>> sides = null)
         {
 
             // разница координат начальной и конечной точек
@@ -188,7 +187,8 @@ namespace lab1
             while (a.X != b.X || a.Y != b.Y)
             {
                 DrawPixel(a.X, a.Y, a.Z, color);
-                sides.Add(a.Copy());
+                sides.TryAdd(a.Y, new());
+                sides[a.Y].Add(a.Copy());
 
                 int err2 = err * 2;      // модифицированное значение ошибки
 
@@ -208,33 +208,20 @@ namespace lab1
 
             // отрисовывем последний пиксель
             DrawPixel(b.X, b.Y, b.Z, color);
-            sides.Add(b.Copy());
-            
+            sides.TryAdd(b.Y, new());
+            sides[b.Y].Add(b.Copy());
         }
 
-        private void FillFace(List<Pixel> sidesPixels, Vector3 color) // список всех точек ребер грани
+        private void FillFace(Dictionary<int, List<Pixel>> sidesPixels, Vector3 color) // список всех точек ребер грани
         {
-            (int? minY, int? maxY) = GetMinMaxY(sidesPixels);
-            if (minY is null || maxY is null)
-            {
-                return;
-            }
-
-            for (int y = (int)minY; y < maxY; y++)      // по очереди отрисовываем линии для каждой y-координаты
-            {
-                (Pixel? startPixel, Pixel? endPixel) = GetStartEndXForY(sidesPixels, y);
-                if (startPixel is null || endPixel is null)
-                {
-                    continue;
-                }
-
-                Pixel start = startPixel;
-                Pixel end = endPixel;
+            foreach (int y in sidesPixels.Keys) {
+                List<Pixel> points = sidesPixels[y].OrderBy(s => s.X).ToList();
+                Pixel start = points.First();
+                Pixel end = points.Last();
 
                 float z = start.Z;                                       // в какую сторону приращение z
                 float dz = (end.Z - start.Z) / Math.Abs(end.X - start.X);  // z += dz при изменении x
 
-                // отрисовываем линию
                 for (int x = start.X; x < end.X; x++, z += dz)
                 {
                     DrawPixel(x, y, z, color);
@@ -242,25 +229,10 @@ namespace lab1
             }
         }
 
-        // Сортируем точки по Y-координате и находим min & max
-        private static (int? min, int? max) GetMinMaxY(List<Pixel> pixels)
-        {
-            List<Pixel> sorted = pixels.OrderBy(x => x.Y).ToList();
-            return sorted.Count == 0 ? (min: null, max: null) : (min: sorted.First().Y, max: sorted.Last().Y);
-        }
-
-        // Находим стартовый и конечный X для определенного Y 
-        private static (Pixel? start, Pixel? end) GetStartEndXForY(List<Pixel> pixels, int y)
-        {
-            // Фильтруем пиксели с нужным Y и сортируем по X
-            List<Pixel> filtered = pixels.Where(pixel => pixel.Y == y).OrderBy(pixel => pixel.X).ToList();
-            return filtered.Count == 0 ? (start: null, end: null) : (start: filtered.First(), end: filtered.Last());
-        }
-
         private void DrawFace(List<Vector3> face, List<Vector4> vertices)
         {
            
-            List<Pixel> sides = new();
+            Dictionary<int, List<Pixel>> sides = new();
 
             Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
             //Vector3 color = Vector3.Zero;
@@ -282,17 +254,11 @@ namespace lab1
                     color,
                     sides
                 );
-
-           
             FillFace(sides, color);
-            
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
         {
-            //&& z > 0 && z < 1 && z <= ZBuffer[x, y]
-
-
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1 && z <= ZBuffer[x, y])
             {
                 bitmap.SetPixel(x, y, color);
@@ -309,10 +275,8 @@ namespace lab1
 
             
             Vector4[] vertices = TransformCoordinates();
-
             
             ZBuffer.Clear();
-            //ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             
             bitmap.Source.Lock();
 
@@ -329,23 +293,7 @@ namespace lab1
                 if (GetNormal(faceVertices).Z < 0)
                     DrawFace(face, faceVertices);
             });
-            
-
-
-            //foreach (List<Vector3> face in model.Faces)
-            //{
-            //    List<Vector4> faceVertices = new List<Vector4>()
-            //                {
-            //                    vertices[(int)face[0].X - 1],
-            //                    vertices[(int)face[1].X - 1],
-            //                    vertices[(int)face[2].X - 1]
-            //                };
-
-            //    if (GetNormal(faceVertices).Z < 0)
-            //        DrawFace(face, faceVertices);
-            //}
-            //tasks.ForEach(task => task.Wait());
-
+       
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
             bitmap.Source.Unlock();
@@ -378,7 +326,6 @@ namespace lab1
                 Draw();
             }
             mouse_position = e.GetPosition(this);
-            
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
