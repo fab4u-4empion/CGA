@@ -236,22 +236,6 @@ namespace lab1
             x012.AddRange(x01);
             x012.AddRange(x12);
 
-            int m = x012.Count / 2;
-
-            List<float> x_left;
-            List<float> x_right;
-
-            if (x02[m] < x012[m])
-            {
-                x_left = x02;
-                x_right = x012;
-            }
-            else
-            {
-                x_left = x012;
-                x_right = x02;
-            }
-
             List<float> z01 = Interpolate(a.Y, a.Z, b.Y, b.Z);
             List<float> z12 = Interpolate(b.Y, b.Z, c.Y, c.Z);
             List<float> z02 = Interpolate(a.Y, a.Z, c.Y, c.Z);
@@ -261,21 +245,30 @@ namespace lab1
             z012.AddRange(z01);
             z012.AddRange(z12);
 
-            m = z012.Count / 2;
+            int m = x012.Count / 2;
+
+            List<float> x_left;
+            List<float> x_right;
 
             List<float> z_left;
             List<float> z_right;
 
-            if (z02[m] < z012[m])
+            if (x02[m] < x012[m])
             {
+                x_left = x02;
+                x_right = x012;
+
                 z_left = z02;
                 z_right = z012;
             }
             else
             {
+                x_left = x012;
+                x_right = x02;
+
                 z_left = z012;
                 z_right = z02;
-            }
+            }            
 
             for (int y = (int)a.Y; y < (int)c.Y; y++)
             {
