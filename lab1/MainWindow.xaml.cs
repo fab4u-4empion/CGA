@@ -158,15 +158,15 @@ namespace lab1
             return GetAverageColor(color1, color2, color3);
         }
 
-        private Vector3 GetNormal(Vector4[] vertices)
+        private float GetNormal(Vector4[] vertices)
         {
             Vector4 v1 = vertices[0];
             Vector4 v2 = vertices[1];
             Vector4 v3 = vertices[2];
 
-            Vector3 s1 = new(v2.X - v1.X, v2.Y - v1.Y, v2.Z - v1.Z);
-            Vector3 s2 = new(v3.X - v2.X, v3.Y - v2.Y, v3.Z - v2.Z);
-            return Vector3.Normalize(Vector3.Cross(s1, s2));
+            Vector2 s1 = new(v2.X - v1.X, v2.Y - v1.Y);
+            Vector2 s2 = new(v3.X - v2.X, v3.Y - v2.Y);
+            return s1.X * s2.Y - s1.Y * s2.X;
         }
 
         private List<float> Interpolate(float i0, float d0, float i1, float d1)
@@ -291,7 +291,7 @@ namespace lab1
 
         private void DrawFace(List<Vector3> face, Vector4[] vertices)
         {
-            Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
+            Vector3 color = GetFaceColor(face, new(1f, 1f, 1f));
             //Vector3 color = Vector3.Zero;
 
             for (int i = 0; i < face.Count - 1; i++)
@@ -317,16 +317,15 @@ namespace lab1
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1 && z <= ZBuffer[x, y])
             {
                 bitmap.SetPixel(x, y, color);
+                
                 ZBuffer[x, y] = z;
+                
             }
 
         }
 
         private void Draw()
         {
-
-          
-           
             
             DateTime t = DateTime.Now;
             bitmap.Clear();
@@ -344,7 +343,7 @@ namespace lab1
                 faceVerts[1] = vertices[(int)face[1].X - 1];
                 faceVerts[2] = vertices[(int)face[2].X - 1];
     
-                if (GetNormal(faceVerts).Z < 0)
+                if (GetNormal(faceVerts) <= 0)
                     DrawFace(face, faceVerts);
             });
        
@@ -360,14 +359,14 @@ namespace lab1
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
 
-            bitmap = new((int)Grid.ActualWidth, (int)Grid.ActualHeight);
+            bitmap = new((int)Grid.ActualWidth * 2, (int)Grid.ActualHeight * 2);
             Canvas.Source = bitmap.Source;
             /*model.Translation = new(0, -10, 0);
             ParseModelFromFile("./model/tree.obj");*/
-            ParseModelFromFile("./model/shovel_low.obj");
-            model.Translation = new(0, -6, -3);
-            //model.Translation = new(-54, -54, 0);
-            //ParseModelFromFile("./model/cube.obj");
+            //ParseModelFromFile("./model/shovel_low.obj");
+            //model.Translation = new(0, -6, -3);
+            model.Translation = new(-54, -54, 0);
+            ParseModelFromFile("./model/cube.obj");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }

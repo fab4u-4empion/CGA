@@ -12,7 +12,7 @@
         MouseWheel="Window_MouseWheel"
         >
     <Grid x:Name="Grid">
-        <Image x:Name="Canvas"/>
+        <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
         <Label x:Name="Time" Content="Label" HorizontalAlignment="Left" Margin="832,10,0,0" VerticalAlignment="Top"/>
     </Grid>
 </Window>
