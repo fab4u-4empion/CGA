@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Diagnostics;
+using System.Threading;
 
 namespace lab1
 {
@@ -25,6 +26,9 @@ namespace lab1
         Camera camera = new();
         ZBuffer ZBuffer;
         Vector3 Light = Vector3.Normalize(new(5, 10, 15));
+        int smoothing = 1;
+
+        SpinLock[,] spins;
 
         Point mouse_position;
         
@@ -115,21 +119,6 @@ namespace lab1
             return windowVertices;
         }
 
-        private void ClearBitmap()
-        {
-
-
-            bitmap.Clear();
-
-            //for (int i = 0; i < bitmap.PixelWidth; i++)
-            //{
-            //    for (int j = 0; j < bitmap.PixelHeight; j++)
-            //    {
-            //        bitmap.ClearPixel(i, j);
-            //    }
-            //}
-        }
-
         private Vector3 GetColor(Vector3 normal, Vector3 color)
         {
             float c = Math.Max(Vector3.Dot(normal, Light), 0);
@@ -187,10 +176,9 @@ namespace lab1
 
             float a = (d1 - d0) / (i1 - i0);
             float d = d0;
-            for (int i = (int)i0; i <= (int)i1; i++)
+            for (int i = (int)i0; i <= (int)i1; i++, d += a)
             {
                 result.Add(d);
-                d += a;
             }
             return result;
         }
@@ -202,12 +190,10 @@ namespace lab1
                 if (a.X > b.X)
                     (b, a) = (a, b);
                 List<float> ys = Interpolate(a.X, a.Y, b.X, b.Y);
-                float dz = (b.Z - a.Z) / (b.X - a.X);
-                float z = a.Z;
+                List<float> zs = Interpolate(a.X, a.Z, b.X, b.Z);
                 for (int x = (int)a.X; x <= (int)b.X; x++)
                 {
-                    DrawPixel(x, (int)ys[x - (int)a.X], z, color);
-                    z += dz;
+                    DrawPixel(x, (int)ys[x - (int)a.X], zs[x - (int)a.X], color);
                 }
             } 
             else
@@ -215,17 +201,15 @@ namespace lab1
                 if (a.Y > b.Y)
                     (b, a) = (a, b);
                 List<float> xs = Interpolate(a.Y, a.X, b.Y, b.X);
-                float dz = (b.Z - a.Z) / (b.Y - a.Y);
-                float z = a.Z;
+                List<float> zs = Interpolate(a.Y, a.Z, b.Y, b.Z);
                 for (int y = (int)a.Y; y <= (int)b.Y; y++)
                 {
-                    DrawPixel((int)xs[y - (int)a.Y], y, z, color);
-                    z += dz;
+                    DrawPixel((int)xs[y - (int)a.Y], y, zs[y - (int)a.Y], color);
                 }
             }
         }
 
-        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 color) // список всех точек ребер грани
+        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 color)
         {
             if (b.Y < a.Y)
                 (a, b) = (b, a);
@@ -234,94 +218,69 @@ namespace lab1
             if (c.Y < b.Y)
                 (b, c) = (c, b);
 
-            List<float> x01 = Interpolate(a.Y, a.X, b.Y, b.X);
-            List<float> x12 = Interpolate(b.Y, b.X, c.Y, c.X);
-            List<float> x02 = Interpolate(a.Y, a.X, c.Y, c.X);
+            Vector4 k1 = (c - a) / (c.Y - a.Y);
+            Vector4 k2 = (b - a) / (b.Y - a.Y);
+            Vector4 k3 = (c - b) / (c.Y - b.Y);
 
-            x01.RemoveAt(x01.Count - 1);
-            List<float> x012 = new();
-            x012.AddRange(x01);
-            x012.AddRange(x12);
+            int top = int.Max((int)float.Ceiling(a.Y), 0);
+            int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
 
-            List<float> z01 = Interpolate(a.Y, a.Z, b.Y, b.Z);
-            List<float> z12 = Interpolate(b.Y, b.Z, c.Y, c.Z);
-            List<float> z02 = Interpolate(a.Y, a.Z, c.Y, c.Z);
-
-            z01.RemoveAt(z01.Count - 1);
-            List<float> z012 = new();
-            z012.AddRange(z01);
-            z012.AddRange(z12);
-
-            int m = x012.Count / 2;
-
-            List<float> x_left;
-            List<float> x_right;
-
-            List<float> z_left;
-            List<float> z_right;
-
-            if (x02[m] < x012[m])
+            for (int y = top; y < bottom; y++)
             {
-                x_left = x02;
-                x_right = x012;
+                Vector4 p1 = a + (y - a.Y) * k1;
+                Vector4 p2 = y < b.Y ? a + (y - a.Y) * k2 : b + (y - b.Y) * k3;
+                if (p1.X > p2.X)
+                    (p1, p2) = (p2, p1);
 
-                z_left = z02;
-                z_right = z012;
-            }
-            else
-            {
-                x_left = x012;
-                x_right = x02;
+                Vector4 k = (p2 - p1) / (p2.X - p1.X);
+                int left = int.Max((int)float.Ceiling(p1.X), 0);
+                int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
 
-                z_left = z012;
-                z_right = z02;
-            }            
-
-            for (int y = (int)a.Y; y < (int)c.Y; y++)
-            {
-                float z = z_left[y - (int)a.Y];
-                float dz = (z_right[y - (int)a.Y] - z_left[y - (int)a.Y]) / (x_right[y - (int)a.Y] - x_left[y - (int)a.Y]);
-                for (int x = (int)x_left[y - (int)a.Y]; x < (int)x_right[y - (int)a.Y]; x++)
-                {
-                    DrawPixel(x, y, z, color);
-                    z += dz;
+                for (int x = left; x < right; x++) { 
+                    Vector4 p = p1 + (x - p1.X) * k;
+                    DrawPixel(x, y, p.Z, color);
                 }
             }
         }
 
         private void DrawFace(List<Vector3> face, Vector4[] vertices)
         {
-            Vector3 color = GetFaceColor(face, new(1f, 1f, 1f));
-            //Vector3 color = Vector3.Zero;
+            Vector3 color = GetFaceColor(face, new(0.5f, 0.5f, 0.5f));
 
-            for (int i = 0; i < face.Count - 1; i++)
-            {
-                DrawLine(
-                    vertices[i],
-                    vertices[i + 1],
-                    color
-                );
-            }
+            //DrawLine(vertices[0], vertices[1], new(0, 0, 0));
+            //DrawLine(vertices[0], vertices[2], new(0, 0, 0));
+            //DrawLine(vertices[1], vertices[2], new(0, 0, 0));
 
-
-            DrawLine(
-                vertices[0],                   
-                vertices[2],
-                color
-            );
             FillFace(vertices[0], vertices[1], vertices[2], color);
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
         {
-            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1 && z <= ZBuffer[x, y])
+            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
             {
-                bitmap.SetPixel(x, y, color);
-                
-                ZBuffer[x, y] = z;
-                
+                bool gotLock = false;
+                bool flag = true;
+                while (flag)
+                {
+                    try
+                    {
+                        spins[x, y].Enter(ref gotLock);
+                        if (gotLock && z <= ZBuffer[x, y])
+                        {
+                            bitmap.SetPixel(x, y, color);
+                            ZBuffer[x, y] = z;
+                        }
+                    }
+                    finally
+                    {
+                        if (gotLock)
+                        {
+                            spins[x, y].Exit();
+                            flag = false;
+                        }
+                    }
+                }
             }
-
         }
 
         private void Draw()
@@ -350,8 +309,7 @@ namespace lab1
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
             bitmap.Source.Unlock();
-
-            Time.Content = (1000 / (DateTime.Now - t).Milliseconds).ToString() + " fps";
+            Time.Content = ((DateTime.Now - t).Milliseconds).ToString() + " ms";
 
 
         }
@@ -359,14 +317,24 @@ namespace lab1
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
 
-            bitmap = new((int)Grid.ActualWidth * 2, (int)Grid.ActualHeight * 2);
+            bitmap = new((int)Grid.ActualWidth * smoothing, (int)Grid.ActualHeight * smoothing);
             Canvas.Source = bitmap.Source;
-            /*model.Translation = new(0, -10, 0);
-            ParseModelFromFile("./model/tree.obj");*/
-            //ParseModelFromFile("./model/shovel_low.obj");
-            //model.Translation = new(0, -6, -3);
-            model.Translation = new(-54, -54, 0);
-            ParseModelFromFile("./model/cube.obj");
+            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
+            for (int i = 0; i < bitmap.PixelWidth; i++)
+            {
+                for (int j = 0; j < bitmap.PixelHeight; j++)
+                {
+                    spins[i, j] = new();
+                }
+            }
+            //model.Translation = new(0, -10, 0);
+            //ParseModelFromFile("./model/tree.obj");
+            ParseModelFromFile("./model/shovel_low.obj");
+            model.Translation = new(0, -6, -3);
+            //ParseModelFromFile("./model/doom.obj");
+            //model.Translation = new(0, -1, 0);
+            //model.Translation = new(-54, -54, 0);
+            //ParseModelFromFile("./model/cube.obj");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }

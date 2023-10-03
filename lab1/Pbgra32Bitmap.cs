@@ -28,8 +28,6 @@ namespace Rasterization
             {
                 *(int*)(BackBuffer + i * BytesPerPixel) = 0;
             }
-
-
         }
 
         public Pbgra32Bitmap(BitmapSource source)
