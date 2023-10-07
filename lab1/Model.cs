@@ -17,6 +17,14 @@ namespace lab1
         public float Pitch { get; set; }
         public float Roll { get; set; }
 
+        private float minX = float.MaxValue;
+        private float minY = float.MaxValue;
+        private float minZ = float.MaxValue;
+
+        private float maxX = float.MinValue;
+        private float maxY = float.MinValue;
+        private float maxZ = float.MinValue;
+
         public Model() {
             Scale = 1.0f;
             Translation = new Vector3(0, 0, 0);
@@ -27,6 +35,14 @@ namespace lab1
         
         public void AddVertex(float x, float y, float z)
         {
+            maxX = float.Max(maxX, x);
+            maxY = float.Max(maxY, y);
+            maxZ = float.Max(maxZ, z);
+
+            minX = float.Min(minX, x);
+            minY = float.Min(minY, y);
+            minZ = float.Min(minZ, z);
+
             Vertices.Add(new(x, y, z, 1));
         }
 
@@ -38,6 +54,15 @@ namespace lab1
         public void AddNormal(float x, float y, float z)
         {
             Normals.Add(new(x, y, z));
+        }
+
+        public void TransformModelParams()
+        {
+            float X = -minX - (maxX - minX) / 2;
+            float Y = -minY - (maxY - minY) / 2;
+            float Z = -minZ - (maxZ - minZ) / 2;
+            Scale = 11.4106541f / (float.Abs(maxY) + float.Abs(minY));
+            Translation = new(X * Scale, Y * Scale, Z * Scale);
         }
     }
 }

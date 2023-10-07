@@ -37,9 +37,9 @@ namespace lab1
 
         private Vector3 GetPosition() {
             return new Vector3(
-                r * (float)Math.Sin(DegToRad(o)) * (float)Math.Sin(DegToRad(f)),
-                r * (float)Math.Cos(DegToRad(o)),
-                r * (float)Math.Sin(DegToRad(o)) * (float)Math.Cos(DegToRad(f))
+                r * (float)float.Sin(DegToRad(o)) * float.Sin(DegToRad(f)),
+                r * (float)float.Cos(DegToRad(o)),
+                r * (float)float.Sin(DegToRad(o)) * float.Cos(DegToRad(f))
             );
         }
 
@@ -48,8 +48,8 @@ namespace lab1
         }
 
         public void UpdatePosition(float dR, float dO, float dF) {
-            r = Math.Max(r + dR, 10);
-            o = Math.Min(179, Math.Max(1, o + dO)); 
+            r = float.Max(r + dR, 10);
+            o = float.Min(179, float.Max(1, o + dO)); 
             f += dF;
             Position = GetPosition();
             LookVector = GetLookVector();
