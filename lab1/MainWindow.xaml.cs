@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
 using lab1.Shaders;
+using System.Windows.Media.Imaging;
 
 namespace lab1
 {
@@ -39,9 +40,12 @@ namespace lab1
             InitializeComponent();
         }
 
-        private void ParseModelFromFile(string path)
+        private void LoadModel(string fold)
         {
-            using (StreamReader reader = new(path))
+            model.DiffuseMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/diffuse.png", UriKind.Relative)));
+            model.NormalMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/nm.png", UriKind.Relative)));
+            model.SpecularMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/spec.png", UriKind.Relative)));
+            using (StreamReader reader = new(fold + "/model.obj"))
             {
                 while (!reader.EndOfStream)
                 {
@@ -51,6 +55,7 @@ namespace lab1
                     {
                         List<float> coordinates = line
                             .Remove(0, 2)
+                            .Trim()
                             .Split(" ")
                             .Select(c =>
                                 float.Parse(c, CultureInfo.InvariantCulture)
@@ -63,6 +68,7 @@ namespace lab1
                     {
                         List<Vector3> vertices = line
                                 .Remove(0, 2)
+                                .Trim()
                                 .Split(" ")
                                 .Select(v =>
                                 {
@@ -88,12 +94,26 @@ namespace lab1
                     {
                         List<float> coordinates = line
                             .Remove(0, 3)
+                            .Trim()
                             .Split(" ")
                             .Select(c =>
                                 float.Parse(c, CultureInfo.InvariantCulture)
                              )
                             .ToList();
                         model.AddNormal(coordinates[0], coordinates[1], coordinates[2]);
+                    }
+
+                    if (line.StartsWith("vt "))
+                    {
+                        List<float> coordinates = line
+                            .Remove(0, 3)
+                            .Trim()
+                            .Split(" ")
+                            .Select(c =>  
+                                float.Parse(c, CultureInfo.InvariantCulture)
+                            )
+                            .ToList();
+                        model.AddUV(coordinates[0], 1 - coordinates[1]);
                     }
                 }
             }
@@ -170,24 +190,31 @@ namespace lab1
             }
         }
 
-        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 n1, Vector3 n2, Vector3 n3, Vector3 color)
+        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 n1, Vector3 n2, Vector3 n3, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector3 color)
         {
+            uv1 /= a.Z;
+            uv2 /= b.Z;
+            uv3 /= c.Z;
+
             if (b.Y < a.Y)
             {
                 (a, b) = (b, a);
                 (n1, n2) = (n2, n1);
+                (uv1, uv2) = (uv2, uv1);
             }
                 
             if (c.Y < a.Y)
             {
                 (a, c) = (c, a);
                 (n1, n3) = (n3, n1);
+                (uv1, uv3) = (uv3, uv1);
             }
 
             if (c.Y < b.Y)
             {
                 (b, c) = (c, b);
                 (n2, n3) = (n3, n2);
+                (uv2, uv3) = (uv3, uv2);
             }
 
             Vector4 k1 = (c - a) / (c.Y - a.Y);
@@ -197,6 +224,10 @@ namespace lab1
             Vector3 kn1 = (n3 - n1) / (c.Y - a.Y);
             Vector3 kn2 = (n2 - n1) / (b.Y - a.Y);
             Vector3 kn3 = (n3 - n2) / (c.Y - b.Y);
+
+            Vector2 kuv1 = (uv3 - uv1) / (c.Y - a.Y);
+            Vector2 kuv2 = (uv2 - uv1) / (b.Y - a.Y);
+            Vector2 kuv3 = (uv3 - uv2) / (c.Y - b.Y);
 
             int top = int.Max((int)float.Ceiling(a.Y), 0);
             int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
@@ -209,14 +240,19 @@ namespace lab1
                 Vector3 pn1 = n1 + (y - a.Y) * kn1;
                 Vector3 pn2 = y < b.Y ? n1 + (y - a.Y) * kn2 : n2 + (y - b.Y) * kn3;
 
+                Vector2 puv1 = uv1 + (y - a.Y) * kuv1;
+                Vector2 puv2 = y < b.Y ? uv1 + (y - a.Y) * kuv2 : uv2 + (y - b.Y) * kuv3;
+
                 if (p1.X > p2.X)
                 {
                     (p1, p2) = (p2, p1);
                     (pn1, pn2) = (pn2, pn1);
+                    (puv1, puv2) = (puv2, puv1);
                 }
 
                 Vector4 k = (p2 - p1) / (p2.X - p1.X);
                 Vector3 kn = (pn2 - pn1) / (p2.X - p1.X);
+                Vector2 kuv = (puv2 - puv1) / (p2.X - p1.X);
 
                 int left = int.Max((int)float.Ceiling(p1.X), 0);
                 int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
@@ -224,8 +260,13 @@ namespace lab1
                 for (int x = left; x < right; x++) { 
                     Vector4 p = p1 + (x - p1.X) * k;
                     Vector3 n = pn1 + (x - p1.X) * kn;
+                    Vector2 uv = (puv1 + (x - p1.X) * kuv) / (1 / p.Z);
 
-                    color = Phong.GetPixelColor(baseColor, n, light, camera.LookVector);
+                    Vector3 diffuse = model.GetDiffuse(uv.X, uv.Y);
+                    //Vector3 n = 2 * model.GetNormal(uv.X, uv.Y) - Vector3.One;
+                    Vector3 spec = model.GetSpecular(uv.X, uv.Y);
+
+                    color = Phong.GetPixelColor(diffuse, n, spec, light, camera.LookVector);
 
                     DrawPixel(x, y, p.Z, color);
                 }
@@ -237,6 +278,10 @@ namespace lab1
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
             Vector3 n2 = model.Normals[(int)face[1].Z - 1]; 
             Vector3 n3 = model.Normals[(int)face[2].Z - 1];
+
+            Vector2 uv1 = model.UV[(int)face[0].Y - 1];
+            Vector2 uv2 = model.UV[(int)face[1].Y - 1];
+            Vector2 uv3 = model.UV[(int)face[2].Y - 1];
 
             //lab 1
             //DrawLine(vertices[0], vertices[1], new(0, 0, 0));
@@ -251,10 +296,10 @@ namespace lab1
             //    baseColor,
             //    light
             //);
-            //FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, color);
+            //FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, uv1, uv2, uv3, color);
 
-            //lab3
-            FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, Vector3.Zero);
+            //lab3-4
+            FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, uv1, uv2, uv3, Vector3.Zero);
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
@@ -330,9 +375,12 @@ namespace lab1
             }
 
             //ParseModelFromFile("./model/tree.obj");
-            ParseModelFromFile("./model/shovel_low.obj");
+            //ParseModelFromFile("./model/shovel_low.obj");
             //ParseModelFromFile("./model/doom.obj");
             //ParseModelFromFile("./model/cube.obj");
+            LoadModel("./model/man");
+            //LoadModel("./model/diablo");
+            //LoadModel("./model/shovel");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }

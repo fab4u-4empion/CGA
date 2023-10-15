@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Rasterization;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace lab1
@@ -8,6 +9,11 @@ namespace lab1
         public List<Vector4> Vertices = new();
         public List<List<Vector3>> Faces = new();
         public List<Vector3> Normals = new();
+        public List<Vector2> UV = new();
+
+        public Pbgra32Bitmap DiffuseMap { get; set; }
+        public Pbgra32Bitmap NormalMap { get; set; }
+        public Pbgra32Bitmap SpecularMap { get; set; }
 
         public float Scale { get; set; }
 
@@ -56,6 +62,11 @@ namespace lab1
             Normals.Add(new(x, y, z));
         }
 
+        public void AddUV(float u, float v)
+        {
+            UV.Add(new(u, v));
+        }
+
         public void TransformModelParams()
         {
             float X = -minX - (maxX - minX) / 2;
@@ -63,6 +74,21 @@ namespace lab1
             float Z = -minZ - (maxZ - minZ) / 2;
             Scale = 11.4106541f / (float.Abs(maxY) + float.Abs(minY));
             Translation = new(X * Scale, Y * Scale, Z * Scale);
+        }
+
+        public Vector3 GetDiffuse(float u, float v)
+        {
+            return DiffuseMap.GetPixel((int)(u * DiffuseMap.PixelWidth), (int)(v * DiffuseMap.PixelHeight));
+        }
+
+        public Vector3 GetNormal(float u, float v)
+        {
+            return NormalMap.GetPixel((int)(u * NormalMap.PixelWidth), (int)(v * NormalMap.PixelHeight));
+        }
+
+        public Vector3 GetSpecular(float u, float v)
+        {
+            return SpecularMap.GetPixel((int)(u * SpecularMap.PixelWidth), (int)(v * SpecularMap.PixelHeight));
         }
     }
 }
