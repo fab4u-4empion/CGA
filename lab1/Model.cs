@@ -14,6 +14,7 @@ namespace lab1
         public Pbgra32Bitmap DiffuseMap { get; set; }
         public Pbgra32Bitmap NormalMap { get; set; }
         public Pbgra32Bitmap SpecularMap { get; set; }
+        public Pbgra32Bitmap MRAO { get; set; }
 
         public float Scale { get; set; }
 
@@ -30,6 +31,10 @@ namespace lab1
         private float maxX = float.MinValue;
         private float maxY = float.MinValue;
         private float maxZ = float.MinValue;
+
+        public float X = 0;
+        public float Y = 0;
+        public float Z = 0;
 
         public Model() {
             Scale = 1.0f;
@@ -67,13 +72,12 @@ namespace lab1
             UV.Add(new(u, v));
         }
 
-        public void TransformModelParams()
+        public Vector3 TransformModelParams()
         {
-            float X = -minX - (maxX - minX) / 2;
-            float Y = -minY - (maxY - minY) / 2;
-            float Z = -minZ - (maxZ - minZ) / 2;
-            Scale = 11.4106541f / (float.Abs(maxY) + float.Abs(minY));
-            Translation = new(X * Scale, Y * Scale, Z * Scale);
+            X = -minX - (maxX - minX) / 2;
+            Y = -minY - (maxY - minY) / 2;
+            Z = -minZ - (maxZ - minZ) / 2;
+            return new Vector3(X, Y, Z);
         }
 
         public Vector3 GetDiffuse(float u, float v)
@@ -89,6 +93,21 @@ namespace lab1
         public Vector3 GetSpecular(float u, float v)
         {
             return SpecularMap.GetPixel((int)(u * SpecularMap.PixelWidth), (int)(v * SpecularMap.PixelHeight));
+        }
+
+        public float GetRoughness(float u, float v)
+        {
+            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).Y;
+        }
+
+        public float GetMetallic(float u, float v)
+        {
+            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).X;
+        }
+
+        public float GetAO(float u, float v)
+        {
+            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).Z;
         }
     }
 }

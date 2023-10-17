@@ -22,11 +22,11 @@ namespace lab1.Shaders
             return Vector3.Divide(new(sumR, sumG, sumB), 3);
         }
 
-        public static Vector3 GetFaceColor(Vector3 n1, Vector3 n2, Vector3 n3, Vector3 baseColor, Vector3 lightVector)
+        public static Vector3 GetFaceColor(Vector3 n1, Vector3 n2, Vector3 n3, Vector3 baseColor, Vector3 light, Vector3 a, Vector3 b, Vector3 c)
         {
-            Vector3 color1 = GetColor(n1, baseColor, lightVector);
-            Vector3 color2 = GetColor(n2, baseColor, lightVector);
-            Vector3 color3 = GetColor(n3, baseColor, lightVector);
+            Vector3 color1 = GetColor(n1, baseColor, Vector3.Normalize(light - a));
+            Vector3 color2 = GetColor(n2, baseColor, Vector3.Normalize(light - b));
+            Vector3 color3 = GetColor(n3, baseColor, Vector3.Normalize(light - c));
 
             return GetAverageColor(color1, color2, color3);
         }

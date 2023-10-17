@@ -27,9 +27,9 @@ namespace lab1
         Model model = new();
         Camera camera = new();
         ZBuffer ZBuffer;
-        Vector3 light = Vector3.Normalize(new(1, 2, 3));
+        Vector3 light = new(0, 0, 0);
         Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
-        int smoothing = 1;
+        float smoothing = 1;
 
         SpinLock[,] spins;
 
@@ -44,7 +44,8 @@ namespace lab1
         {
             model.DiffuseMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/diffuse.png", UriKind.Relative)));
             model.NormalMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/nm.png", UriKind.Relative)));
-            model.SpecularMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/spec.png", UriKind.Relative)));
+            //model.SpecularMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/spec.png", UriKind.Relative)));
+            model.MRAO = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/mrao.png", UriKind.Relative)));
             using (StreamReader reader = new(fold + "/model.obj"))
             {
                 while (!reader.EndOfStream)
@@ -117,7 +118,6 @@ namespace lab1
                     }
                 }
             }
-            model.TransformModelParams();
         }
 
         private Vector4[] TransformCoordinates()
@@ -126,7 +126,7 @@ namespace lab1
             Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
+            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position - model.TransformModelParams(), camera.Target - model.TransformModelParams(), camera.Up);
             Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 1000);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(0, 0, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
@@ -135,8 +135,10 @@ namespace lab1
             for (int i = 0; i < windowVertices.Length; i++)
             {
                 windowVertices[i] = Vector4.Transform(model.Vertices[i], modelViewProjectionMatrix);
-                windowVertices[i] /= windowVertices[i].W;
+                float w = 1 / windowVertices[i].W;
+                windowVertices[i] *= w;
                 windowVertices[i] = Vector4.Transform(windowVertices[i], viewportMatrix);
+                windowVertices[i].W = w;
             }
 
             return windowVertices;
@@ -190,17 +192,31 @@ namespace lab1
             }
         }
 
-        private void FillFace(Vector4 a, Vector4 b, Vector4 c, Vector3 n1, Vector3 n2, Vector3 n3, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector3 color)
+        private void FillFace(
+            Vector4 a, Vector4 b, Vector4 c, 
+            Vector3 n1, Vector3 n2, Vector3 n3, 
+            Vector2 uv1, Vector2 uv2, Vector2 uv3,
+            Vector4 aw, Vector4 bw, Vector4 cw,
+            Vector3 color)
         {
-            uv1 /= a.Z;
-            uv2 /= b.Z;
-            uv3 /= c.Z;
+            uv1 *= a.W;
+            uv2 *= b.W;
+            uv3 *= c.W;
+
+            n1 *= a.W;
+            n2 *= b.W;
+            n3 *= c.W;
+
+            aw *= a.W;
+            bw *= b.W;
+            cw *= c.W;
 
             if (b.Y < a.Y)
             {
                 (a, b) = (b, a);
                 (n1, n2) = (n2, n1);
                 (uv1, uv2) = (uv2, uv1);
+                (aw, bw) = (bw, aw);
             }
                 
             if (c.Y < a.Y)
@@ -208,6 +224,7 @@ namespace lab1
                 (a, c) = (c, a);
                 (n1, n3) = (n3, n1);
                 (uv1, uv3) = (uv3, uv1);
+                (aw, cw) = (cw, aw);
             }
 
             if (c.Y < b.Y)
@@ -215,6 +232,7 @@ namespace lab1
                 (b, c) = (c, b);
                 (n2, n3) = (n3, n2);
                 (uv2, uv3) = (uv3, uv2);
+                (bw, cw) = (cw, bw);
             }
 
             Vector4 k1 = (c - a) / (c.Y - a.Y);
@@ -228,6 +246,10 @@ namespace lab1
             Vector2 kuv1 = (uv3 - uv1) / (c.Y - a.Y);
             Vector2 kuv2 = (uv2 - uv1) / (b.Y - a.Y);
             Vector2 kuv3 = (uv3 - uv2) / (c.Y - b.Y);
+
+            Vector4 kw1 = (cw - aw) / (c.Y - a.Y);
+            Vector4 kw2 = (bw - aw) / (b.Y - a.Y);
+            Vector4 kw3 = (cw - bw) / (c.Y - b.Y);
 
             int top = int.Max((int)float.Ceiling(a.Y), 0);
             int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
@@ -243,30 +265,53 @@ namespace lab1
                 Vector2 puv1 = uv1 + (y - a.Y) * kuv1;
                 Vector2 puv2 = y < b.Y ? uv1 + (y - a.Y) * kuv2 : uv2 + (y - b.Y) * kuv3;
 
+                Vector4 pw1 = aw + (y - a.Y) * kw1;
+                Vector4 pw2 = y < b.Y ? aw + (y - a.Y) * kw2 : bw + (y - b.Y) * kw3;
+
                 if (p1.X > p2.X)
                 {
                     (p1, p2) = (p2, p1);
                     (pn1, pn2) = (pn2, pn1);
                     (puv1, puv2) = (puv2, puv1);
+                    (pw1, pw2) = (pw2, pw1);
                 }
 
                 Vector4 k = (p2 - p1) / (p2.X - p1.X);
                 Vector3 kn = (pn2 - pn1) / (p2.X - p1.X);
                 Vector2 kuv = (puv2 - puv1) / (p2.X - p1.X);
+                Vector4 kw = (pw2 - pw1) / (p2.X - p1.X);
 
                 int left = int.Max((int)float.Ceiling(p1.X), 0);
                 int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
 
                 for (int x = left; x < right; x++) { 
                     Vector4 p = p1 + (x - p1.X) * k;
-                    Vector3 n = pn1 + (x - p1.X) * kn;
-                    Vector2 uv = (puv1 + (x - p1.X) * kuv) / (1 / p.Z);
+                    //Vector3 n = (pn1 + (x - p1.X) * kn) / p.W;
+                    Vector2 uv = (puv1 + (x - p1.X) * kuv) / p.W;
+                    Vector4 pw = (pw1 + (x - p1.X) * kw) / p.W;
 
-                    Vector3 diffuse = model.GetDiffuse(uv.X, uv.Y);
+                    //lab4
+                    //Vector3 diffuse = model.GetDiffuse(uv.X, uv.Y);
                     //Vector3 n = 2 * model.GetNormal(uv.X, uv.Y) - Vector3.One;
-                    Vector3 spec = model.GetSpecular(uv.X, uv.Y);
+                    //float spec = model.GetSpecular(uv.X, uv.Y).X;
 
-                    color = Phong.GetPixelColor(diffuse, n, spec, light, camera.LookVector);
+                    //color = Phong.GetPixelColor(diffuse, n, 0.5f, light, camera.Position, new(pw.X, pw.Y, pw.Z));
+                    //color = Phong.GetPixelColor(diffuse, n, 0.5f, light, camera.Position, new(pw.X, pw.Y, pw.Z));
+
+                    //pbr
+                    Vector3 albedo = model.GetDiffuse(uv.X, uv.Y);
+                    float metallic = model.GetMetallic(uv.X, uv.Y);
+                    float roughness = model.GetRoughness(uv.X, uv.Y);
+                    float ao = model.GetAO(uv.X, uv.Y);
+
+                    //Vector3 albedo = new(0.5f, 0.5f, 0.5f);
+                    //float metallic = 0.5f;
+                    //float roughness = 0.5f;
+                    //float ao = 0;
+
+                    Vector3 n = 2 * model.GetNormal(uv.X, uv.Y) - Vector3.One;
+
+                    color = PBR.GetPixelColor(albedo, metallic, roughness, ao, n, camera.Position, new(pw.X, pw.Y, pw.Z));
 
                     DrawPixel(x, y, p.Z, color);
                 }
@@ -283,6 +328,10 @@ namespace lab1
             Vector2 uv2 = model.UV[(int)face[1].Y - 1];
             Vector2 uv3 = model.UV[(int)face[2].Y - 1];
 
+            Vector4 aw = model.Vertices[(int)face[0].X - 1];
+            Vector4 bw = model.Vertices[(int)face[1].X - 1];
+            Vector4 cw = model.Vertices[(int)face[2].X - 1];
+
             //lab 1
             //DrawLine(vertices[0], vertices[1], new(0, 0, 0));
             //DrawLine(vertices[0], vertices[2], new(0, 0, 0));
@@ -294,12 +343,25 @@ namespace lab1
             //    n2,
             //    n3,
             //    baseColor,
-            //    light
+            //    light,
+            //    new Vector3(aw.X, aw.Y, aw.Z),
+            //    new Vector3(bw.X, bw.Y, bw.Z),
+            //    new Vector3(cw.X, cw.Y, cw.Z)
             //);
-            //FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, uv1, uv2, uv3, color);
+            //FillFace(
+            //    vertices[0], vertices[1], vertices[2],
+            //    n1, n2, n3,
+            //    uv1, uv2, uv3,
+            //    aw, bw, cw,
+            //    color);
 
             //lab3-4
-            FillFace(vertices[0], vertices[1], vertices[2], n1, n2, n3, uv1, uv2, uv3, Vector3.Zero);
+            FillFace(
+                vertices[0], vertices[1], vertices[2],
+                n1, n2, n3,
+                uv1, uv2, uv3,
+                aw, bw, cw,
+                Vector3.Zero);
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
@@ -358,29 +420,26 @@ namespace lab1
             
             bitmap.Source.Unlock();
             Time.Content = ((DateTime.Now - t).Milliseconds).ToString() + " ms";
+            Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
 
-            bitmap = new((int)Grid.ActualWidth * smoothing, (int)Grid.ActualHeight * smoothing);
+            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
-            for (int i = 0; i < bitmap.PixelWidth; i++)
-            {
-                for (int j = 0; j < bitmap.PixelHeight; j++)
-                {
-                    spins[i, j] = new();
-                }
-            }
 
             //ParseModelFromFile("./model/tree.obj");
             //ParseModelFromFile("./model/shovel_low.obj");
             //ParseModelFromFile("./model/doom.obj");
             //ParseModelFromFile("./model/cube.obj");
-            LoadModel("./model/man");
+            //LoadModel("./model/man");
             //LoadModel("./model/diablo");
-            //LoadModel("./model/shovel");
+            LoadModel("./model/shovel");
+            //LoadModel("./model/doom");
+            //LoadModel("./model/cyber");
+            //LoadModel("./model/chess");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Draw();
         }
@@ -412,6 +471,111 @@ namespace lab1
                 camera.UpdatePosition(1f, 0, 0);
             }
             Draw();
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            Canvas.Source = bitmap.Source;
+            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
+            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            if (IsLoaded)
+                Draw();
+        }
+
+        private WindowState LastState;
+
+        private void ResizeHandler()
+        {
+            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            Canvas.Source = bitmap.Source;
+            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
+            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            Draw();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.NumPad1:
+                    light.X -= 0.5f;
+                    Draw();
+                    break;
+
+                case Key.NumPad2:
+                    light.X += 0.5f;
+                    Draw();
+                    break;
+
+                case Key.NumPad4:
+                    light.Y -= 0.5f;
+                    Draw();
+                    break;
+
+                case Key.NumPad5:
+                    light.Y += 0.5f;
+                    Draw();
+                    break;
+
+                case Key.NumPad7:
+                    light.Z -= 0.5f;
+                    Draw();
+                    break;
+
+                case Key.NumPad8:
+                    light.Z += 0.5f;
+                    Draw();
+                    break;
+            }
+
+            if (!e.IsRepeat)
+            {
+                switch (e.Key)
+                {
+                    case Key.D1:
+                        smoothing = 0.25f;
+                        ResizeHandler();
+                        break;
+
+                    case Key.D2:
+                        smoothing = 0.5f;
+                        ResizeHandler();
+                        break;
+
+                    case Key.D3:
+                        smoothing = 1;
+                        ResizeHandler();
+                        break;
+
+                    case Key.D4:
+                        smoothing = 2;
+                        ResizeHandler();
+                        break;
+
+                    case Key.D5:
+                        smoothing = 4;
+                        ResizeHandler();
+                        break;
+
+                    case Key.F11:
+                        if (WindowStyle != WindowStyle.None)
+                        {
+                            LastState = WindowState;
+                            WindowStyle = WindowStyle.None;
+                            ResizeMode = ResizeMode.NoResize;
+                            WindowState = WindowState.Normal;
+                            WindowState = WindowState.Maximized;
+                        }
+                        else
+                        {
+                            WindowStyle = WindowStyle.SingleBorderWindow;
+                            ResizeMode = ResizeMode.CanResize;
+                            WindowState = LastState;
+                        }
+                        break;
+                }
+            }
         }
     }
 }

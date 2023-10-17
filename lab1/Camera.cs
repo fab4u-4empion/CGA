@@ -48,7 +48,7 @@ namespace lab1
         }
 
         public void UpdatePosition(float dR, float dO, float dF) {
-            r = float.Max(r + dR, 10);
+            r = float.Max(r + dR, 1);
             o = float.Min(179, float.Max(1, o + dO)); 
             f += dF;
             Position = GetPosition();

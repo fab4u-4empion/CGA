@@ -10,9 +10,12 @@
         MouseMove="Window_MouseMove"
         MouseDown="Window_MouseDown"
         MouseWheel="Window_MouseWheel"
+        SizeChanged="Window_SizeChanged"
+        KeyDown="Window_KeyDown"
         >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
-        <Label x:Name="Time" Content="Label" HorizontalAlignment="Left" Margin="832,10,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top"/>
+        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top"/>
     </Grid>
 </Window>

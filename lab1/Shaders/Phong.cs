@@ -4,21 +4,25 @@ namespace lab1.Shaders
 {
     public class Phong
     {
-        private static Vector3 ka = new(0.5f, 0.5f, 0.5f);
-        private static Vector3 kd = new(0.5f, 0.5f, 0.5f);
-        private static Vector3 ks = new(1, 1, 1);
+        private static float ka = 0.3f;
+        private static float kd = 1f;
+        private static Vector3 Is = new(1, 1, 1);
 
         private static float a = 20f;
 
-        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 normal, Vector3 spec, Vector3 light, Vector3 look)
+        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, float spec, Vector3 light, Vector3 camera, Vector3 p)
         {
+            Vector3 L = Vector3.Normalize(light - p);
+            Vector3 V = Vector3.Normalize(camera - p);
+            Vector3 N = Vector3.Normalize(n);
+
             Vector3 ambient = baseColor * ka;
-            Vector3 diffuse = baseColor * kd * float.Max(Vector3.Dot(normal, light), 0);
-            Vector3 specular = baseColor * spec * float.Pow(
+            Vector3 diffuse = baseColor * kd * float.Max(Vector3.Dot(N, L), 0);
+            Vector3 specular = Is * spec * float.Pow(
                 float.Max(
                     Vector3.Dot(
-                        Vector3.Normalize(Vector3.Reflect(light, normal)), 
-                        look
+                        Vector3.Normalize(Vector3.Reflect(-L, N)), 
+                        V
                     ), 
                     0
                 ), 
