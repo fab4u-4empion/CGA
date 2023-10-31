@@ -15,7 +15,7 @@
         >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
-        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top"/>
-        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top"/>
+        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top" Foreground="White"/>
+        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top" Foreground="White"/>
     </Grid>
 </Window>

@@ -10,11 +10,10 @@ namespace lab1
         public List<List<Vector3>> Faces = new();
         public List<Vector3> Normals = new();
         public List<Vector2> UV = new();
-
-        public Pbgra32Bitmap DiffuseMap { get; set; }
-        public Pbgra32Bitmap NormalMap { get; set; }
-        public Pbgra32Bitmap SpecularMap { get; set; }
-        public Pbgra32Bitmap MRAO { get; set; }
+        public List<Material> Materials = new();
+        public List<int> FacesMaterials = new();
+        public Dictionary<string, int> MaterialsIndexes = new();
+        public List<List<Vector3>> FacesCoordinates = new();
 
         public float Scale { get; set; }
 
@@ -72,7 +71,7 @@ namespace lab1
             UV.Add(new(u, v));
         }
 
-        public Vector3 TransformModelParams()
+        public Vector3 GetTranslationParams()
         {
             X = -minX - (maxX - minX) / 2;
             Y = -minY - (maxY - minY) / 2;
@@ -80,34 +79,9 @@ namespace lab1
             return new Vector3(X, Y, Z);
         }
 
-        public Vector3 GetDiffuse(float u, float v)
+        public float GetMinZoomR ()
         {
-            return DiffuseMap.GetPixel((int)(u * DiffuseMap.PixelWidth), (int)(v * DiffuseMap.PixelHeight));
-        }
-
-        public Vector3 GetNormal(float u, float v)
-        {
-            return NormalMap.GetPixel((int)(u * NormalMap.PixelWidth), (int)(v * NormalMap.PixelHeight));
-        }
-
-        public Vector3 GetSpecular(float u, float v)
-        {
-            return SpecularMap.GetPixel((int)(u * SpecularMap.PixelWidth), (int)(v * SpecularMap.PixelHeight));
-        }
-
-        public float GetRoughness(float u, float v)
-        {
-            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).Y;
-        }
-
-        public float GetMetallic(float u, float v)
-        {
-            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).X;
-        }
-
-        public float GetAO(float u, float v)
-        {
-            return MRAO.GetPixel((int)(u * MRAO.PixelWidth), (int)(v * MRAO.PixelHeight)).Z;
+            return float.Max(float.Max(maxX - minX, maxY - minY), maxZ - minZ) + 2;
         }
     }
 }

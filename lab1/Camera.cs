@@ -14,6 +14,17 @@ namespace lab1
         public Vector3 Up { get; set; }
         public float FoV { get; set; }
         public Vector3 LookVector { get; set; }
+        public float MinZoomR { 
+            get { return minZoom; } 
+            set {
+                r = value + 10;
+                minZoom = value;
+                Position = GetPosition();
+                LookVector = GetLookVector();
+            } 
+        }
+
+        private float minZoom = 10;
 
         private float r;
         private float o;
@@ -21,6 +32,7 @@ namespace lab1
 
         public Camera() { 
             Target = Vector3.Zero;
+            MinZoomR = 10;
             r = 25;
             o = 90;
             f = 0;
@@ -48,7 +60,7 @@ namespace lab1
         }
 
         public void UpdatePosition(float dR, float dO, float dF) {
-            r = float.Max(r + dR, 1);
+            r = float.Max(r + dR, minZoom);
             o = float.Min(179, float.Max(1, o + dO)); 
             f += dF;
             Position = GetPosition();

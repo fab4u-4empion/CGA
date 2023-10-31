@@ -23,13 +23,17 @@ namespace lab1
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
+        Vector3[,] bufferHDR;
+        Vector3[,] bufferEmission;
 
         Model model = new();
         Camera camera = new();
         ZBuffer ZBuffer;
         Vector3 light = new(0, 0, 0);
         Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
-        float smoothing = 1;
+        float smoothing = 1f;
+        float BlurIntensity = 0.15f;
+        float BlurRadius = 7;
 
         SpinLock[,] spins;
 
@@ -40,17 +44,92 @@ namespace lab1
             InitializeComponent();
         }
 
+        private void LoadMaterials(string fold, string mtl)
+        {
+            using (StreamReader mtlReader = new($"{fold}/{mtl}"))
+            {
+                Material? material = null;
+                int mtlIndex = 0;
+
+                while (!mtlReader.EndOfStream)
+                {
+                    String mtlLine = mtlReader.ReadLine().Trim();
+
+                    if (mtlLine.StartsWith("newmtl"))
+                    {
+                        if (material != null)
+                        {
+                            model.Materials.Add(material);
+                            mtlIndex++;
+                        }
+                        material = new();
+                        model.MaterialsIndexes.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
+                    }
+
+                    if (mtlLine.StartsWith("Pm"))
+                    {
+                        material.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                    }
+
+                    if (mtlLine.StartsWith("Kd"))
+                    {
+                        float[] Kd = mtlLine
+                            .Remove(0, 2)
+                            .Trim()
+                            .Split(' ')
+                            .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
+                            .ToArray();
+                        material.Kd = new(Kd[0], Kd[1], Kd[2]);
+                    }
+
+                    if (mtlLine.StartsWith("Pr"))
+                    {
+                        material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                    }
+
+                    if (mtlLine.StartsWith("map_Kd"))
+                    {
+                        material.Diffuse = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative)));
+                    }
+
+                    if (mtlLine.StartsWith("map_Ke"))
+                    {
+                        material.Emission = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative)));
+                    }
+
+                    if (mtlLine.StartsWith("map_MRAO"))
+                    {
+                        material.MRAO = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 8).Trim()}", UriKind.Relative)));
+                    }
+
+                    if (mtlLine.StartsWith("norm"))
+                    {
+                        material.Normals = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 4).Trim()}", UriKind.Relative)));
+                    }
+                }
+                model.Materials.Add(material);
+            }
+        }
+
         private void LoadModel(string fold)
         {
-            model.DiffuseMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/diffuse.png", UriKind.Relative)));
-            model.NormalMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/nm.png", UriKind.Relative)));
-            //model.SpecularMap = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/spec.png", UriKind.Relative)));
-            model.MRAO = new Pbgra32Bitmap(new BitmapImage(new Uri($"{fold}/mrao.png", UriKind.Relative)));
+            int materialIndex = 0;
             using (StreamReader reader = new(fold + "/model.obj"))
             {
                 while (!reader.EndOfStream)
                 {
                     String line = reader.ReadLine().Trim();
+
+                    if (line.StartsWith("mtllib "))
+                    {
+                        String mtl = line.Remove(0, 7).Trim();
+                        LoadMaterials(fold, mtl);
+                    }
+
+                    if (line.StartsWith("usemtl"))
+                    {
+                        model.MaterialsIndexes.TryGetValue(line.Remove(0, 6).Trim(), out materialIndex);
+                    }
 
                     if (line.StartsWith("v "))
                     {
@@ -62,7 +141,7 @@ namespace lab1
                                 float.Parse(c, CultureInfo.InvariantCulture)
                              )
                             .ToList();
-                        model.AddVertex(coordinates[0], coordinates[1], coordinates[2]);
+                        model.AddVertex(coordinates[0] * 2, coordinates[1] * 2, coordinates[2] * 2);
                     }
 
                     if (line.StartsWith("f "))
@@ -88,6 +167,7 @@ namespace lab1
                                 vertices[i + 1],
                                 vertices[i + 2]
                             });
+                            model.FacesMaterials.Add(materialIndex);
                         }
                     }
 
@@ -118,6 +198,21 @@ namespace lab1
                     }
                 }
             }
+            for (int i = 0; i < model.Faces.Count; i++)
+            {
+                List<Vector3> face = model.Faces[i];
+                Vector4 a = model.Vertices[(int)face[0].X - 1];
+                Vector4 b = model.Vertices[(int)face[1].X - 1];
+                Vector4 c = model.Vertices[(int)face[2].X - 1];
+
+                List<Vector3> faceVerts = new() {
+                   new(a.X, a.Y, a.Z),
+                   new(b.X, b.Y, b.Z),
+                   new(c.X, c.Y, c.Z)
+                };
+
+                model.FacesCoordinates.Add(faceVerts);
+            }
         }
 
         private Vector4[] TransformCoordinates()
@@ -126,7 +221,7 @@ namespace lab1
             Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position - model.TransformModelParams(), camera.Target - model.TransformModelParams(), camera.Up);
+            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position - model.GetTranslationParams(), camera.Target - model.GetTranslationParams(), camera.Up);
             Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 1000);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(0, 0, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
@@ -197,7 +292,8 @@ namespace lab1
             Vector3 n1, Vector3 n2, Vector3 n3, 
             Vector2 uv1, Vector2 uv2, Vector2 uv3,
             Vector4 aw, Vector4 bw, Vector4 cw,
-            Vector3 color)
+            Vector3 color,
+            int materialIndex, int faceIndex)
         {
             uv1 *= a.W;
             uv2 *= b.W;
@@ -295,30 +391,26 @@ namespace lab1
                     //Vector3 n = 2 * model.GetNormal(uv.X, uv.Y) - Vector3.One;
                     //float spec = model.GetSpecular(uv.X, uv.Y).X;
 
-                    //color = Phong.GetPixelColor(diffuse, n, 0.5f, light, camera.Position, new(pw.X, pw.Y, pw.Z));
+                    //color = Phong.GetPixelColor(baseColor, n, 0.5f, light, camera.Position, new(pw.X, pw.Y, pw.Z));
                     //color = Phong.GetPixelColor(diffuse, n, 0.5f, light, camera.Position, new(pw.X, pw.Y, pw.Z));
 
                     //pbr
-                    Vector3 albedo = model.GetDiffuse(uv.X, uv.Y);
-                    float metallic = model.GetMetallic(uv.X, uv.Y);
-                    float roughness = model.GetRoughness(uv.X, uv.Y);
-                    float ao = model.GetAO(uv.X, uv.Y);
+                    Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv.X, uv.Y);
+                    Vector3 n = model.Materials[materialIndex].GetNormal(uv.X, uv.Y);
+                    Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv.X, uv.Y);
+                    Vector3 emission = model.Materials[materialIndex].GetEmission(uv.X, uv.Y);
 
-                    //Vector3 albedo = new(0.5f, 0.5f, 0.5f);
-                    //float metallic = 0.5f;
-                    //float roughness = 0.5f;
-                    //float ao = 0;
+                    Vector3 hdrColor;
+                    Vector3 emissionColor;
+                    (hdrColor, emissionColor) = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, emission, n, camera.Position, new(pw.X, pw.Y, pw.Z), model.FacesCoordinates, faceIndex);
 
-                    Vector3 n = 2 * model.GetNormal(uv.X, uv.Y) - Vector3.One;
-
-                    color = PBR.GetPixelColor(albedo, metallic, roughness, ao, n, camera.Position, new(pw.X, pw.Y, pw.Z));
-
-                    DrawPixel(x, y, p.Z, color);
+                    DrawPixel(x, y, p.Z, hdrColor, emissionColor);
+                    //DrawPixel(x, y, p.Z, color);
                 }
             }
         }
 
-        private void DrawFace(List<Vector3> face, Vector4[] vertices)
+        private void DrawFace(List<Vector3> face, Vector4[] vertices, int materialIndex, int faceIndex)
         {
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
             Vector3 n2 = model.Normals[(int)face[1].Z - 1]; 
@@ -361,7 +453,9 @@ namespace lab1
                 n1, n2, n3,
                 uv1, uv2, uv3,
                 aw, bw, cw,
-                Vector3.Zero);
+                Vector3.Zero,
+                materialIndex,
+                faceIndex);
         }
 
         private void DrawPixel(int x, int y, float z, Vector3 color)
@@ -393,6 +487,98 @@ namespace lab1
             }
         }
 
+        private void DrawPixel(int x, int y, float z, Vector3 hdr, Vector3 emission)
+        {
+            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
+            {
+                bool gotLock = false;
+                bool flag = true;
+                while (flag)
+                {
+                    try
+                    {
+                        spins[x, y].Enter(ref gotLock);
+                        if (gotLock && z <= ZBuffer[x, y])
+                        {
+                            bufferHDR[x, y] = hdr;
+                            bufferEmission[x, y] = emission;
+                            ZBuffer[x, y] = z;
+                        }
+                    }
+                    finally
+                    {
+                        if (gotLock)
+                        {
+                            spins[x, y].Exit();
+                            flag = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void DrawBitmap(int r)
+        {
+            if (r > 0)
+            {
+                Vector3[,] resultTMP = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
+
+                float sigma = (r * 2f) / 6f;
+
+                float[] g = new float[r * 2 + 1];
+
+                for (int i = -r; i <= r; i++)
+                {
+                    g[i + r] = (float)Math.Exp(-1 * i * i / (2 * sigma * sigma)) / (float)Math.Sqrt(2 * float.Pi * sigma * sigma);
+                }
+
+                Parallel.For(0, bitmap.PixelWidth, (x) =>
+                {
+                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    {
+                        Vector3 sum = Vector3.Zero;
+                        for (int i = x - r; i <= x + r; i++)
+                        {
+                            sum += bufferEmission[
+                                Math.Min(Math.Max(i, 0), bitmap.PixelWidth - 1),
+                                y
+                            ] * g[i + r - x];
+                        }
+                        resultTMP[x, y] = sum;
+                    });
+                });
+
+                Parallel.For(0, bitmap.PixelWidth, (x) =>
+                {
+                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    {
+                        Vector3 sum = Vector3.Zero;
+                        for (int i = y - r; i <= y + r; i++)
+                        {
+                            sum += resultTMP[
+                                x,
+                                Math.Min(Math.Max(i, 0), bitmap.PixelHeight - 1)
+                            ] * g[i + r - y];
+                        }
+                        bitmap.SetPixel(x, y, PBR.LinearToSrgb(PBR.AsecFilmic(bufferHDR[x, y] + sum * BlurIntensity)));
+                        bufferHDR[x, y] = Vector3.Zero;
+                        bufferEmission[x, y] = Vector3.Zero;
+                    });
+                });
+            }
+            else
+            {
+                Parallel.For(0, bitmap.PixelWidth, (x) =>
+                {
+                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    {
+                        bitmap.SetPixel(x, y, PBR.LinearToSrgb(PBR.AsecFilmic(bufferHDR[x, y])));
+                        bufferHDR[x, y] = Vector3.Zero;
+                    });
+                });
+            }
+        }
+
         private void Draw()
         {
             
@@ -403,23 +589,25 @@ namespace lab1
             ZBuffer.Clear();
             
             bitmap.Source.Lock();
-            
-            Parallel.ForEach(model.Faces, face =>
-            {
 
+            Parallel.For(0, model.Faces.Count, (X) =>
+            {
+                List<Vector3> face = model.Faces[X];
                 Vector4[] faceVerts = new Vector4[3];
                 faceVerts[0] = vertices[(int)face[0].X - 1];
                 faceVerts[1] = vertices[(int)face[1].X - 1];
                 faceVerts[2] = vertices[(int)face[2].X - 1];
-    
+
                 if (GetNormal(faceVerts) <= 0)
-                    DrawFace(face, faceVerts);
+                    DrawFace(face, faceVerts, model.FacesMaterials[X], X);
             });
+
+            DrawBitmap((int)(BlurRadius * smoothing));
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
             bitmap.Source.Unlock();
-            Time.Content = ((DateTime.Now - t).Milliseconds).ToString() + " ms";
+            Time.Content = (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
         }
 
@@ -427,20 +615,24 @@ namespace lab1
         {
 
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferEmission = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
 
-            //ParseModelFromFile("./model/tree.obj");
-            //ParseModelFromFile("./model/shovel_low.obj");
-            //ParseModelFromFile("./model/doom.obj");
-            //ParseModelFromFile("./model/cube.obj");
-            //LoadModel("./model/man");
-            //LoadModel("./model/diablo");
-            LoadModel("./model/shovel");
-            //LoadModel("./model/doom");
-            //LoadModel("./model/cyber");
-            //LoadModel("./model/chess");
+
+            //LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Cyber Mancubus");
+            //LoadModel("./model/Doom Slayer");
+            //LoadModel("./model/Intergalactic Spaceship");
+            //LoadModel("./model/Material Ball");
+            //LoadModel("./model/Mimic Chest");
+            //LoadModel("./model/Pink Soldier");
+            //LoadModel("./model/Robot Steampunk");
+            //LoadModel("./model/Tree Man");
+            LoadModel("./model/Box");
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            camera.MinZoomR = model.GetMinZoomR();
             Draw();
         }
 
@@ -476,6 +668,8 @@ namespace lab1
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferEmission = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
@@ -488,6 +682,8 @@ namespace lab1
         private void ResizeHandler()
         {
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferEmission = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
@@ -500,32 +696,125 @@ namespace lab1
             {
                 case Key.NumPad1:
                     light.X -= 0.5f;
+                    PBR.X -= 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
                     break;
 
                 case Key.NumPad2:
                     light.X += 0.5f;
+                    PBR.X += 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
                     break;
 
                 case Key.NumPad4:
                     light.Y -= 0.5f;
+                    PBR.Y -= 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
                     break;
 
                 case Key.NumPad5:
                     light.Y += 0.5f;
+                    PBR.Y += 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
                     break;
 
                 case Key.NumPad7:
                     light.Z -= 0.5f;
+                    PBR.Z -= 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
                     break;
 
                 case Key.NumPad8:
                     light.Z += 0.5f;
+                    PBR.Z += 0.1f;
+                    PBR.ChangeLightsPos();
                     Draw();
+                    break;
+
+                case Key.Right:
+                    PBR.LightIntensity += 50;
+                    Draw();
+                    break;
+
+                case Key.Left:
+                    PBR.LightIntensity -= 50;
+                    PBR.LightIntensity = float.Max(PBR.LightIntensity, 0);
+                    Draw();
+                    break;
+
+                case Key.Up:
+                    PBR.LP += 1;
+                    PBR.ChangeLightsPos();
+                    Draw(); 
+                    break;
+
+                case Key.Down:
+                    PBR.LP -= 1;
+                    PBR.ChangeLightsPos();
+                    Draw();
+                    break;
+
+                case Key.Add:
+                    PBR.AmbientIntensity += 0.01f;
+                    Draw();
+                    break;
+
+                case Key.Subtract:
+                    PBR.AmbientIntensity -= 0.01f;
+                    PBR.AmbientIntensity = float.Max(PBR.AmbientIntensity, 0);
+                    Draw();
+                    break;
+
+                case Key.Divide:
+                    PBR.EmissionIntensity -= 0.2f;
+                    PBR.EmissionIntensity = float.Max(PBR.EmissionIntensity, 0);
+                    Draw();
+                    break;
+
+                case Key.Multiply:
+                    PBR.EmissionIntensity += 0.2f;
+                    Draw();
+                    break;
+
+                case Key.W:
+                    BlurIntensity += 0.05f;
+                    Draw();
+                    break;
+
+                case Key.S:
+                    BlurIntensity -= 0.05f;
+                    BlurIntensity = float.Max(BlurIntensity, 0);
+                    Draw();
+                    break;
+
+                case Key.D:
+                    BlurRadius += 1f;
+                    Draw();
+                    break;
+
+                case Key.A:
+                    BlurRadius -= 1f;
+                    BlurRadius = float.Max(BlurRadius, 0);
+                    Draw();
+                    break;
+
+                case Key.R:
+                    PBR.UseShadow = !PBR.UseShadow;
+                    Draw();
+                    break;
+
+                case Key.Q:
+                    PngBitmapEncoder encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(bitmap.Source as BitmapSource));
+                    using (FileStream st = new FileStream($"D:/img/{DateTime.Now.DayOfYear} {DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second}.png", FileMode.Create))
+                    {
+                        encoder.Save(st);
+                    }
                     break;
             }
 
