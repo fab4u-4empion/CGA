@@ -546,7 +546,7 @@ namespace lab1
                                 Math.Min(Math.Max(i, 0), bitmap.PixelHeight - 1)
                             ] * g[i + r - y];
                         }
-                        bitmap.SetPixel(x, y, PBR.LinearToSrgb(PBR.AsecFilmic(bufferHDR[x, y] + sum * BlurIntensity)));
+                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + sum * BlurIntensity));
                         bufferHDR[x, y] = Vector3.Zero;
                         bufferEmission[x, y] = Vector3.Zero;
                     });
@@ -558,7 +558,7 @@ namespace lab1
                 {
                     Parallel.For(0, bitmap.PixelHeight, (y) =>
                     {
-                        bitmap.SetPixel(x, y, PBR.LinearToSrgb(PBR.AsecFilmic(bufferHDR[x, y])));
+                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
                         bufferHDR[x, y] = Vector3.Zero;
                     });
                 });
@@ -597,6 +597,9 @@ namespace lab1
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
             Ray_Count.Content = $"Ray count: {RTX.RayCount}";
             Light_size.Content = $"Light size: {RTX.LightSize}";
+            ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
+            if (ToneMapping.Mode == ToneMappingMode.AgX)
+                ToneMode.Content += $" {ToneMapping.LookMode}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -731,12 +734,12 @@ namespace lab1
                     break;
 
                 case Key.Right:
-                    PBR.LightIntensity += 50;
+                    PBR.LightIntensity += 10;
                     Draw();
                     break;
 
                 case Key.Left:
-                    PBR.LightIntensity -= 50;
+                    PBR.LightIntensity -= 10;
                     PBR.LightIntensity = float.Max(PBR.LightIntensity, 0);
                     Draw();
                     break;
@@ -821,6 +824,29 @@ namespace lab1
 
                 case Key.V:
                     RTX.RayCount += 1;
+                    Draw();
+                    break;
+
+                case Key.T:
+                    if (ToneMapping.Mode == ToneMappingMode.ACES) 
+                        ToneMapping.Mode = ToneMappingMode.AgX;
+                    else 
+                    if (ToneMapping.Mode == ToneMappingMode.AgX) 
+                        ToneMapping.Mode = ToneMappingMode.ACES;
+                    Draw();
+                    break;
+
+                case Key.Y:
+                    if (ToneMapping.Mode == ToneMappingMode.AgX) {
+                        if (ToneMapping.LookMode == AgXLookMode.DEFAULT)
+                            ToneMapping.LookMode = AgXLookMode.PUNCHI;
+                        else
+                        if (ToneMapping.LookMode == AgXLookMode.PUNCHI)
+                            ToneMapping.LookMode = AgXLookMode.GOLDEN;
+                        else
+                        if (ToneMapping.LookMode == AgXLookMode.GOLDEN)
+                            ToneMapping.LookMode = AgXLookMode.DEFAULT;
+                    }
                     Draw();
                     break;
 

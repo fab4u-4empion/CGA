@@ -74,38 +74,6 @@ namespace lab1.Shaders
             return Min(1e12f, 0.5f / (v + l));
         }
 
-        public static Vector3 AsecFilmic(Vector3 color)
-        {
-            color = new(
-                Dot(new(0.59719f, 0.35458f, 0.04823f), color),
-                Dot(new(0.07600f, 0.90834f, 0.01566f), color),
-                Dot(new(0.02840f, 0.13383f, 0.83777f), color)
-            );
-
-            color = (color * (color + new Vector3(0.0245786f)) - new Vector3(0.000090537f)) /
-                (color * (0.983729f * color + new Vector3(0.4329510f)) + new Vector3(0.238081f));
-
-            color = new(
-                Dot(new(1.60475f, -0.53108f, -0.07367f), color),
-                Dot(new(-0.10208f, 1.10813f, -0.00605f), color),
-                Dot(new(-0.00327f, -0.07276f, 1.07602f), color)
-            );
-
-            return Clamp(color, Vector3.Zero, One);
-        }
-
-        public static Vector3 SrgbToLinear(Vector3 color)
-        {
-            static float SrgbToLinear(float c) => c <= 0.04045f ? c / 12.92f : Pow((c + 0.055f) / 1.055f, 2.4f);
-            return new(SrgbToLinear(color.X), SrgbToLinear(color.Y), SrgbToLinear(color.Z));
-        }
-
-        public static Vector3 LinearToSrgb(Vector3 color)
-        {
-            static float LinearToSrgb(float c) => c <= 0.0031308f ? 12.92f * c : 1.055f * Pow(c, 1 / 2.4f) - 0.055f;
-            return new(LinearToSrgb(color.X), LinearToSrgb(color.Y), LinearToSrgb(color.Z));
-        }
-
         public static void ChangeLightsPos()
         {
             Lights = new Vector3[] {
@@ -134,8 +102,8 @@ namespace lab1.Shaders
             int faceIndex
         )
         {
-            albedo = SrgbToLinear(albedo);
-            emission = SrgbToLinear(emission);
+            albedo = ToneMapping.SrgbToLinear(albedo);
+            emission = ToneMapping.SrgbToLinear(emission);
             roughness *= roughness;
 
             Vector3 N = Normalize(n);
