@@ -13,7 +13,6 @@ namespace lab1
         public List<Material> Materials = new();
         public List<int> FacesMaterials = new();
         public Dictionary<string, int> MaterialsIndexes = new();
-        public List<List<Vector3>> FacesCoordinates = new();
 
         public float Scale { get; set; }
 

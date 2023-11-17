@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Threading;
 using lab1.Shaders;
 using System.Windows.Media.Imaging;
+using lab1.Shadow;
 
 namespace lab1
 {
@@ -197,21 +198,6 @@ namespace lab1
                         model.AddUV(coordinates[0], 1 - coordinates[1]);
                     }
                 }
-            }
-            for (int i = 0; i < model.Faces.Count; i++)
-            {
-                List<Vector3> face = model.Faces[i];
-                Vector4 a = model.Vertices[(int)face[0].X - 1];
-                Vector4 b = model.Vertices[(int)face[1].X - 1];
-                Vector4 c = model.Vertices[(int)face[2].X - 1];
-
-                List<Vector3> faceVerts = new() {
-                   new(a.X, a.Y, a.Z),
-                   new(b.X, b.Y, b.Z),
-                   new(c.X, c.Y, c.Z)
-                };
-
-                model.FacesCoordinates.Add(faceVerts);
             }
         }
 
@@ -402,7 +388,7 @@ namespace lab1
 
                     Vector3 hdrColor;
                     Vector3 emissionColor;
-                    (hdrColor, emissionColor) = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, emission, n, camera.Position, new(pw.X, pw.Y, pw.Z), model.FacesCoordinates, faceIndex);
+                    (hdrColor, emissionColor) = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, emission, n, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
 
                     DrawPixel(x, y, p.Z, hdrColor, emissionColor);
                     //DrawPixel(x, y, p.Z, color);
@@ -609,6 +595,8 @@ namespace lab1
             bitmap.Source.Unlock();
             Time.Content = (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
+            Ray_Count.Content = $"Ray count: {RTX.RayCount}";
+            Light_size.Content = $"Light size: {RTX.LightSize}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -620,9 +608,9 @@ namespace lab1
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
 
-
+            DateTime t = DateTime.Now;
             //LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -630,7 +618,13 @@ namespace lab1
             //LoadModel("./model/Pink Soldier");
             //LoadModel("./model/Robot Steampunk");
             //LoadModel("./model/Tree Man");
-            LoadModel("./model/Box");
+            //LoadModel("./model/Box");
+            Model_time.Content = "Model loaded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
+
+            t = DateTime.Now;
+            BVH.Build(model.Faces, model.Vertices);
+            BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
+
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             camera.MinZoomR = model.GetMinZoomR();
             Draw();
@@ -808,10 +802,33 @@ namespace lab1
                     Draw();
                     break;
 
+                case Key.Z:
+                    RTX.LightSize -= 0.001f;
+                    RTX.LightSize = float.Max(RTX.LightSize, 0);
+                    Draw();
+                    break;
+
+                case Key.X:
+                    RTX.LightSize += 0.001f;
+                    Draw();
+                    break;
+
+                case Key.C:
+                    RTX.RayCount -= 1;
+                    RTX.RayCount = int.Max(RTX.RayCount, 0);
+                    Draw();
+                    break;
+
+                case Key.V:
+                    RTX.RayCount += 1;
+                    Draw();
+                    break;
+
                 case Key.Q:
                     PngBitmapEncoder encoder = new PngBitmapEncoder();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap.Source as BitmapSource));
-                    using (FileStream st = new FileStream($"D:/img/{DateTime.Now.DayOfYear} {DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second}.png", FileMode.Create))
+                    DirectoryInfo info = Directory.CreateDirectory("img");
+                    using (FileStream st = new FileStream($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
                     {
                         encoder.Save(st);
                     }

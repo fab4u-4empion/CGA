@@ -9,16 +9,20 @@ namespace lab1.Shaders
 {
     public class PBR
     {
-        public static float LightIntensity = 10_000;
+        public static float LightIntensity = 100;
         public static float LP = 50;
         public static float AmbientIntensity = 0.15f;
         public static float EmissionIntensity = 1;
 
         public static bool UseShadow = false;
 
-        public static float X = 0;
-        public static float Y = 3.6f;
-        public static float Z = 0;
+        //public static float X = 0;
+        //public static float Y = 3.6f;
+        //public static float Z = 0;
+
+        public static float X = 5;
+        public static float Y = 5;
+        public static float Z = 5;
 
         private static Vector3[] Lights = new Vector3[] {
             new (LP, LP, LP),
@@ -105,10 +109,10 @@ namespace lab1.Shaders
         public static void ChangeLightsPos()
         {
             Lights = new Vector3[] {
-                new (LP, LP, LP),
-                new (-LP, LP, LP),
-                new (LP, LP, -LP),
-                new (-LP, LP, -LP),
+                new(LP, LP, LP),
+                new(-LP, LP, LP),
+                new(LP, LP, -LP),
+                new(-LP, LP, -LP),
                 //new(-1.6f, 3.6f, -1.6f),
                 //new(1.6f, 3.6f, -1.6f),
                 //new(-1.6f, 3.6f, 1.6f),
@@ -127,7 +131,6 @@ namespace lab1.Shaders
             Vector3 n, 
             Vector3 camera, 
             Vector3 p,
-            List<List<Vector3>> faces,
             int faceIndex
         )
         {
@@ -149,28 +152,27 @@ namespace lab1.Shaders
                 Vector3 L = Normalize(Lights[i] - p);
                 Vector3 H = Normalize(V + L);
 
-                float distance = (Lights[i] - p).Length();
+                float distance = Distance(Lights[i], p);
 
-                if (!UseShadow || !RTX.CheckIntersection(L, p, distance, faces, faceIndex))
-                {
-                    float attenuation = 1.0f / (distance * distance);
-                    Vector3 radiance = LightsColors[i] * attenuation * LightIntensity;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p, faceIndex) : 1;
 
-                    float NdotH = Max(Dot(N, H), 0);
-                    float NdotL = Max(Dot(N, L), 0);
+                float attenuation = 1.0f / (distance * distance);
+                Vector3 radiance = LightsColors[i] * attenuation * LightIntensity;
 
-                    float D = Distribution(NdotH, roughness);
-                    float G = Visibility(NdotV, NdotL, roughness);
-                    Vector3 F = FresnelSchlick(NdotH, F0);
+                float NdotH = Max(Dot(N, H), 0);
+                float NdotL = Max(Dot(N, L), 0);
 
-                    Vector3 kS = F;
-                    Vector3 kD = Vector3.One - kS;
-                    kD *= 1 - metallic;
+                float D = Distribution(NdotH, roughness);
+                float G = Visibility(NdotV, NdotL, roughness);
+                Vector3 F = FresnelSchlick(NdotH, F0);
 
-                    Vector3 specular = D * G * F;
+                Vector3 kS = F;
+                Vector3 kD = Vector3.One - kS;
+                kD *= 1 - metallic;
 
-                    color += (kD * albedo / Pi + specular) * radiance * NdotL;
-                }
+                Vector3 specular = D * G * F;
+
+                color += (kD * albedo / Pi + specular) * radiance * NdotL * intensity;
             }
 
             color += albedo * ao * AmbientIntensity + emission * EmissionIntensity;
