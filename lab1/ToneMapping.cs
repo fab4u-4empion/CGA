@@ -14,7 +14,7 @@ namespace lab1
     public enum AgXLookMode
     {
         DEFAULT,
-        PUNCHI,
+        PUNCHY,
         GOLDEN
     }
 
@@ -46,9 +46,9 @@ namespace lab1
         public static Vector3 AgX(Vector3 color)
         {
             color = new(
-                Dot(new(0.842479062253094f, 0.0423282422610123f, 0.0423756549057051f), color),
-                Dot(new(0.0784335999999992f, 0.878468636469772f, 0.0784336f), color),
-                Dot(new(0.0792237451477643f, 0.0791661274605434f, 0.879142973793104f), color)
+                Dot(new(0.842479062253094f, 0.0784335999999992f, 0.0792237451477643f), color),
+                Dot(new(0.0423282422610123f, 0.878468636469772f, 0.0791661274605434f), color),
+                Dot(new(0.0423756549057051f, 0.0784336f, 0.879142973793104f), color)
             );
 
             float min_ev = -12.47393f;
@@ -75,9 +75,9 @@ namespace lab1
         public static Vector3 AgXEotf(Vector3 color)
         {
             color = new(
-                Dot(new(1.19687900512017f, -0.0528968517574562f, -0.0529716355144438f), color),
-                Dot(new(-0.0980208811401368f, 1.15190312990417f, -0.0980434501171241f), color),
-                Dot(new(-0.0990297440797205f, -0.0989611768448433f, 1.15107367264116f), color)
+                Dot(new(1.19687900512017f, -0.0980208811401368f, -0.0990297440797205f), color),
+                Dot(new(-0.0528968517574562f, 1.15190312990417f, -0.0989611768448433f), color),
+                Dot(new(-0.0529716355144438f, -0.0980434501171241f, 1.15107367264116f), color)
             );
 
             color = new(Pow(color.X, 2.2f), Pow(color.Y, 2.2f), Pow(color.Z, 2.2f));
@@ -94,7 +94,7 @@ namespace lab1
             Vector3 power = One;
             float sat = 1.0f;
 
-            if (LookMode == AgXLookMode.PUNCHI)
+            if (LookMode == AgXLookMode.PUNCHY)
             {
                 slope = new(1.0f);
                 power = new(1.35f, 1.35f, 1.35f);

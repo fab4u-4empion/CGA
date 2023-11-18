@@ -839,9 +839,9 @@ namespace lab1
                 case Key.Y:
                     if (ToneMapping.Mode == ToneMappingMode.AgX) {
                         if (ToneMapping.LookMode == AgXLookMode.DEFAULT)
-                            ToneMapping.LookMode = AgXLookMode.PUNCHI;
+                            ToneMapping.LookMode = AgXLookMode.PUNCHY;
                         else
-                        if (ToneMapping.LookMode == AgXLookMode.PUNCHI)
+                        if (ToneMapping.LookMode == AgXLookMode.PUNCHY)
                             ToneMapping.LookMode = AgXLookMode.GOLDEN;
                         else
                         if (ToneMapping.LookMode == AgXLookMode.GOLDEN)
