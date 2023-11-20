@@ -515,52 +515,52 @@ namespace lab1
 
                 for (int i = -r; i <= r; i++)
                 {
-                    g[i + r] = (float)Math.Exp(-1 * i * i / (2 * sigma * sigma)) / (float)Math.Sqrt(2 * float.Pi * sigma * sigma);
+                    g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
                 }
 
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
-                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    for (int y = 0;  y < bitmap.PixelHeight; y++)
                     {
                         Vector3 sum = Vector3.Zero;
                         for (int i = x - r; i <= x + r; i++)
                         {
                             sum += bufferEmission[
-                                Math.Min(Math.Max(i, 0), bitmap.PixelWidth - 1),
+                                int.Min(int.Max(i, 0), bitmap.PixelWidth - 1),
                                 y
                             ] * g[i + r - x];
                         }
                         resultTMP[x, y] = sum;
-                    });
+                    }
                 });
 
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
-                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         Vector3 sum = Vector3.Zero;
                         for (int i = y - r; i <= y + r; i++)
                         {
                             sum += resultTMP[
                                 x,
-                                Math.Min(Math.Max(i, 0), bitmap.PixelHeight - 1)
+                                int.Min(int.Max(i, 0), bitmap.PixelHeight - 1)
                             ] * g[i + r - y];
                         }
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + sum * BlurIntensity));
                         bufferHDR[x, y] = Vector3.Zero;
                         bufferEmission[x, y] = Vector3.Zero;
-                    });
+                    }
                 });
             }
             else
             {
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
-                    Parallel.For(0, bitmap.PixelHeight, (y) =>
+                    for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
                         bufferHDR[x, y] = Vector3.Zero;
-                    });
+                    }
                 });
             }
         }
@@ -600,6 +600,7 @@ namespace lab1
             ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
                 ToneMode.Content += $" {ToneMapping.LookMode}";
+            Filter.Content = $"Using bilinear filter: {Material.UsingBilinearFilter}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -612,8 +613,8 @@ namespace lab1
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
 
             DateTime t = DateTime.Now;
-            //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -824,6 +825,11 @@ namespace lab1
 
                 case Key.V:
                     RTX.RayCount += 1;
+                    Draw();
+                    break;
+
+                case Key.B:
+                    Material.UsingBilinearFilter = !Material.UsingBilinearFilter;
                     Draw();
                     break;
 

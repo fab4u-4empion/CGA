@@ -146,7 +146,7 @@ namespace lab1.Shaders
             color += albedo * ao * AmbientIntensity + emission * EmissionIntensity;
 
             float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-            float x = float.Clamp((luminance ) / 5f, 0, 1);
+            float x = float.Clamp(luminance / 5f, 0, 1);
             float factor = x * x * (3 - 2 * x);
             return (color, color * factor);
         }

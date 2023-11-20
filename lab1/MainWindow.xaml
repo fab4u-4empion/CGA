@@ -22,5 +22,6 @@
         <Label x:Name="Model_time" Content="Label" HorizontalAlignment="Left" Margin="20 40" VerticalAlignment="Bottom" Foreground="White"/>
         <Label x:Name="BVH_time" Content="Label" HorizontalAlignment="Left" Margin="20 20" VerticalAlignment="Bottom" Foreground="White"/>
         <Label x:Name="ToneMode" Content="Label" HorizontalAlignment="Right" Margin="20 20" VerticalAlignment="Bottom" Foreground="White"/>
+        <Label x:Name="Filter" Content="Label" HorizontalAlignment="Right" Margin="20 40" VerticalAlignment="Bottom" Foreground="White"/>
     </Grid>
 </Window>
