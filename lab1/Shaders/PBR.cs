@@ -40,7 +40,7 @@ namespace lab1.Shaders
             new (0.5f, 1f, 0.5f),
             new (0.5f, 0.5f, 1),
             new (0.5f, 1, 1)
-            //new(1, 1, 1)
+            ////new(1, 1, 1)
             //new(1, 0, 0),
             //new(0, 1, 0),
             //new(0, 0, 1),

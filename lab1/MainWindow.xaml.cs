@@ -15,6 +15,8 @@ using System.Threading;
 using lab1.Shaders;
 using System.Windows.Media.Imaging;
 using lab1.Shadow;
+using lab1.Effects;
+using Microsoft.Win32;
 
 namespace lab1
 {
@@ -34,7 +36,7 @@ namespace lab1
         Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
-        float BlurRadius = 7;
+        float BlurRadius = 1;
 
         SpinLock[,] spins;
 
@@ -503,50 +505,18 @@ namespace lab1
             }
         }
 
-        public void DrawBitmap(int r)
+        public void DrawBitmap()
         {
-            if (r > 0)
+            if (BlurRadius > 0)
             {
-                Vector3[,] resultTMP = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
-
-                float sigma = (r * 2f) / 6f;
-
-                float[] g = new float[r * 2 + 1];
-
-                for (int i = -r; i <= r; i++)
-                {
-                    g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
-                }
-
-                Parallel.For(0, bitmap.PixelWidth, (x) =>
-                {
-                    for (int y = 0;  y < bitmap.PixelHeight; y++)
-                    {
-                        Vector3 sum = Vector3.Zero;
-                        for (int i = x - r; i <= x + r; i++)
-                        {
-                            sum += bufferEmission[
-                                int.Min(int.Max(i, 0), bitmap.PixelWidth - 1),
-                                y
-                            ] * g[i + r - x];
-                        }
-                        resultTMP[x, y] = sum;
-                    }
-                });
+                Vector3[,] bloomBuffer = Bloom.GetBoolmBuffer((int)(BlurRadius * smoothing), bufferEmission, bitmap.PixelWidth, bitmap.PixelHeight);
 
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
-                        Vector3 sum = Vector3.Zero;
-                        for (int i = y - r; i <= y + r; i++)
-                        {
-                            sum += resultTMP[
-                                x,
-                                int.Min(int.Max(i, 0), bitmap.PixelHeight - 1)
-                            ] * g[i + r - y];
-                        }
-                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + sum * BlurIntensity));
+                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
+                        //bitmap.SetPixel(x, y, ToneMapping.CompressColor(bloomBuffer[x, y]));
                         bufferHDR[x, y] = Vector3.Zero;
                         bufferEmission[x, y] = Vector3.Zero;
                     }
@@ -559,6 +529,7 @@ namespace lab1
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
+                        bufferEmission[x, y] = Vector3.Zero;
                         bufferHDR[x, y] = Vector3.Zero;
                     }
                 });
@@ -588,7 +559,7 @@ namespace lab1
                     DrawFace(face, faceVerts, model.FacesMaterials[X], X);
             });
 
-            DrawBitmap((int)(BlurRadius * smoothing));
+            DrawBitmap();
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
@@ -613,8 +584,8 @@ namespace lab1
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
 
             DateTime t = DateTime.Now;
-            LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            //LoadModel("./model/Shovel Knight");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -864,6 +835,25 @@ namespace lab1
                     {
                         encoder.Save(st);
                     }
+                    break;
+
+                case Key.O:
+                    OpenFileDialog dlg = new OpenFileDialog();
+                    if (dlg.ShowDialog() == true)
+                    {
+                        Bloom.KernelImg = dlg.FileName;
+                    }
+                    Draw();
+                    break;
+
+                case Key.P:
+                    Bloom.KernelImg = null;
+                    Draw();
+                    break;
+
+                case Key.I:
+                    Bloom.KernelCount = Bloom.KernelCount == 1 ? 3 : 1;
+                    Draw();
                     break;
             }
 
