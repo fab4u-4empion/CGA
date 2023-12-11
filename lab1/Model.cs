@@ -80,7 +80,7 @@ namespace lab1
 
         public float GetMinZoomR ()
         {
-            return float.Max(float.Max(maxX - minX, maxY - minY), maxZ - minZ) + 2;
+            return float.Max(float.Max(maxX - minX, maxY - minY), maxZ - minZ);
         }
     }
 }

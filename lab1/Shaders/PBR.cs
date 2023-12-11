@@ -9,10 +9,11 @@ namespace lab1.Shaders
 {
     public class PBR
     {
-        public static float LightIntensity = 100;
+        public static float LightIntensity = 1000;
         public static float LP = 50;
         public static float AmbientIntensity = 0.15f;
         public static float EmissionIntensity = 1;
+        public static bool ClearCoatEnable = false;
 
         public static bool UseShadow = false;
 
@@ -40,7 +41,7 @@ namespace lab1.Shaders
             new (0.5f, 1f, 0.5f),
             new (0.5f, 0.5f, 1),
             new (0.5f, 1, 1)
-            ////new(1, 1, 1)
+            //new(1, 1, 1)
             //new(1, 0, 0),
             //new(0, 1, 0),
             //new(0, 0, 1),
@@ -74,6 +75,11 @@ namespace lab1.Shaders
             return Min(1e12f, 0.5f / (v + l));
         }
 
+        private static float V_Kelemen(float LdotH)
+        {
+            return 0.25f / (LdotH * LdotH);
+        }
+
         public static void ChangeLightsPos()
         {
             Lights = new Vector3[] {
@@ -90,13 +96,17 @@ namespace lab1.Shaders
             //};
         }
 
-        public static (Vector3, Vector3) GetPixelColor(
+        public static Vector3 GetPixelColor(
             Vector3 albedo, 
             float metallic, 
             float roughness, 
             float ao, 
+            float opacity,
             Vector3 emission, 
             Vector3 n, 
+            Vector3 clearCoatN,
+            float clearCoat,
+            float clearCoatRougness,
             Vector3 camera, 
             Vector3 p,
             int faceIndex
@@ -105,11 +115,14 @@ namespace lab1.Shaders
             albedo = ToneMapping.SrgbToLinear(albedo);
             emission = ToneMapping.SrgbToLinear(emission);
             roughness *= roughness;
+            clearCoatRougness *= clearCoatRougness;
 
             Vector3 N = Normalize(n);
+            Vector3 ON = Normalize(clearCoatN);
             Vector3 V = Normalize(camera - p);
 
             float NdotV = Max(Dot(N, V), 0);
+            float ONdotV = Max(Dot(ON, V), 0);
 
             Vector3 F0 = Lerp(new(0.04f), albedo, metallic);
 
@@ -124,31 +137,32 @@ namespace lab1.Shaders
 
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p, faceIndex) : 1;
 
-                float attenuation = 1.0f / (distance * distance);
-                Vector3 radiance = LightsColors[i] * attenuation * LightIntensity;
-
                 float NdotH = Max(Dot(N, H), 0);
                 float NdotL = Max(Dot(N, L), 0);
+                float ONdotH = Max(Dot(ON, H), 0);
+                float ONdotL = Max(Dot(ON, L), 0);
 
-                float D = Distribution(NdotH, roughness);
-                float G = Visibility(NdotV, NdotL, roughness);
-                Vector3 F = FresnelSchlick(NdotH, F0);
+                float distribution = Distribution(NdotH, roughness);
+                float visibility = Visibility(NdotV, NdotL, roughness);
+                Vector3 reflectance = FresnelSchlick(NdotH, F0);
 
-                Vector3 kS = F;
-                Vector3 kD = Vector3.One - kS;
-                kD *= 1 - metallic;
+                Vector3 diffuse = (1 - metallic) * albedo / Pi * opacity;
+                Vector3 specular = reflectance * visibility * distribution;
 
-                Vector3 specular = D * G * F;
+                Vector3 irradiance = LightsColors[i] * LightIntensity / (distance * distance);
 
-                color += (kD * albedo / Pi + specular) * radiance * NdotL * intensity;
+                float clearCoatDistribution = Distribution(ONdotH, clearCoatRougness);
+                float clearCoatVisibility = Visibility(ONdotV, ONdotL, clearCoatRougness);
+                Vector3 clearCoatReflectance = FresnelSchlick(ONdotH, new(0.04f)) * clearCoat;
+
+                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution;
+
+                color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * ONdotL) * irradiance * intensity;
             }
 
-            color += albedo * ao * AmbientIntensity + emission * EmissionIntensity;
+            color += albedo * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
 
-            float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-            float x = float.Clamp(luminance / 5f, 0, 1);
-            float factor = x * x * (3 - 2 * x);
-            return (color, color * factor);
+            return color;
         }
     }
 }

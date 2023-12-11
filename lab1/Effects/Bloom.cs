@@ -14,12 +14,25 @@ namespace lab1.Effects
 
         public static Vector3[,] GetBoolmBuffer(int r, Vector3[,] src, int width, int height)
         {
+            Vector3[,] tmp = new Vector3[width, height];
+            Parallel.For(0, width, (x) =>
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Vector3 color = src[x, y];
+                    float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
+                    float X = float.Clamp(luminance / 5f, 0, 1);
+                    float factor = X * X * (3 - 2 * X);
+                    tmp[x, y] = color * factor;
+                }
+            });
+
             if (KernelImg == null)
             {
-                return GetGaussianClassicBlur(r, src, width, height);
+                return GetGaussianClassicBlur(r, tmp, width, height);
             }
 
-            return GetImageBasedBlur(src, width, height);
+            return GetImageBasedBlur(tmp, width, height);
         }
 
         private static (int, int) GetRealSize(int w, int h) {

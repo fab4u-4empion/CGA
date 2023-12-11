@@ -9,6 +9,11 @@ namespace lab1
         public Pbgra32Bitmap? Normals = null;
         public Pbgra32Bitmap? MRAO = null;
         public Pbgra32Bitmap? Emission = null;
+        public Pbgra32Bitmap? Trasmission = null;
+
+        public Pbgra32Bitmap? ClearCoat = null;
+        public Pbgra32Bitmap? ClearCoatRoughness = null;
+        public Pbgra32Bitmap? ClearCoatNormals = null;
 
         public float Pm = 0;
         public float Pr = 1;
@@ -44,10 +49,23 @@ namespace lab1
             return Emission == null ? Vector3.Zero : Emission.GetPixel((int)(u * Emission.PixelWidth), (int)(v * Emission.PixelHeight));
         }
 
-        public Vector3 GetNormal(float u, float v)
+        public float GetTrasmission(float u, float v)
+        {
+            return Trasmission == null ? 0 : Trasmission.GetPixel((int)(u * Trasmission.PixelWidth), (int)(v * Trasmission.PixelHeight)).X;
+        }
+
+        public (float, float, Vector3) GetClearCoat(float u, float v, Vector3 defaultNormal)
+        {
+            float roughness = ClearCoatRoughness == null ? 0 : ClearCoatRoughness.GetPixel((int)(u * ClearCoatRoughness.PixelWidth), (int)(v * ClearCoatRoughness.PixelHeight)).X;
+            float clearCoat = ClearCoat == null ? 0 : ClearCoat.GetPixel((int)(u * ClearCoat.PixelWidth), (int)(v * ClearCoat.PixelHeight)).X;
+            Vector3 normal = ClearCoatNormals == null ? defaultNormal : 2 * ClearCoatNormals.GetPixel((int)(u * ClearCoatNormals.PixelWidth), (int)(v * ClearCoatNormals.PixelHeight)) - Vector3.One;
+            return (roughness, clearCoat, normal);
+        }
+
+        public Vector3 GetNormal(float u, float v, Vector3 defaultNormal)
         {
             if (Normals == null)
-                return Vector3.Zero;
+                return defaultNormal;
             if (UsingBilinearFilter)
             {
                 u *= Normals.PixelWidth;
