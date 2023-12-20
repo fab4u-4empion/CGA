@@ -1,5 +1,6 @@
 ﻿using Rasterization;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace lab1
@@ -55,9 +56,9 @@ namespace lab1
             Vertices.Add(new(x, y, z, 1));
         }
 
-        public void AddFace(List<Vector3> vertices)
+        public void AddFace(List<Vector3> vertex)
         {
-            Faces.Add(vertices);
+            Faces.Add(vertex);
         }
 
         public void AddNormal(float x, float y, float z)
