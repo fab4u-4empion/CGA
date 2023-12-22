@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
+using System.Reflection;
 
 namespace lab1
 {
@@ -40,7 +41,7 @@ namespace lab1
         ZBuffer ZBuffer;
         Vector3 light = new(0, 0, 0);
         Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
-        float smoothing = 1f;
+        float smoothing = 0.25f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
 
@@ -82,7 +83,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Trasmission"))
                     {
-                        material.Trasmission = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative)));
+                        material.AddTrasmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("Kd"))
@@ -103,37 +104,37 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Kd"))
                     {
-                        material.Diffuse = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative)));
+                        material.AddDiffuse(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("map_Ke"))
                     {
-                        material.Emission = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative)));
+                        material.AddEmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("map_MRAO"))
                     {
-                        material.MRAO = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 8).Trim()}", UriKind.Relative)));
+                        material.AddMRAO(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 8).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("map_ClearCoat"))
                     {
-                        material.ClearCoat = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 13).Trim()}", UriKind.Relative)));
+                        material.AddClearCoat(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 13).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("map_CCRoughness"))
                     {
-                        material.ClearCoatRoughness = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative)));
+                        material.AddClearCoatRoughness(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("CCNorm"))
                     {
-                        material.ClearCoatNormals = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative)));
+                        material.AddClearCoatNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("norm"))
                     {
-                        material.Normals = new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 4).Trim()}", UriKind.Relative)));
+                        material.AddNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 4).Trim()}", UriKind.Relative))));
                     }
                 }
                 model.Materials.Add(material);
@@ -358,24 +359,26 @@ namespace lab1
             Vector4 b = viewVertices[(int)face[1].X - 1];
             Vector4 c = viewVertices[(int)face[2].X - 1];
 
-            Vector2 ap = new(
-                float.Ceiling(float.Clamp(a.X, 0, bitmap.PixelWidth)),
-                float.Ceiling(float.Clamp(a.Y, 0, bitmap.PixelHeight))
-            );
-
-            Vector2 bp = new(
-                float.Ceiling(float.Clamp(b.X, 0, bitmap.PixelWidth)),
-                float.Ceiling(float.Clamp(b.Y, 0, bitmap.PixelHeight))
-            );
-
-            Vector2 cp = new(
-                float.Ceiling(float.Clamp(c.X, 0, bitmap.PixelWidth)),
-                float.Ceiling(float.Clamp(c.Y, 0, bitmap.PixelHeight))
-            );
+            Vector2 ap = new(a.X, a.Y);
+            Vector2 bp = new(b.X, b.Y);
+            Vector2 cp = new(c.X, c.Y);
 
             float u = float.Abs(PerpDotProduct(cp - p, bp - p) * a.W);
             float v = float.Abs(PerpDotProduct(ap - p, cp - p) * b.W);
             float w = float.Abs(PerpDotProduct(ap - p, bp - p) * c.W);
+            float sum = u + v + w;
+
+            Vector2 px = p + Vector2.UnitX;
+            float ux = float.Abs(PerpDotProduct(cp - px, bp - px) * a.W);
+            float vx = float.Abs(PerpDotProduct(ap - px, cp - px) * b.W);
+            float wx = float.Abs(PerpDotProduct(ap - px, bp - px) * c.W);
+            float sumx = ux + vx + wx;
+
+            Vector2 py = p + Vector2.UnitY;
+            float uy = float.Abs(PerpDotProduct(cp - py, bp - py) * a.W);
+            float vy = float.Abs(PerpDotProduct(ap - py, cp - py) * b.W);
+            float wy = float.Abs(PerpDotProduct(ap - py, bp - py) * c.W);
+            float sumy = uy + vy + wy;
 
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
             Vector3 n2 = model.Normals[(int)face[1].Z - 1];
@@ -389,16 +392,19 @@ namespace lab1
             Vector4 bw = model.Vertices[(int)face[1].X - 1];
             Vector4 cw = model.Vertices[(int)face[2].X - 1];
 
-            Vector2 uv = (u * uv1 + v * uv2 + w * uv3) / (u + v + w);
-            Vector3 oN = (u * n1 + v * n2 + w * n3) / (u + v + w);
-            Vector4 pw = (u * aw + v * bw + w * cw) / (u + v + w);
+            Vector2 uv = (u * uv1 + v * uv2 + w * uv3) / sum;
+            Vector2 uvx = (ux * uv1 + vx * uv2 + wx * uv3) / sumx;
+            Vector2 uvy = (uy * uv1 + vy * uv2 + wy * uv3) / sumy;
 
-            Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv.X, uv.Y);
-            Vector3 n = model.Materials[materialIndex].GetNormal(uv.X, uv.Y, oN);
-            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv.X, uv.Y);
-            Vector3 emission = model.Materials[materialIndex].GetEmission(uv.X, uv.Y);
-            float opascity = 1 - model.Materials[materialIndex].GetTrasmission(uv.X, uv.Y);
-            (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv.X, uv.Y, oN);
+            Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
+            Vector4 pw = (u * aw + v * bw + w * cw) / sum;
+
+            Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uvx, uvy);
+            Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uvx, uvy);
+            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uvx, uvy);
+            Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uvx, uvy);
+            float opascity = 1 - model.Materials[materialIndex].GetTrasmission(uv, uvx, uvy);
+            (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uvx, uvy);
 
             Vector3 hdrColor = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opascity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
 
@@ -570,6 +576,25 @@ namespace lab1
 
             bitmap.Source.Lock();
 
+            var range = Partitioner.Create(0, model.Faces.Count);
+
+            //Parallel.ForEach(range, (range) =>
+            //{
+            //    for (int i = range.Item1; i < range.Item2; i++)
+            //    {
+            //        Vector4[] faceVerts =
+            //            [
+            //                viewVertices[(int)model.Faces[i][0].X - 1],
+            //                viewVertices[(int)model.Faces[i][1].X - 1],
+            //                viewVertices[(int)model.Faces[i][2].X - 1],
+            //            ];
+            //        if (GetNormal(faceVerts) <= 0)
+            //        {
+            //            FillViewBuffer(faceVerts, i);
+            //        }
+            //    }
+            //});
+
             Parallel.For(0, model.Faces.Count, (X) =>
             {
                 List<Vector3> face = model.Faces[X];
@@ -579,7 +604,8 @@ namespace lab1
                     viewVertices[(int)face[1].X - 1],
                     viewVertices[(int)face[2].X - 1],
                 ];
-                if (GetNormal(faceVerts) <= 0) {
+                if (GetNormal(faceVerts) <= 0)
+                {
                     FillViewBuffer(faceVerts, X);
                 }
             });
@@ -597,7 +623,6 @@ namespace lab1
             ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
                 ToneMode.Content += $" {ToneMapping.LookMode}";
-            Filter.Content = $"Using bilinear filter: {Material.UsingBilinearFilter}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -853,11 +878,6 @@ namespace lab1
 
                 case Key.V:
                     RTX.RayCount += 1;
-                    Draw();
-                    break;
-
-                case Key.B:
-                    Material.UsingBilinearFilter = !Material.UsingBilinearFilter;
                     Draw();
                     break;
 
