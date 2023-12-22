@@ -363,21 +363,21 @@ namespace lab1
             Vector2 bp = new(b.X, b.Y);
             Vector2 cp = new(c.X, c.Y);
 
-            float u = float.Abs(PerpDotProduct(cp - p, bp - p) * a.W);
-            float v = float.Abs(PerpDotProduct(ap - p, cp - p) * b.W);
-            float w = float.Abs(PerpDotProduct(ap - p, bp - p) * c.W);
+            float u = PerpDotProduct(bp - p, cp - p) * a.W;
+            float v = PerpDotProduct(cp - p, ap - p) * b.W;
+            float w = PerpDotProduct(ap - p, bp - p) * c.W;
             float sum = u + v + w;
 
             Vector2 px = p + Vector2.UnitX;
-            float ux = float.Abs(PerpDotProduct(cp - px, bp - px) * a.W);
-            float vx = float.Abs(PerpDotProduct(ap - px, cp - px) * b.W);
-            float wx = float.Abs(PerpDotProduct(ap - px, bp - px) * c.W);
+            float ux = PerpDotProduct(bp - px, cp - px) * a.W;
+            float vx = PerpDotProduct(cp - px, ap - px) * b.W;
+            float wx = PerpDotProduct(ap - px, bp - px) * c.W;
             float sumx = ux + vx + wx;
 
             Vector2 py = p + Vector2.UnitY;
-            float uy = float.Abs(PerpDotProduct(cp - py, bp - py) * a.W);
-            float vy = float.Abs(PerpDotProduct(ap - py, cp - py) * b.W);
-            float wy = float.Abs(PerpDotProduct(ap - py, bp - py) * c.W);
+            float uy = PerpDotProduct(bp - py, cp - py) * a.W;
+            float vy = PerpDotProduct(cp - py, ap - py) * b.W;
+            float wy = PerpDotProduct(ap - py, bp - py) * c.W;
             float sumy = uy + vy + wy;
 
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
@@ -644,8 +644,8 @@ namespace lab1
             }
 
             DateTime t = DateTime.Now;
-            //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
