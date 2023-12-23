@@ -41,7 +41,7 @@ namespace lab1
         ZBuffer ZBuffer;
         Vector3 light = new(0, 0, 0);
         Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
-        float smoothing = 0.25f;
+        float smoothing = 1f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
 
@@ -645,7 +645,7 @@ namespace lab1
 
             DateTime t = DateTime.Now;
             //LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
