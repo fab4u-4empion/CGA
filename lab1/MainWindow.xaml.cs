@@ -644,7 +644,7 @@ namespace lab1
             }
 
             DateTime t = DateTime.Now;
-            LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Shovel Knight");
             //LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
