@@ -621,6 +621,7 @@ namespace lab1
             Ray_Count.Content = $"Ray count: {RTX.RayCount}";
             Light_size.Content = $"Light size: {RTX.LightSize}";
             ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
+            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
                 ToneMode.Content += $" {ToneMapping.LookMode}";
         }
@@ -934,7 +935,7 @@ namespace lab1
                     break;
 
                 case Key.M:
-                    PBR.ClearCoatEnable = !PBR.ClearCoatEnable;
+                    Material.UsingMIPMapping = !Material.UsingMIPMapping;
                     Draw();
                     break;
             }
