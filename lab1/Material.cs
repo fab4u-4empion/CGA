@@ -23,7 +23,7 @@ namespace lab1
         public float Pr = 1;
         public Vector3 Kd = Vector3.Zero;
 
-        public static bool UsingBilinearFilter = false;
+        public static bool UsingMIPMapping = false;
 
         private List<Pbgra32Bitmap> CalculateMIP(Pbgra32Bitmap src)
         {
@@ -102,48 +102,67 @@ namespace lab1
             if (src.Count == 0)
                 return def;
 
-            Vector2 xUV = new(uvx.X * src[0].PixelWidth, uvx.Y * src[0].PixelHeight);
-            Vector2 yUV = new(uvy.X * src[0].PixelWidth, uvy.Y * src[0].PixelHeight);
-            Vector2 origUV = new(uv.X * src[0].PixelWidth, uv.Y * src[0].PixelHeight);
+            if (UsingMIPMapping)
+            {
+                Vector2 size = new(src[0].PixelWidth, src[0].PixelHeight);
 
-            Vector2 duvdx = xUV - origUV;
-            Vector2 duvdy = yUV - origUV;
+                Vector2 duvdx = (uvx - uv) * size;
+                Vector2 duvdy = (uvy - uv) * size;
 
-            float lvl = float.Clamp(0.5f * float.Log2(float.Max(Vector2.Dot(duvdx, duvdx), Vector2.Dot(duvdy, duvdy))), 0, src.Count - 1.1f);
+                float lvl = float.Clamp(0.5f * float.Log2(float.Max(Vector2.Dot(duvdx, duvdx), Vector2.Dot(duvdy, duvdy))), 0, src.Count - 1.1f);
 
-            int mainLvl = (int)float.Floor(lvl);
+                int mainLvl = (int)float.Floor(lvl);
 
-            float u = uv.X * (src[mainLvl].PixelWidth - 1);
-            float v = uv.Y * (src[mainLvl].PixelHeight - 1);
+                float u = uv.X * (src[mainLvl].PixelWidth - 1);
+                float v = uv.Y * (src[mainLvl].PixelHeight - 1);
 
-            int x = (int)float.Floor(u);
-            int y = (int)float.Floor(v);
+                int x = (int)float.Floor(u);
+                int y = (int)float.Floor(v);
 
-            float u_ratio = u - x;
-            float v_ratio = v - y;
+                float u_ratio = u - x;
+                float v_ratio = v - y;
 
-            float nextU = uv.X * (src[mainLvl + 1].PixelWidth - 1);
-            float nextV = uv.Y * (src[mainLvl + 1].PixelHeight - 1);
+                float nextU = uv.X * (src[mainLvl + 1].PixelWidth - 1);
+                float nextV = uv.Y * (src[mainLvl + 1].PixelHeight - 1);
 
-            int nextX = (int)float.Floor(nextU);
-            int nextY = (int)float.Floor(nextV);
+                int nextX = (int)float.Floor(nextU);
+                int nextY = (int)float.Floor(nextV);
 
-            float next_u_ratio = nextU - nextX;
-            float next_v_ratio = nextV - nextY;
+                float next_u_ratio = nextU - nextX;
+                float next_v_ratio = nextV - nextY;
 
-            Vector3 mainColor = Vector3.Lerp(
-                    Vector3.Lerp(src[mainLvl].GetPixel(x, y), src[mainLvl].GetPixel(x + 1, y), u_ratio),
-                    Vector3.Lerp(src[mainLvl].GetPixel(x, y + 1), src[mainLvl].GetPixel(x + 1, y + 1), u_ratio),
-                    v_ratio
-                );
+                Vector3 mainColor = Vector3.Lerp(
+                        Vector3.Lerp(src[mainLvl].GetPixel(x, y), src[mainLvl].GetPixel(x + 1, y), u_ratio),
+                        Vector3.Lerp(src[mainLvl].GetPixel(x, y + 1), src[mainLvl].GetPixel(x + 1, y + 1), u_ratio),
+                        v_ratio
+                    );
 
-            Vector3 nextColor = Vector3.Lerp(
-                    Vector3.Lerp(src[mainLvl + 1].GetPixel(nextX, nextY), src[mainLvl + 1].GetPixel(nextX + 1, nextY), next_u_ratio),
-                    Vector3.Lerp(src[mainLvl + 1].GetPixel(nextX, nextY + 1), src[mainLvl + 1].GetPixel(nextX + 1, nextY + 1), next_u_ratio),
-                    next_v_ratio
-                );
+                Vector3 nextColor = Vector3.Lerp(
+                        Vector3.Lerp(src[mainLvl + 1].GetPixel(nextX, nextY), src[mainLvl + 1].GetPixel(nextX + 1, nextY), next_u_ratio),
+                        Vector3.Lerp(src[mainLvl + 1].GetPixel(nextX, nextY + 1), src[mainLvl + 1].GetPixel(nextX + 1, nextY + 1), next_u_ratio),
+                        next_v_ratio
+                    );
 
-            return Vector3.Lerp(mainColor, nextColor, lvl - mainLvl);
+                return Vector3.Lerp(mainColor, nextColor, lvl - mainLvl);
+            }
+            else
+            {
+                float u = uv.X * (src[0].PixelWidth - 1);
+                float v = uv.Y * (src[0].PixelHeight - 1);
+
+                int x = (int)float.Floor(u);
+                int y = (int)float.Floor(v);
+
+                float u_ratio = u - x;
+                float v_ratio = v - y;
+
+                return Vector3.Lerp(
+                        Vector3.Lerp(src[0].GetPixel(x, y), src[0].GetPixel(x + 1, y), u_ratio),
+                        Vector3.Lerp(src[0].GetPixel(x, y + 1), src[0].GetPixel(x + 1, y + 1), u_ratio),
+                        v_ratio
+                    );
+            }
+            
         }
 
         public Vector3 GetDiffuse(Vector2 uv, Vector2 uvx, Vector2 uvy)
