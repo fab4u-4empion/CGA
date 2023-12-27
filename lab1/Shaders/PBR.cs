@@ -112,8 +112,6 @@ namespace lab1.Shaders
             int faceIndex
         )
         {
-            albedo = ToneMapping.SrgbToLinear(albedo);
-            emission = ToneMapping.SrgbToLinear(emission);
             roughness *= roughness;
             clearCoatRougness *= clearCoatRougness;
 

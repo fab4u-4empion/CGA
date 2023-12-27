@@ -10,14 +10,13 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Diagnostics;
 using System.Threading;
 using lab1.Shaders;
 using System.Windows.Media.Imaging;
 using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
-using System.Reflection;
+using System.Diagnostics;
 
 namespace lab1
 {
@@ -44,6 +43,7 @@ namespace lab1
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
+        Stopwatch timer = new();
 
         SpinLock[,] spins;
 
@@ -237,7 +237,7 @@ namespace lab1
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position - model.GetTranslationParams(), camera.Target - model.GetTranslationParams(), camera.Up);
-            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 1000);
+            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.001f, 1000);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
 
@@ -254,12 +254,8 @@ namespace lab1
             return windowVertices;
         }
 
-        private float GetNormal(Vector4[] vertices)
+        private float GetNormal(Vector4 v1, Vector4 v2, Vector4 v3)
         {
-            Vector4 v1 = vertices[0];
-            Vector4 v2 = vertices[1];
-            Vector4 v3 = vertices[2];
-
             Vector2 s1 = new(v2.X - v1.X, v2.Y - v1.Y);
             Vector2 s2 = new(v3.X - v2.X, v3.Y - v2.Y);
             return s1.X * s2.Y - s1.Y * s2.X;
@@ -307,12 +303,8 @@ namespace lab1
             }
         }
 
-        private void FillViewBuffer(Vector4[] vertices, int X)
+        private void FillViewBuffer(Vector4 a, Vector4 b, Vector4 c, int X)
         {
-            Vector4 a = vertices[0];
-            Vector4 b = vertices[1];
-            Vector4 c = vertices[2];
-
             if (b.Y < a.Y)
                 (a, b) = (b, a);
 
@@ -559,8 +551,8 @@ namespace lab1
         private void Draw()
         {
             
-            DateTime t = DateTime.Now;
-            bitmap.Clear();
+            timer.Reset();
+            timer.Start();
 
             Vector4[] viewVertices = TransformCoordinates();
 
@@ -574,49 +566,37 @@ namespace lab1
                 }
             });              
 
-            bitmap.Source.Lock();
+            
 
             var range = Partitioner.Create(0, model.Faces.Count);
 
-            //Parallel.ForEach(range, (range) =>
-            //{
-            //    for (int i = range.Item1; i < range.Item2; i++)
-            //    {
-            //        Vector4[] faceVerts =
-            //            [
-            //                viewVertices[(int)model.Faces[i][0].X - 1],
-            //                viewVertices[(int)model.Faces[i][1].X - 1],
-            //                viewVertices[(int)model.Faces[i][2].X - 1],
-            //            ];
-            //        if (GetNormal(faceVerts) <= 0)
-            //        {
-            //            FillViewBuffer(faceVerts, i);
-            //        }
-            //    }
-            //});
-
-            Parallel.For(0, model.Faces.Count, (X) =>
+            Parallel.ForEach(range, (range) =>
             {
-                List<Vector3> face = model.Faces[X];
-                Vector4[] faceVerts =
-                [
-                    viewVertices[(int)face[0].X - 1],
-                    viewVertices[(int)face[1].X - 1],
-                    viewVertices[(int)face[2].X - 1],
-                ];
-                if (GetNormal(faceVerts) <= 0)
+                for (int i = range.Item1; i < range.Item2; i++)
                 {
-                    FillViewBuffer(faceVerts, X);
+                    Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
+                    Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
+                    Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
+                    if (GetNormal(a, b, c) <= 0)
+                    {
+                        FillViewBuffer(a, b, c, i);
+                    }
                 }
             });
 
             DrawViewBuffer(viewVertices);
+
+            bitmap.Source.Lock();
+            bitmap.Clear();
+
             DrawBitmap();
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
             bitmap.Source.Unlock();
-            Time.Content = (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
+
+            timer.Stop();
+            Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
             Ray_Count.Content = $"Ray count: {RTX.RayCount}";
             Light_size.Content = $"Light size: {RTX.LightSize}";
@@ -659,6 +639,8 @@ namespace lab1
             //LoadModel("./model/Car");
             //LoadModel("./model/Egor");
             //LoadModel("./model/other/chess");
+            //LoadModel("./model/Model");
+            //LoadModel("./model/Napoleon");
             Model_time.Content = "Model loaded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             t = DateTime.Now;
