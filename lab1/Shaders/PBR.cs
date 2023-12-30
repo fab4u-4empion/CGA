@@ -10,7 +10,7 @@ namespace lab1.Shaders
     public class PBR
     {
         public static float LightIntensity = 1000;
-        public static float LP = 50;
+        public static float LP = 20;
         public static float AmbientIntensity = 0.15f;
         public static float EmissionIntensity = 1;
         public static bool ClearCoatEnable = false;
@@ -62,7 +62,7 @@ namespace lab1.Shaders
             float k = NdotH * NdotH * (a2 - 1) + 1;
             float d = a2 / (Pi * k * k);
 
-            return d < 1e12f ? d : 1e12f;
+            return d < 1e6f ? d : 1e6f;
         }
 
         private static float Visibility(float NdotV, float NdotL, float roughness)
@@ -72,12 +72,7 @@ namespace lab1.Shaders
             float v = NdotL * Sqrt(NdotV * NdotV * (1 - a2) + a2);
             float l = NdotV * Sqrt(NdotL * NdotL * (1 - a2) + a2);
 
-            return Min(1e12f, 0.5f / (v + l));
-        }
-
-        private static float V_Kelemen(float LdotH)
-        {
-            return 0.25f / (LdotH * LdotH);
+            return Min(1e6f, 0.5f / (v + l));
         }
 
         public static void ChangeLightsPos()
@@ -136,13 +131,14 @@ namespace lab1.Shaders
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p, faceIndex) : 1;
 
                 float NdotH = Max(Dot(N, H), 0);
+                float VdotH = Max(Dot(V, H), 0);
                 float NdotL = Max(Dot(N, L), 0);
                 float ONdotH = Max(Dot(ON, H), 0);
                 float ONdotL = Max(Dot(ON, L), 0);
 
                 float distribution = Distribution(NdotH, roughness);
                 float visibility = Visibility(NdotV, NdotL, roughness);
-                Vector3 reflectance = FresnelSchlick(NdotH, F0);
+                Vector3 reflectance = FresnelSchlick(VdotH, F0);
 
                 Vector3 diffuse = (1 - metallic) * albedo / Pi * opacity;
                 Vector3 specular = reflectance * visibility * distribution;
@@ -151,7 +147,7 @@ namespace lab1.Shaders
 
                 float clearCoatDistribution = Distribution(ONdotH, clearCoatRougness);
                 float clearCoatVisibility = Visibility(ONdotV, ONdotL, clearCoatRougness);
-                Vector3 clearCoatReflectance = FresnelSchlick(ONdotH, new(0.04f)) * clearCoat;
+                Vector3 clearCoatReflectance = FresnelSchlick(VdotH, new(0.04f)) * clearCoat;
 
                 Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution;
 

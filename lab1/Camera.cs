@@ -63,7 +63,7 @@ namespace lab1
             r = float.Max(r + dR, minZoom);
             o = float.Min(179, float.Max(1, o + dO)); 
             f += dF;
-            Position = GetPosition();
+            Position = GetPosition() + Target;
             LookVector = GetLookVector();
         }
     }

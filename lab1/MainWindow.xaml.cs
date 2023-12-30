@@ -236,7 +236,7 @@ namespace lab1
             Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position - model.GetTranslationParams(), camera.Target - model.GetTranslationParams(), camera.Up);
+            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
             Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.001f, 1000);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
@@ -542,6 +542,7 @@ namespace lab1
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
+                        //bitmap.SetPixel(x, y, bufferHDR[x, y]);
                         bufferHDR[x, y] = Vector3.Zero;
                     }
                 });
@@ -625,8 +626,8 @@ namespace lab1
             }
 
             DateTime t = DateTime.Now;
-            //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -649,6 +650,8 @@ namespace lab1
 
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             camera.MinZoomR = model.GetMinZoomR();
+            camera.Target = model.GetCenter();
+            camera.UpdatePosition(0, 0, 0);
             Draw();
         }
 

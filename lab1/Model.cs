@@ -71,11 +71,11 @@ namespace lab1
             UV.Add(new(u, v));
         }
 
-        public Vector3 GetTranslationParams()
+        public Vector3 GetCenter()
         {
-            X = -minX - (maxX - minX) / 2;
-            Y = -minY - (maxY - minY) / 2;
-            Z = -minZ - (maxZ - minZ) / 2;
+            X = (maxX + minX) / 2;
+            Y = (maxY + minY) / 2;
+            Z = (maxZ + minZ) / 2;
             return new Vector3(X, Y, Z);
         }
 
