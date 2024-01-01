@@ -5,6 +5,7 @@ using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace lab1
 {
@@ -111,6 +112,33 @@ namespace lab1
             ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
         }
 
+        private static Vector3 GetColor(Vector3[,] src, Vector2 uv)
+        {
+            float u = uv.X * src.GetLength(1) - 0.5f;
+            float v = uv.Y * src.GetLength(0) - 0.5f;
+
+            int x0 = (int)float.Floor(u);
+            int y0 = (int)float.Floor(v);
+
+            int x1 = x0 + 1;
+            int y1 = y0 + 1;
+
+            float u_ratio = u - x0;
+            float v_ratio = v - y0;
+
+            x0 &= (src.GetLength(1) - 1);
+            x1 &= (src.GetLength(1) - 1);
+
+            y0 &= (src.GetLength(0) - 1);
+            y1 &= (src.GetLength(0) - 1);
+
+            return Vector3.Lerp(
+                Vector3.Lerp(src[y0, x0], src[y0, x1], u_ratio),
+                Vector3.Lerp(src[y1, x0], src[y1, x1], u_ratio),
+                v_ratio
+            );
+        }
+
         private Vector3 GetColorFromTexture(List<Vector3[,]> src, Vector2 uv, Vector3 def, Vector2 uvx, Vector2 uvy)
         {
             if (src.Count == 0)
@@ -128,83 +156,16 @@ namespace lab1
                 int mainLvl = (int)lvl;
                 int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
 
-                float u = uv.X * src[mainLvl].GetLength(1) - 0.5f;
-                float v = uv.Y * src[mainLvl].GetLength(0) - 0.5f;
+                Vector3 mainColor = GetColor(src[mainLvl], uv);
 
-                int x0 = (int)float.Floor(u);
-                int y0 = (int)float.Floor(v);
-
-                int x1 = x0 + 1;
-                int y1 = y0 + 1;
-
-                float u_ratio = u - x0;
-                float v_ratio = v - y0;
-
-                x0 &= (src[mainLvl].GetLength(1) - 1);
-                x1 &= (src[mainLvl].GetLength(1) - 1);
-
-                y0 &= (src[mainLvl].GetLength(0) - 1);
-                y1 &= (src[mainLvl].GetLength(0) - 1);
-
-                float nextU = uv.X * src[nextLvl].GetLength(1) - 0.5f;
-                float nextV = uv.Y * src[nextLvl].GetLength(0) - 0.5f;
-
-                int nextX0 = (int)float.Floor(nextU);
-                int nextY0 = (int)float.Floor(nextV);
-
-                int nextX1 = nextX0 + 1;
-                int nextY1 = nextY0 + 1;
-
-                float next_u_ratio = nextU - nextX0;
-                float next_v_ratio = nextV - nextY0;
-
-                nextX0 &= (src[nextLvl].GetLength(1) - 1);
-                nextX1 &= (src[nextLvl].GetLength(1) - 1);
-
-                nextY0 &= (src[nextLvl].GetLength(0) - 1);
-                nextY1 &= (src[nextLvl].GetLength(0) - 1);
-
-                Vector3 mainColor = Vector3.Lerp(
-                        Vector3.Lerp(src[mainLvl][y0, x0], src[mainLvl][y0, x1], u_ratio),
-                        Vector3.Lerp(src[mainLvl][y1, x0], src[mainLvl][y1, x1], u_ratio),
-                        v_ratio
-                    );
-
-                Vector3 nextColor = Vector3.Lerp(
-                        Vector3.Lerp(src[nextLvl][nextY0, nextX0], src[nextLvl][nextY0, nextX1], next_u_ratio),
-                        Vector3.Lerp(src[nextLvl][nextY1, nextX0], src[nextLvl][nextY1, nextX1], next_u_ratio),
-                        next_v_ratio
-                    );
+                Vector3 nextColor = GetColor(src[nextLvl], uv);
 
                 return Vector3.Lerp(mainColor, nextColor, lvl - mainLvl);
             }
             else
             {
-                float u = uv.X * src[0].GetLength(1) - 0.5f;
-                float v = uv.Y * src[0].GetLength(0) - 0.5f;
-
-                int x0 = (int)float.Floor(u);
-                int y0 = (int)float.Floor(v);
-
-                int x1 = x0 + 1;
-                int y1 = y0 + 1;
-
-                float u_ratio = u - x0;
-                float v_ratio = v - y0;
-
-                x0 &= (src[0].GetLength(1) - 1);
-                x1 &= (src[0].GetLength(1) - 1);
-
-                y0 &= (src[0].GetLength(0) - 1);
-                y1 &= (src[0].GetLength(0) - 1);
-
-                return Vector3.Lerp(
-                        Vector3.Lerp(src[0][y0, x0], src[0][y0, x1], u_ratio),
-                        Vector3.Lerp(src[0][y1, x0], src[0][y1, x1], u_ratio),
-                        v_ratio
-                    );
+                return GetColor(src[0], uv);
             }
-            
         }
 
         public Vector3 GetDiffuse(Vector2 uv, Vector2 uvx, Vector2 uvy)

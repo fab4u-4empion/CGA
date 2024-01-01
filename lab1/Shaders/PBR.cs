@@ -62,7 +62,7 @@ namespace lab1.Shaders
             float k = NdotH * NdotH * (a2 - 1) + 1;
             float d = a2 / (Pi * k * k);
 
-            return d < 1e6f ? d : 1e6f;
+            return d < 1e12f ? d : 1e12f;
         }
 
         private static float Visibility(float NdotV, float NdotL, float roughness)
@@ -72,7 +72,7 @@ namespace lab1.Shaders
             float v = NdotL * Sqrt(NdotV * NdotV * (1 - a2) + a2);
             float l = NdotV * Sqrt(NdotL * NdotL * (1 - a2) + a2);
 
-            return Min(1e6f, 0.5f / (v + l));
+            return Min(1e12f, 0.5f / (v + l));
         }
 
         public static void ChangeLightsPos()

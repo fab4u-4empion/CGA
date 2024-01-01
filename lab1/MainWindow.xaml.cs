@@ -39,7 +39,7 @@ namespace lab1
         Camera camera = new();
         ZBuffer ZBuffer;
         Vector3 light = new(0, 0, 0);
-        Vector3 baseColor = new(0.5f, 0.5f, 0.5f);
+        Vector3 backColor = new(0.1f, 0.1f, 0.1f);
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
@@ -237,7 +237,7 @@ namespace lab1
             Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
-            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.001f, 1000);
+            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 500f);
             Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
 
@@ -252,13 +252,6 @@ namespace lab1
             }
 
             return windowVertices;
-        }
-
-        private float GetNormal(Vector4 v1, Vector4 v2, Vector4 v3)
-        {
-            Vector2 s1 = new(v2.X - v1.X, v2.Y - v1.Y);
-            Vector2 s2 = new(v3.X - v2.X, v3.Y - v2.Y);
-            return s1.X * s2.Y - s1.Y * s2.X;
         }
 
         private float PerpDotProduct(Vector2 a, Vector2 b)
@@ -461,34 +454,6 @@ namespace lab1
             }
         }
 
-        //private void DrawPixel(int x, int y, float z, Vector3 hdr, float opacity)
-        //{
-        //    if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
-        //    {
-        //        bool gotLock = false;
-        //        bool flag = true;
-        //        while (flag)
-        //        {
-        //            try
-        //            {
-        //                spins[x, y].Enter(ref gotLock);
-        //                if (gotLock)
-        //                {
-        //                    layers[x, y].Add(new() { Color = hdr, Opacity = opacity, Z = z });
-        //                }
-        //            }
-        //            finally
-        //            {
-        //                if (gotLock)
-        //                {
-        //                    spins[x, y].Exit(false);
-        //                    flag = false;
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-
         public Vector3 GetResultColor(int x, int y)
         {
             List<Layer> layer = layers[x, y];
@@ -515,14 +480,6 @@ namespace lab1
 
         public void DrawBitmap()
         {
-            //Parallel.For(0, bitmap.PixelWidth, (x) =>
-            //{
-            //    for (int y = 0; y < bitmap.PixelHeight; y++)
-            //    {
-            //        bufferHDR[x, y] = GetResultColor(x, y);
-            //    }
-            //});
-
             if (BlurRadius > 0)
             {
                 Vector3[,] bloomBuffer = Bloom.GetBoolmBuffer((int)(BlurRadius * smoothing), bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
@@ -531,7 +488,7 @@ namespace lab1
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
-                        bufferHDR[x, y] = Vector3.Zero;
+                        bufferHDR[x, y] = backColor;
                     }
                 });
             }
@@ -542,8 +499,7 @@ namespace lab1
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
-                        //bitmap.SetPixel(x, y, bufferHDR[x, y]);
-                        bufferHDR[x, y] = Vector3.Zero;
+                        bufferHDR[x, y] = backColor;
                     }
                 });
             }
@@ -552,8 +508,7 @@ namespace lab1
         private void Draw()
         {
             
-            timer.Reset();
-            timer.Start();
+            timer.Restart();
 
             Vector4[] viewVertices = TransformCoordinates();
 
@@ -561,7 +516,6 @@ namespace lab1
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
                 {
-                    //layers[x, y].Clear();
                     ZBuffer[x, y] = float.MaxValue;
                     viewBuffer[x, y] = -1;
                 }
@@ -578,10 +532,8 @@ namespace lab1
                     Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
                     Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
                     Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                    if (GetNormal(a, b, c) <= 0)
-                    {
+                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
                         FillViewBuffer(a, b, c, i);
-                    }
                 }
             });
 
@@ -597,6 +549,7 @@ namespace lab1
             bitmap.Source.Unlock();
 
             timer.Stop();
+
             Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
             Ray_Count.Content = $"Ray count: {RTX.RayCount}";
@@ -614,14 +567,13 @@ namespace lab1
             bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
-            //layers = new List<Layer>[bitmap.PixelWidth, bitmap.PixelHeight];
             viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
                 {
                     spins[i, j] = new(false);
-                    //layers[i, j] = new(16);
+                    bufferHDR[i, j] = backColor;
                 }
             }
 
@@ -691,13 +643,12 @@ namespace lab1
             viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
-            //layers = new List<Layer>[bitmap.PixelWidth, bitmap.PixelHeight];
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
                 {
                     spins[i, j] = new(false);
-                    //layers[i, j] = new(16);
+                    bufferHDR[i, j] = backColor;
                 }
             }
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
@@ -714,13 +665,12 @@ namespace lab1
             viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
             Canvas.Source = bitmap.Source;
             spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
-            //layers = new List<Layer>[bitmap.PixelWidth, bitmap.PixelHeight]; 
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
                 {
                     spins[i, j] = new(false);
-                    //layers[i, j] = new(16);
+                    bufferHDR[i, j] = backColor;
                 }
             }
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
