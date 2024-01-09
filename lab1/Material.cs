@@ -149,7 +149,7 @@ namespace lab1
                 float length1 = ((uv3 - uv1) * src[0].Size).Length();
                 float length2 = ((uv4 - uv2) * src[0].Size).Length();
 
-                float lvl = float.Clamp(0.5f * float.Log2(float.Max(length1, length2)), 0, src.Count - 1);
+                float lvl = float.Clamp(float.Log2(float.Max(length1, length2)), 0, src.Count - 1);
 
                 int mainLvl = (int)lvl;
                 int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
