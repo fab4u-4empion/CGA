@@ -11,15 +11,15 @@ namespace lab1
 {
     public class Material
     {
-        public List<Vector3[,]> Diffuse = new(15);
-        public List<Vector3[,]> Normals = new(15);
-        public List<Vector3[,]> MRAO = new(15);
-        public List<Vector3[,]> Emission = new(15);
-        public List<Vector3[,]> Trasmission = new(15);
+        public List<Buffer<Vector3>> Diffuse = new(15);
+        public List<Buffer<Vector3>> Normals = new(15);
+        public List<Buffer<Vector3>> MRAO = new(15);
+        public List<Buffer<Vector3>> Emission = new(15);
+        public List<Buffer<Vector3>> Trasmission = new(15);
 
-        public List<Vector3[,]> ClearCoat = new(15);
-        public List<Vector3[,]> ClearCoatRoughness = new(15);
-        public List<Vector3[,]> ClearCoatNormals = new(15);
+        public List<Buffer<Vector3>> ClearCoat = new(15);
+        public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
+        public List<Buffer<Vector3>> ClearCoatNormals = new(15);
 
         public float Pm = 0;
         public float Pr = 1;
@@ -27,18 +27,18 @@ namespace lab1
 
         public static bool UsingMIPMapping = false;
 
-        private List<Vector3[,]> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
+        private List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
-            List<Vector3[,]> lvls = new(15);
+            List<Buffer<Vector3>> lvls = new(15);
 
-            Vector3[,] mainLvl = new Vector3[src.PixelHeight, src.PixelWidth];
-            for (int row = 0; row < src.PixelHeight; row++)
+            Buffer<Vector3> mainLvl = new(src.PixelWidth, src.PixelHeight);
+            for (int x = 0; x < src.PixelWidth; x++)
             {
-                for (int col = 0; col < src.PixelWidth; col++)
+                for (int y = 0; y < src.PixelHeight; y++)
                 {
-                    mainLvl[row, col] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(col, row)) : src.GetPixel(col, row);
+                    mainLvl[x, y] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(x, y)) : src.GetPixel(x, y);
                     if (isNormal)
-                        mainLvl[row, col] = 2 * mainLvl[row, col] - Vector3.One;
+                        mainLvl[x, y] = 2 * mainLvl[x, y] - Vector3.One;
                 }
             }
 
@@ -50,17 +50,17 @@ namespace lab1
 
             do
             {
-                Vector3[,] nextLvl = new Vector3[sizeH / 2, sizeW / 2];
-                for (int row = 0; row < lvls[currentLvl].GetLength(0); row += 2)
+                Buffer<Vector3> nextLvl = new(sizeW / 2, sizeH / 2);
+                for (int x = 0; x < lvls[currentLvl].Width; x += 2)
                 {
-                    for (int col = 0; col < lvls[currentLvl].GetLength(1); col += 2)
+                    for (int y = 0; y < lvls[currentLvl].Height; y += 2)
                     {
-                        Vector3 color = lvls[currentLvl][row, col]
-                        + lvls[currentLvl][row + 1, col]
-                        + lvls[currentLvl][row, col + 1]
-                        + lvls[currentLvl][row + 1, col + 1];
+                        Vector3 color = lvls[currentLvl][x, y]
+                        + lvls[currentLvl][x + 1, y]
+                        + lvls[currentLvl][x, y + 1]
+                        + lvls[currentLvl][x + 1, y + 1];
                         color /= 4;
-                        nextLvl[row / 2, col / 2] = color;
+                        nextLvl[x / 2, y / 2] = color;
                     }
                 }
                 lvls.Add(nextLvl);
@@ -112,10 +112,10 @@ namespace lab1
             ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
         }
 
-        private static Vector3 GetColor(Vector3[,] src, Vector2 uv)
+        private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
         {
-            float u = uv.X * src.GetLength(1) - 0.5f;
-            float v = uv.Y * src.GetLength(0) - 0.5f;
+            float u = uv.X * src.Width - 0.5f;
+            float v = uv.Y * src.Height - 0.5f;
 
             int x0 = (int)float.Floor(u);
             int y0 = (int)float.Floor(v);
@@ -126,32 +126,30 @@ namespace lab1
             float u_ratio = u - x0;
             float v_ratio = v - y0;
 
-            x0 &= (src.GetLength(1) - 1);
-            x1 &= (src.GetLength(1) - 1);
+            x0 &= (src.Width - 1);
+            x1 &= (src.Width - 1);
 
-            y0 &= (src.GetLength(0) - 1);
-            y1 &= (src.GetLength(0) - 1);
+            y0 &= (src.Height - 1);
+            y1 &= (src.Height - 1);
 
             return Vector3.Lerp(
-                Vector3.Lerp(src[y0, x0], src[y0, x1], u_ratio),
-                Vector3.Lerp(src[y1, x0], src[y1, x1], u_ratio),
+                Vector3.Lerp(src[x0, y0], src[x1, y1], u_ratio),
+                Vector3.Lerp(src[x0, y1], src[x1, y1], u_ratio),
                 v_ratio
             );
         }
 
-        private Vector3 GetColorFromTexture(List<Vector3[,]> src, Vector2 uv, Vector3 def, Vector2 uvx, Vector2 uvy)
+        private Vector3 GetColorFromTexture(List<Buffer<Vector3>> src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             if (src.Count == 0)
                 return def;
 
             if (UsingMIPMapping)
             {
-                Vector2 size = new(src[0].GetLength(1), src[0].GetLength(0));
+                float length1 = ((uv3 - uv1) * src[0].Size).Length();
+                float length2 = ((uv4 - uv2) * src[0].Size).Length();
 
-                Vector2 duvdx = (uvx - uv) * size;
-                Vector2 duvdy = (uvy - uv) * size;
-
-                float lvl = float.Clamp(0.5f * float.Log2(float.Max(Vector2.Dot(duvdx, duvdx), Vector2.Dot(duvdy, duvdy))), 0, src.Count - 1);
+                float lvl = float.Clamp(0.5f * float.Log2(float.Max(length1, length2)), 0, src.Count - 1);
 
                 int mainLvl = (int)lvl;
                 int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
@@ -168,39 +166,39 @@ namespace lab1
             }
         }
 
-        public Vector3 GetDiffuse(Vector2 uv, Vector2 uvx, Vector2 uvy)
+        public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Diffuse, uv, ToneMapping.SrgbToLinear(Kd), uvx, uvy);
+            return GetColorFromTexture(Diffuse, uv, ToneMapping.SrgbToLinear(Kd), uv1, uv2, uv3, uv4);
         }
 
-        public Vector3 GetEmission(Vector2 uv, Vector2 uvx, Vector2 uvy)
+        public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Emission, uv, Vector3.Zero, uvx, uvy);
+            return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2, uv3, uv4);
         }
 
-        public float GetTrasmission(Vector2 uv, Vector2 uvx, Vector2 uvy)
+        public float GetTrasmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Trasmission, uv, Vector3.Zero, uvx, uvy).X;
+            return GetColorFromTexture(Trasmission, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
         }
 
-        public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uvx, Vector2 uvy)
+        public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, Vector3.Zero, uvx, uvy).X;
-            float clearCoat = GetColorFromTexture(ClearCoat, uv, Vector3.Zero, uvx, uvy).X;
-            Vector3 normal = GetColorFromTexture(ClearCoatNormals, uv, defaultNormal, uvx, uvy);
+            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
+            float clearCoat = GetColorFromTexture(ClearCoat, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
+            Vector3 normal = GetColorFromTexture(ClearCoatNormals, uv, defaultNormal, uv1, uv2, uv3, uv4);
 
             return (roughness, clearCoat, normal);
         }
 
-        public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uvx, Vector2 uvy)
+        public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             
-            return GetColorFromTexture(Normals, uv, defaultNormal, uvx, uvy);
+            return GetColorFromTexture(Normals, uv, defaultNormal, uv1, uv2, uv3, uv4);
         }
 
-        public Vector3 GetMRAO(Vector2 uv, Vector2 uvx, Vector2 uvy)
+        public Vector3 GetMRAO(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(MRAO, uv, new(Pm, Pr, 1), uvx, uvy);
+            return GetColorFromTexture(MRAO, uv, new(Pm, Pr, 1), uv1, uv2, uv3, uv4);
         }
     }
 }

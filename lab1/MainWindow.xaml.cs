@@ -31,21 +31,23 @@ namespace lab1
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
-        List<Layer>[,] layers;
-        Vector3[,] bufferHDR;
-        int[,] viewBuffer;
+
+        Buffer<Vector3> bufferHDR;
+        Buffer<SpinLock> spins;
+        Buffer<int> viewBuffer;
+        Buffer<float> ZBuffer;
 
         Model model = new();
         Camera camera = new();
-        ZBuffer ZBuffer;
+
         Vector3 light = new(0, 0, 0);
         Vector3 backColor = new(0.1f, 0.1f, 0.1f);
+
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
-        Stopwatch timer = new();
 
-        SpinLock[,] spins;
+        Stopwatch timer = new();
 
         Point mouse_position;
         
@@ -344,52 +346,50 @@ namespace lab1
             Vector4 b = viewVertices[(int)face[1].X - 1];
             Vector4 c = viewVertices[(int)face[2].X - 1];
 
-            Vector2 ap = new(a.X, a.Y);
-            Vector2 bp = new(b.X, b.Y);
-            Vector2 cp = new(c.X, c.Y);
+            Vector2 ap = new Vector2(a.X, a.Y) - p;
+            Vector2 bp = new Vector2(b.X, b.Y) - p;
+            Vector2 cp = new Vector2(c.X, c.Y) - p;
 
-            float u = PerpDotProduct(bp - p, cp - p) * a.W;
-            float v = PerpDotProduct(cp - p, ap - p) * b.W;
-            float w = PerpDotProduct(ap - p, bp - p) * c.W;
+            float u = PerpDotProduct(bp, cp) * a.W;
+            float v = PerpDotProduct(cp, ap) * b.W;
+            float w = PerpDotProduct(ap, bp) * c.W;
             float sum = u + v + w;
 
-            Vector2 px = p + Vector2.UnitX;
-            float ux = PerpDotProduct(bp - px, cp - px) * a.W;
-            float vx = PerpDotProduct(cp - px, ap - px) * b.W;
-            float wx = PerpDotProduct(ap - px, bp - px) * c.W;
-            float sumx = ux + vx + wx;
+            float dudx = (cp.Y - bp.Y) * a.W * 0.5f;
+            float dvdx = (cp.Y - ap.Y) * b.W * 0.5f;
+            float dwdx = (ap.Y - bp.Y) * c.W * 0.5f;
 
-            Vector2 py = p + Vector2.UnitY;
-            float uy = PerpDotProduct(bp - py, cp - py) * a.W;
-            float vy = PerpDotProduct(cp - py, ap - py) * b.W;
-            float wy = PerpDotProduct(ap - py, bp - py) * c.W;
-            float sumy = uy + vy + wy;
+            float dudy = (cp.X - bp.X) * a.W * 0.5f;
+            float dvdy = (cp.X - ap.X) * b.W * 0.5f;
+            float dwdy = (ap.X - bp.X) * c.W * 0.5f;
 
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
             Vector3 n2 = model.Normals[(int)face[1].Z - 1];
             Vector3 n3 = model.Normals[(int)face[2].Z - 1];
 
-            Vector2 uv1 = model.UV[(int)face[0].Y - 1];
-            Vector2 uv2 = model.UV[(int)face[1].Y - 1];
-            Vector2 uv3 = model.UV[(int)face[2].Y - 1];
+            Vector2 uv_1 = model.UV[(int)face[0].Y - 1];
+            Vector2 uv_2 = model.UV[(int)face[1].Y - 1];
+            Vector2 uv_3 = model.UV[(int)face[2].Y - 1];
 
             Vector4 aw = model.Vertices[(int)face[0].X - 1];
             Vector4 bw = model.Vertices[(int)face[1].X - 1];
             Vector4 cw = model.Vertices[(int)face[2].X - 1];
 
-            Vector2 uv = (u * uv1 + v * uv2 + w * uv3) / sum;
-            Vector2 uvx = (ux * uv1 + vx * uv2 + wx * uv3) / sumx;
-            Vector2 uvy = (uy * uv1 + vy * uv2 + wy * uv3) / sumy;
+            Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3) / sum;
+            Vector2 uv1 = ((u - dudx) * uv_1 + (v - dvdx) * uv_2 + (w - dwdx) * uv_3) / (sum - dudx - dvdx - dwdx);
+            Vector2 uv2 = ((u - dudy) * uv_1 + (v - dvdy) * uv_2 + (w - dwdy) * uv_3) / (sum - dudy - dvdy - dwdy);
+            Vector2 uv3 = ((u + dudx) * uv_1 + (v + dvdx) * uv_2 + (w + dwdx) * uv_3) / (sum + dudx + dvdx + dwdx);
+            Vector2 uv4 = ((u + dudy) * uv_1 + (v + dvdy) * uv_2 + (w + dwdy) * uv_3) / (sum + dudy + dvdy + dwdy);
 
             Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
             Vector4 pw = (u * aw + v * bw + w * cw) / sum;
 
-            Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uvx, uvy);
-            Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uvx, uvy);
-            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uvx, uvy);
-            Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uvx, uvy);
-            float opascity = 1 - model.Materials[materialIndex].GetTrasmission(uv, uvx, uvy);
-            (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uvx, uvy);
+            Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
+            Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
+            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
+            Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
+            float opascity = 1 - model.Materials[materialIndex].GetTrasmission(uv, uv1, uv2, uv3, uv4);
+            (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
             Vector3 hdrColor = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opascity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
 
@@ -454,17 +454,17 @@ namespace lab1
             }
         }
 
-        public Vector3 GetResultColor(int x, int y)
-        {
-            List<Layer> layer = layers[x, y];
-            layer.Sort((a, b) => b.Z.CompareTo(a.Z));
-            Vector3 color = Vector3.Zero;
-            for (int i = 0; i < layer.Count; i++)
-            {
-                color = layer[i].Color + color * (1 - layer[i].Opacity);
-            }
-            return color;
-        }
+        //public Vector3 GetResultColor(int x, int y)
+        //{
+        //    List<Layer> layer = layers[x, y];
+        //    layer.Sort((a, b) => b.Z.CompareTo(a.Z));
+        //    Vector3 color = Vector3.Zero;
+        //    for (int i = 0; i < layer.Count; i++)
+        //    {
+        //        color = layer[i].Color + color * (1 - layer[i].Opacity);
+        //    }
+        //    return color;
+        //}
 
         public void DrawViewBuffer(Vector4[] viewVertices)
         {
@@ -482,7 +482,7 @@ namespace lab1
         {
             if (BlurRadius > 0)
             {
-                Vector3[,] bloomBuffer = Bloom.GetBoolmBuffer((int)(BlurRadius * smoothing), bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
+                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer((int)(BlurRadius * smoothing), bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
                     for (int y = 0; y < bitmap.PixelHeight; y++)
@@ -521,11 +521,7 @@ namespace lab1
                 }
             });              
 
-            
-
-            var range = Partitioner.Create(0, model.Faces.Count);
-
-            Parallel.ForEach(range, (range) =>
+            Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
             {
                 for (int i = range.Item1; i < range.Item2; i++)
                 {
@@ -564,10 +560,10 @@ namespace lab1
         {
 
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
-            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Canvas.Source = bitmap.Source;
-            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
-            viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
+            spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
@@ -578,8 +574,8 @@ namespace lab1
             }
 
             DateTime t = DateTime.Now;
-            LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            //LoadModel("./model/Shovel Knight");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -601,9 +597,11 @@ namespace lab1
             BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+
             camera.MinZoomR = model.GetMinZoomR();
             camera.Target = model.GetCenter();
             camera.UpdatePosition(0, 0, 0);
+
             Draw();
         }
 
@@ -639,10 +637,10 @@ namespace lab1
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
-            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
-            viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Canvas.Source = bitmap.Source;
-            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
+            spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
@@ -661,10 +659,10 @@ namespace lab1
         private void ResizeHandler()
         {
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
-            bufferHDR = new Vector3[bitmap.PixelWidth, bitmap.PixelHeight];
-            viewBuffer = new int[bitmap.PixelWidth, bitmap.PixelHeight];
+            bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Canvas.Source = bitmap.Source;
-            spins = new SpinLock[bitmap.PixelWidth, bitmap.PixelHeight];
+            spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
