@@ -553,12 +553,17 @@ namespace lab1
 
             Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
             Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
+
             Ray_Count.Content = $"Ray count: {RTX.RayCount}";
             Light_size.Content = $"Light size: {RTX.LightSize}";
+
             ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
-            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
                 ToneMode.Content += $" {ToneMapping.LookMode}";
+
+            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
+            if (Material.UsingMIPMapping)
+                MIPMapping.Content += $"\nAnisotropic: {Material.UsingAnisotropicFiltering}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -874,6 +879,11 @@ namespace lab1
 
                 case Key.M:
                     Material.UsingMIPMapping = !Material.UsingMIPMapping;
+                    Draw();
+                    break;
+
+                case Key.N:
+                    Material.UsingAnisotropicFiltering = !Material.UsingAnisotropicFiltering;
                     Draw();
                     break;
             }
