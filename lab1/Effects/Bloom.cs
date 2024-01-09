@@ -12,9 +12,9 @@ namespace lab1.Effects
         public static string KernelImg = null;
         public static int KernelCount = 1;
 
-        public static Vector3[,] GetBoolmBuffer(int r, Vector3[,] src, int width, int height)
+        public static Buffer<Vector3> GetBoolmBuffer(int r, Buffer<Vector3> src, int width, int height)
         {
-            Vector3[,] tmp = new Vector3[width, height];
+            Buffer<Vector3> tmp = new(width, height);
             Parallel.For(0, width, (x) =>
             {
                 for (int y = 0; y < height; y++)
@@ -56,10 +56,10 @@ namespace lab1.Effects
             return (rW + 1, rH + 1);
         }
 
-        public static Vector3[,] GetGaussianClassicBlur(int r, Vector3[,] src, int width, int height)
+        public static Buffer<Vector3> GetGaussianClassicBlur(int r, Buffer<Vector3> src, int width, int height)
         {
-            Vector3[,] resultTMP = new Vector3[width, height];
-            Vector3[,] result = new Vector3[width, height];
+            Buffer<Vector3> resultTMP = new(width, height);
+            Buffer<Vector3> result = new(width, height);
 
             float sigma;
             float factor = 1f;
@@ -74,6 +74,16 @@ namespace lab1.Effects
                 {
                     g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
                 }
+
+                float sigmaH = (r * 2f * 100) / 6f;
+
+                float[] gH = new float[r * 100 * 2 + 1];
+
+                for (int i = -r * 100; i <= r * 100; i++)
+                {
+                    gH[i + r * 100] = float.Exp(-1 * i * i / (2 * sigmaH * sigmaH)) / float.Sqrt(2 * float.Pi * sigmaH * sigmaH);
+                }
+
                 Parallel.For(0, width, (x) =>
                 {
                     for (int y = 0; y < height; y++)
@@ -113,7 +123,7 @@ namespace lab1.Effects
             return result;
         }
 
-        public static Vector3[,] GetImageBasedBlur(Vector3[,] src, int width, int height)
+        public static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
         {
             (int w, int h) = GetRealSize(width, height);
 
