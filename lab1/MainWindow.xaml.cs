@@ -346,22 +346,27 @@ namespace lab1
             Vector4 b = viewVertices[(int)face[1].X - 1];
             Vector4 c = viewVertices[(int)face[2].X - 1];
 
-            Vector2 ap = new Vector2(a.X, a.Y) - p;
-            Vector2 bp = new Vector2(b.X, b.Y) - p;
-            Vector2 cp = new Vector2(c.X, c.Y) - p;
+            Vector2 pa = new Vector2(a.X, a.Y) - p;
+            Vector2 pb = new Vector2(b.X, b.Y) - p;
+            Vector2 pc = new Vector2(c.X, c.Y) - p;
 
-            float u = PerpDotProduct(bp, cp) * a.W;
-            float v = PerpDotProduct(cp, ap) * b.W;
-            float w = PerpDotProduct(ap, bp) * c.W;
+            float u = PerpDotProduct(pc, pb) * a.W;
+            float v = PerpDotProduct(pa, pc) * b.W;
+            float w = PerpDotProduct(pb, pa) * c.W;
             float sum = u + v + w;
 
-            float dudx = (cp.Y - bp.Y) * a.W * 0.5f;
-            float dvdx = (cp.Y - ap.Y) * b.W * 0.5f;
-            float dwdx = (ap.Y - bp.Y) * c.W * 0.5f;
+            float dudx = (pc.Y - pb.Y) * a.W * 0.5f;
+            float dvdx = (pa.Y - pc.Y) * b.W * 0.5f;
+            float dwdx = (pb.Y - pa.Y) * c.W * 0.5f;
 
-            float dudy = (cp.X - bp.X) * a.W * 0.5f;
-            float dvdy = (cp.X - ap.X) * b.W * 0.5f;
-            float dwdy = (ap.X - bp.X) * c.W * 0.5f;
+            float dudy = (pb.X - pc.X) * a.W * 0.5f;
+            float dvdy = (pc.X - pa.X) * b.W * 0.5f;
+            float dwdy = (pa.X - pb.X) * c.W * 0.5f;
+
+            (float u1, float v1, float w1) = (u - dudx, v - dvdx, w - dwdx);
+            (float u2, float v2, float w2) = (u + dudy, v + dvdy, w + dwdy);
+            (float u3, float v3, float w3) = (u + dudx, v + dvdx, w + dwdx);
+            (float u4, float v4, float w4) = (u - dudy, v - dvdy, w - dwdy);
 
             Vector3 n1 = model.Normals[(int)face[0].Z - 1];
             Vector3 n2 = model.Normals[(int)face[1].Z - 1];
@@ -376,10 +381,10 @@ namespace lab1
             Vector4 cw = model.Vertices[(int)face[2].X - 1];
 
             Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3) / sum;
-            Vector2 uv1 = ((u - dudx) * uv_1 + (v - dvdx) * uv_2 + (w - dwdx) * uv_3) / (sum - dudx - dvdx - dwdx);
-            Vector2 uv2 = ((u - dudy) * uv_1 + (v - dvdy) * uv_2 + (w - dwdy) * uv_3) / (sum - dudy - dvdy - dwdy);
-            Vector2 uv3 = ((u + dudx) * uv_1 + (v + dvdx) * uv_2 + (w + dwdx) * uv_3) / (sum + dudx + dvdx + dwdx);
-            Vector2 uv4 = ((u + dudy) * uv_1 + (v + dvdy) * uv_2 + (w + dwdy) * uv_3) / (sum + dudy + dvdy + dwdy);
+            Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3) / (u1 + v1 + w1);
+            Vector2 uv2 = (u2 * uv_1 + v2 * uv_2 + w2 * uv_3) / (u2 + v2 + w2);
+            Vector2 uv3 = (u3 * uv_1 + v3 * uv_2 + w3 * uv_3) / (u3 + v3 + w3);
+            Vector2 uv4 = (u4 * uv_1 + v4 * uv_2 + w4 * uv_3) / (u4 + v4 + w4);
 
             Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
             Vector4 pw = (u * aw + v * bw + w * cw) / sum;
