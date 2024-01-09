@@ -26,7 +26,7 @@ namespace lab1
         public Vector3 Kd = Vector3.Zero;
 
         public static bool UsingMIPMapping = false;
-        public static bool UsingAnisotropicFiltering = false;
+        public static int MaxAnisotropy = 1;
 
         private List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
@@ -150,45 +150,41 @@ namespace lab1
                 float length1 = ((uv3 - uv1) * src[0].Size).Length();
                 float length2 = ((uv4 - uv2) * src[0].Size).Length();
 
-                if (UsingAnisotropicFiltering)
+                float max = float.Max(length1, length2);
+                float min = float.Min(length1, length2);
+
+                float aniso = float.Min(max / min, MaxAnisotropy);
+
+                int N = (int)float.Round(aniso, MidpointRounding.AwayFromZero);
+                float lvl = float.Clamp(float.Log2(max / aniso), 0, src.Count - 1);
+
+                int mainLvl = (int)lvl;
+                int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
+
+                (Vector2 a, Vector2 b) = length1 > length2 ? (uv1, uv3) : (uv2, uv4);
+
+                if (N == 1)
                 {
-                    float max = float.Max(length1, length2);
-                    float min = float.Min(length1, length2);
+                    Vector2 p = (a + b) * 0.5f;
 
-                    int N = int.Min((int)float.Ceiling(max / min), 16);
-                    float lvl = float.Clamp(float.Log2(max / N), 0, src.Count - 1);
-
-                    int mainLvl = (int)lvl;
-                    int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
-
-                    Vector2 a;
-                    Vector2 b;
-
-                    if (length1 > length2)
-                        (a, b) = (uv1, uv3);
-                    else
-                        (a, b) = (uv2, uv4);
-
-                    Vector2 k = (b - a) / N;
-                    a += 0.5f * k;
-
-                    Vector3 color = Vector3.Zero;
-
-                    for (int i = 0; i < N; i++, a += k)
-                        color += Vector3.Lerp(GetColor(src[mainLvl], a), GetColor(src[nextLvl], a), lvl - mainLvl);
-
-                    return color / N;
+                    return Vector3.Lerp(GetColor(src[mainLvl], p), GetColor(src[nextLvl], p), lvl - mainLvl);
                 }
                 else
                 {
-                    float lvl = float.Clamp(float.Log2(float.Max(length1, length2)), 0, src.Count - 1);
+                    Vector2 k = (b - a) / N;
+                    a += 0.5f * k;
 
-                    int mainLvl = (int)lvl;
-                    int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
+                    Vector3 mainColor = Vector3.Zero;
+                    Vector3 nextColor = Vector3.Zero;
 
-                    return Vector3.Lerp(GetColor(src[mainLvl], uv), GetColor(src[nextLvl], uv), lvl - mainLvl);
+                    for (int i = 0; i < N; i++, a += k)
+                    {
+                        mainColor += GetColor(src[mainLvl], a);
+                        nextColor += GetColor(src[nextLvl], a);
+                    }
+
+                    return Vector3.Lerp(mainColor, nextColor, lvl - mainLvl) / N;
                 }
-                
             }
             else
             {

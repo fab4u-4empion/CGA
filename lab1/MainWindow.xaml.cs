@@ -563,7 +563,7 @@ namespace lab1
 
             MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
             if (Material.UsingMIPMapping)
-                MIPMapping.Content += $"\nAnisotropic: {Material.UsingAnisotropicFiltering}";
+                MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -584,8 +584,8 @@ namespace lab1
             }
 
             DateTime t = DateTime.Now;
-            //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Shovel Knight");
+            //LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -883,7 +883,9 @@ namespace lab1
                     break;
 
                 case Key.N:
-                    Material.UsingAnisotropicFiltering = !Material.UsingAnisotropicFiltering;
+                    Material.MaxAnisotropy *= 2;
+                    if (Material.MaxAnisotropy > 16) 
+                        Material.MaxAnisotropy = 1;
                     Draw();
                     break;
             }
