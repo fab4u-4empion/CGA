@@ -11,7 +11,7 @@ namespace lab1
         public List<Buffer<Vector3>> Normals = new(15);
         public List<Buffer<Vector3>> MRAO = new(15);
         public List<Buffer<Vector3>> Emission = new(15);
-        public List<Buffer<Vector3>> Trasmission = new(15);
+        public List<Buffer<Vector3>> Transmission = new(15);
 
         public List<Buffer<Vector3>> ClearCoat = new(15);
         public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
@@ -19,7 +19,7 @@ namespace lab1
 
         public float Pm = 0;
         public float Pr = 1;
-        public float Pt = 0;
+        public float Tr = 0;
         public Vector3 Kd = Vector3.Zero;
 
         public static bool UsingMIPMapping = false;
@@ -90,9 +90,9 @@ namespace lab1
             Emission.AddRange(CalculateMIP(src, true));
         }
 
-        public void AddTrasmission(Pbgra32Bitmap src)
+        public void AddTransmission(Pbgra32Bitmap src)
         {
-            Trasmission.AddRange(CalculateMIP(src));
+            Transmission.AddRange(CalculateMIP(src));
         }
 
         public void AddClearCoat(Pbgra32Bitmap src)
@@ -199,9 +199,9 @@ namespace lab1
             return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2, uv3, uv4);
         }
 
-        public float GetTrasmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Trasmission, uv, new(Pt), uv1, uv2, uv3, uv4).X;
+            return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2, uv3, uv4).X;
         }
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)

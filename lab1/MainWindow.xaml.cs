@@ -23,17 +23,8 @@ namespace lab1
     
     public struct Layer
     {
-        public int X { get; set; }
-        public int Y { get; set; }
         public float Z { get; set; }
         public int Index { get; set; }
-    }
-
-    public enum RasterizationMods
-    {
-        View,
-        Depth,
-        Layer
     }
 
     public partial class MainWindow : Window
@@ -47,9 +38,8 @@ namespace lab1
         Buffer<int> viewBuffer;
         Buffer<float> ZBuffer;
 
-        Buffer<byte> DepthBuffer;
-        Buffer<int> StartIndexBuffer;
-        Buffer<byte> OffsetBuffer;
+        Buffer<int> OffsetBuffer;
+        Buffer<byte> CountBuffer;
         Layer[] LayersBuffer;
 
         Model model = new();
@@ -100,9 +90,9 @@ namespace lab1
                         material.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
-                    if (mtlLine.StartsWith("map_Trasmission"))
+                    if (mtlLine.StartsWith("map_Transmission"))
                     {
-                        material.AddTrasmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
+                        material.AddTransmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
                     }
 
                     if (mtlLine.StartsWith("Kd"))
@@ -121,9 +111,9 @@ namespace lab1
                         material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
-                    if (mtlLine.StartsWith("Pt"))
+                    if (mtlLine.StartsWith("Tr"))
                     {
-                        material.Pt = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                        material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
                     if (mtlLine.StartsWith("map_Kd"))
@@ -283,7 +273,7 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        private void Rasterize(Vector4 a, Vector4 b, Vector4 c, int X, RasterizationMods mode)
+        private void Rasterize(Vector4 a, Vector4 b, Vector4 c, int X, Action<int, int, float, int> action)
         {
             if (b.Y < a.Y)
                 (a, b) = (b, a);
@@ -317,20 +307,7 @@ namespace lab1
                 for (int x = left; x < right; x++)
                 {
                     Vector4 p = p1 + (x - p1.X) * k;
-                    switch (mode)
-                    {
-                        case RasterizationMods.View:
-                            DrawPixelIntoViewBuffer(x, y, p.Z, X);
-                            break;
-
-                        case RasterizationMods.Depth:
-                            IncDepth(x, y, p.Z);
-                            break;
-
-                        case RasterizationMods.Layer:
-                            DrawPixelIntoLayers(x, y, p.Z, X);
-                            break;
-                    }
+                    action(x, y, p.Z, X);
                 }
             }
         }
@@ -391,7 +368,7 @@ namespace lab1
             Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
-            float opacity = UsingTransparency ? 1 - model.Materials[materialIndex].GetTrasmission(uv, uv1, uv2, uv3, uv4) : 1;
+            float opacity = UsingTransparency ? 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4) : 1;
             (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
             Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
@@ -399,7 +376,7 @@ namespace lab1
             return new(color, opacity);
         }
 
-        private void DrawPixelIntoViewBuffer(int x, int y, float z, int X)
+        private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
         {
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
             {
@@ -412,7 +389,7 @@ namespace lab1
                         spins[x, y].Enter(ref gotLock);
                         if (gotLock && z <= ZBuffer[x, y])
                         {
-                            viewBuffer[x, y] = X;
+                            viewBuffer[x, y] = index;
                             ZBuffer[x, y] = z;
                         }
                     }
@@ -428,31 +405,11 @@ namespace lab1
             }
         }
 
-        private void IncDepth(int x, int y, float z)
+        private void IncDepth(int x, int y, float z, int index)
         {
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
             {
-                bool gotLock = false;
-                bool flag = true;
-                while (flag)
-                {
-                    try
-                    {
-                        spins[x, y].Enter(ref gotLock);
-                        if (gotLock)
-                        {
-                            DepthBuffer[x, y] += 1;
-                        }
-                    }
-                    finally
-                    {
-                        if (gotLock)
-                        {
-                            spins[x, y].Exit(false);
-                            flag = false;
-                        }
-                    }
-                }
+                Interlocked.Increment(ref OffsetBuffer[x, y]);
             }
         }
 
@@ -469,14 +426,12 @@ namespace lab1
                         spins[x, y].Enter(ref gotLock);
                         if (gotLock)
                         {
-                            LayersBuffer[StartIndexBuffer[x, y] + OffsetBuffer[x, y]] = new()
+                            LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
                             {
-                                X = x,
-                                Y = y,
                                 Index = index,
                                 Z = z
                             };
-                            OffsetBuffer[x, y] += 1;
+                            CountBuffer[x, y] += 1;
                         }
                     }
                     finally
@@ -491,25 +446,43 @@ namespace lab1
             }
         }
 
-        public Vector3 GetResultColor(int start, int length)
+        public Vector3 GetResultColor(int start, int length, int x, int y)
         {
-            for (int i = 0; i < length - 1; i++)
-                for (int j = 0; j < length - i - 1; j++)
-                    if (LayersBuffer[j + start].Z > LayersBuffer[j + start + 1].Z)
-                        (LayersBuffer[j + start], LayersBuffer[j + start + 1]) = (LayersBuffer[j + start + 1], LayersBuffer[j + start]);
+            float key;
+            Layer layer;
+            int j;
+            for (int i = 1; i < length; i++)
+            {
+                key = LayersBuffer[i + start].Z;
+                layer = LayersBuffer[i + start];
+                j = i - 1;
+
+                while (j >= 0 && LayersBuffer[j + start].Z > key)
+                {
+                    LayersBuffer[j + 1 + start] = LayersBuffer[j + start];
+                    j--;
+                }
+                LayersBuffer[j + 1 + start] = layer;
+            }
 
             Vector3 color = Vector3.Zero;
             float alpha = 1;
 
             for (int i = 0; i < length; i++)
             {
-                Layer layer = LayersBuffer[i + start];
-                Vector4 pixelColor = GetPixelColor(layer.Index, new(layer.X, layer.Y));
+                layer = LayersBuffer[i + start];
+                Vector4 pixelColor = GetPixelColor(layer.Index, new(x, y));
                 color += alpha * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
                 alpha *= pixelColor.W;
                 if (pixelColor.W == 1)
+                {
+                    alpha = 1;
                     break;
+                }
             }
+
+            if (alpha != 1)
+                color += backColor * alpha;
 
             return color;
         }
@@ -535,8 +508,8 @@ namespace lab1
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
                 {
-                    if (DepthBuffer[x, y] > 0)
-                        bufferHDR[x, y] = GetResultColor(StartIndexBuffer[x, y], DepthBuffer[x, y]);
+                    if (CountBuffer[x, y] > 0)
+                        bufferHDR[x, y] = GetResultColor(OffsetBuffer[x, y], CountBuffer[x, y], x, y);
                 }
             });
         }
@@ -581,7 +554,7 @@ namespace lab1
                 {
                     ZBuffer[x, y] = float.MaxValue;
                     viewBuffer[x, y] = -1;
-                    DepthBuffer[x, y] = 0;
+                    CountBuffer[x, y] = 0;
                     OffsetBuffer[x, y] = 0;
                 }
             });          
@@ -595,18 +568,20 @@ namespace lab1
                         Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
                         Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
                         Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                        Rasterize(a, b, c, i, RasterizationMods.Depth);
+                        Rasterize(a, b, c, i, IncDepth);
                     }
                 });
 
                 int prefixSum = 0;
+                int depth = 0;
 
                 for (int x = 0; x < bitmap.PixelWidth; x++)
                 {
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
-                        StartIndexBuffer[x, y] = prefixSum;
-                        prefixSum += DepthBuffer[x, y];
+                        depth = OffsetBuffer[x, y];
+                        OffsetBuffer[x, y] = prefixSum;
+                        prefixSum += depth;
                     }
                 }
 
@@ -619,7 +594,7 @@ namespace lab1
                         Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
                         Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
                         Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                        Rasterize(a, b, c, i, RasterizationMods.Layer);
+                        Rasterize(a, b, c, i, DrawPixelIntoLayers);
                     }
                 });
                 DrawLayers();
@@ -634,7 +609,7 @@ namespace lab1
                         Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
                         Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
                         if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
-                            Rasterize(a, b, c, i, RasterizationMods.View);
+                            Rasterize(a, b, c, i, DrawPixelIntoViewBuffer);
                     }
                 });
                 DrawViewBuffer();
@@ -673,8 +648,7 @@ namespace lab1
             Canvas.Source = bitmap.Source;
             spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
             viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            DepthBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            StartIndexBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            CountBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             OffsetBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
@@ -692,8 +666,8 @@ namespace lab1
             CreateBuffers();
             DateTime t = DateTime.Now;
             //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
-            //LoadModel("./model/Doom Slayer");
+            //LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
             //LoadModel("./model/Mimic Chest");
