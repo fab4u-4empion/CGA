@@ -23,19 +23,34 @@ namespace lab1
     
     public struct Layer
     {
-        public Vector3 Color { get; set; }
-        public float Opacity { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
         public float Z { get; set; }
+        public int Index { get; set; }
+    }
+
+    public enum RasterizationMods
+    {
+        View,
+        Depth,
+        Layer
     }
 
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
 
+        Vector4[] viewVertices;
+
         Buffer<Vector3> bufferHDR;
         Buffer<SpinLock> spins;
         Buffer<int> viewBuffer;
         Buffer<float> ZBuffer;
+
+        Buffer<byte> DepthBuffer;
+        Buffer<int> StartIndexBuffer;
+        Buffer<byte> OffsetBuffer;
+        Layer[] LayersBuffer;
 
         Model model = new();
         Camera camera = new();
@@ -50,6 +65,8 @@ namespace lab1
         Stopwatch timer = new();
 
         Point mouse_position;
+
+        bool UsingTransparency = false;
         
         public MainWindow()
         {
@@ -102,6 +119,11 @@ namespace lab1
                     if (mtlLine.StartsWith("Pr"))
                     {
                         material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                    }
+
+                    if (mtlLine.StartsWith("Pt"))
+                    {
+                        material.Pt = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
                     if (mtlLine.StartsWith("map_Kd"))
@@ -261,44 +283,7 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        private void DrawLine(Vector4 a, Vector4 b, Vector3 color)
-        {
-            
-            if (Math.Abs(b.X - a.X) > Math.Abs(b.Y - a.Y))
-            {
-                if (a.X > b.X)
-                    (b, a) = (a, b);
-
-                Vector4 k = (b - a) / (b.X - a.X);
-
-                int left = int.Max((int)float.Ceiling(a.X), 0);
-                int right = int.Min((int)float.Ceiling(b.X), bitmap.PixelWidth);
-
-                for (int x = left; x < right; x++)
-                {
-                    Vector4 p = a + (x - a.X) * k;
-                    DrawPixel(x, (int)float.Ceiling(p.Y), p.Z, color);
-                }
-            }
-            else
-            {
-                if (a.Y > b.Y)
-                    (b, a) = (a, b);
-
-                Vector4 k = (b - a) / (b.Y - a.Y);
-
-                int top = int.Max((int)float.Ceiling(a.Y), 0);
-                int bottom = int.Min((int)float.Ceiling(b.Y), bitmap.PixelWidth);
-
-                for (int y = top; y < bottom; y++)
-                {
-                    Vector4 p = a + (y - a.Y) * k;
-                    DrawPixel((int)float.Ceiling(p.X), y, p.Z, color);
-                }
-            }
-        }
-
-        private void FillViewBuffer(Vector4 a, Vector4 b, Vector4 c, int X)
+        private void Rasterize(Vector4 a, Vector4 b, Vector4 c, int X, RasterizationMods mode)
         {
             if (b.Y < a.Y)
                 (a, b) = (b, a);
@@ -332,12 +317,25 @@ namespace lab1
                 for (int x = left; x < right; x++)
                 {
                     Vector4 p = p1 + (x - p1.X) * k;
-                    DrawPixelIntoViewBuffer(x, y, p.Z, X);
+                    switch (mode)
+                    {
+                        case RasterizationMods.View:
+                            DrawPixelIntoViewBuffer(x, y, p.Z, X);
+                            break;
+
+                        case RasterizationMods.Depth:
+                            IncDepth(x, y, p.Z);
+                            break;
+
+                        case RasterizationMods.Layer:
+                            DrawPixelIntoLayers(x, y, p.Z, X);
+                            break;
+                    }
                 }
             }
         }
 
-        private void DrawPixelIntoHDRBuffer(int faceIndex, Vector4[] viewVertices, Vector2 p)
+        private Vector4 GetPixelColor(int faceIndex, Vector2 p)
         {
             List<Vector3> face = model.Faces[faceIndex];
             int materialIndex = model.FacesMaterials[faceIndex];
@@ -393,12 +391,12 @@ namespace lab1
             Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
-            float opascity = 1 - model.Materials[materialIndex].GetTrasmission(uv, uv1, uv2, uv3, uv4);
+            float opacity = UsingTransparency ? 1 - model.Materials[materialIndex].GetTrasmission(uv, uv1, uv2, uv3, uv4) : 1;
             (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
-            Vector3 hdrColor = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opascity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
+            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
 
-            bufferHDR[(int)p.X, (int)p.Y] = hdrColor;
+            return new(color, opacity);
         }
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int X)
@@ -430,7 +428,7 @@ namespace lab1
             }
         }
 
-        private void DrawPixel(int x, int y, float z, Vector3 color)
+        private void IncDepth(int x, int y, float z)
         {
             if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
             {
@@ -441,10 +439,9 @@ namespace lab1
                     try
                     {
                         spins[x, y].Enter(ref gotLock);
-                        if (gotLock && z <= ZBuffer[x, y])
+                        if (gotLock)
                         {
-                            bitmap.SetPixel(x, y, color);
-                            ZBuffer[x, y] = z;
+                            DepthBuffer[x, y] += 1;
                         }
                     }
                     finally
@@ -459,31 +456,92 @@ namespace lab1
             }
         }
 
-        //public Vector3 GetResultColor(int x, int y)
-        //{
-        //    List<Layer> layer = layers[x, y];
-        //    layer.Sort((a, b) => b.Z.CompareTo(a.Z));
-        //    Vector3 color = Vector3.Zero;
-        //    for (int i = 0; i < layer.Count; i++)
-        //    {
-        //        color = layer[i].Color + color * (1 - layer[i].Opacity);
-        //    }
-        //    return color;
-        //}
+        private void DrawPixelIntoLayers(int x, int y, float z, int index)
+        {
+            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
+            {
+                bool gotLock = false;
+                bool flag = true;
+                while (flag)
+                {
+                    try
+                    {
+                        spins[x, y].Enter(ref gotLock);
+                        if (gotLock)
+                        {
+                            LayersBuffer[StartIndexBuffer[x, y] + OffsetBuffer[x, y]] = new()
+                            {
+                                X = x,
+                                Y = y,
+                                Index = index,
+                                Z = z
+                            };
+                            OffsetBuffer[x, y] += 1;
+                        }
+                    }
+                    finally
+                    {
+                        if (gotLock)
+                        {
+                            spins[x, y].Exit(false);
+                            flag = false;
+                        }
+                    }
+                }
+            }
+        }
 
-        public void DrawViewBuffer(Vector4[] viewVertices)
+        public Vector3 GetResultColor(int start, int length)
+        {
+            for (int i = 0; i < length - 1; i++)
+                for (int j = 0; j < length - i - 1; j++)
+                    if (LayersBuffer[j + start].Z > LayersBuffer[j + start + 1].Z)
+                        (LayersBuffer[j + start], LayersBuffer[j + start + 1]) = (LayersBuffer[j + start + 1], LayersBuffer[j + start]);
+
+            Vector3 color = Vector3.Zero;
+            float alpha = 1;
+
+            for (int i = 0; i < length; i++)
+            {
+                Layer layer = LayersBuffer[i + start];
+                Vector4 pixelColor = GetPixelColor(layer.Index, new(layer.X, layer.Y));
+                color += alpha * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
+                alpha *= pixelColor.W;
+                if (pixelColor.W == 1)
+                    break;
+            }
+
+            return color;
+        }
+
+        public void DrawViewBuffer()
         {
             Parallel.For(0, bitmap.PixelWidth, (x) =>
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
                 {
                     if (viewBuffer[x, y] != -1)
-                        DrawPixelIntoHDRBuffer(viewBuffer[x, y], viewVertices, new(x, y));
+                    {
+                        Vector4 color = GetPixelColor(viewBuffer[x, y], new(x, y));
+                        bufferHDR[x, y] = new(color.X, color.Y, color.Z);
+                    }
                 }
             });
         }
 
-        public void DrawBitmap()
+        public void DrawLayers()
+        {
+            Parallel.For(0, bitmap.PixelWidth, (x) =>
+            {
+                for (int y = 0; y < bitmap.PixelHeight; y++)
+                {
+                    if (DepthBuffer[x, y] > 0)
+                        bufferHDR[x, y] = GetResultColor(StartIndexBuffer[x, y], DepthBuffer[x, y]);
+                }
+            });
+        }
+
+        public void DrawHDRBuffer()
         {
             if (BlurRadius > 0)
             {
@@ -515,7 +573,7 @@ namespace lab1
             
             timer.Restart();
 
-            Vector4[] viewVertices = TransformCoordinates();
+            viewVertices = TransformCoordinates();
 
             Parallel.For(0, bitmap.PixelWidth, (x) =>
             {
@@ -523,27 +581,69 @@ namespace lab1
                 {
                     ZBuffer[x, y] = float.MaxValue;
                     viewBuffer[x, y] = -1;
+                    DepthBuffer[x, y] = 0;
+                    OffsetBuffer[x, y] = 0;
                 }
-            });              
-
-            Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
+            });          
+            
+            if (UsingTransparency)
             {
-                for (int i = range.Item1; i < range.Item2; i++)
+                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
                 {
-                    Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
-                    Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
-                    Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
-                        FillViewBuffer(a, b, c, i);
-                }
-            });
+                    for (int i = range.Item1; i < range.Item2; i++)
+                    {
+                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
+                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
+                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
+                        Rasterize(a, b, c, i, RasterizationMods.Depth);
+                    }
+                });
 
-            DrawViewBuffer(viewVertices);
+                int prefixSum = 0;
+
+                for (int x = 0; x < bitmap.PixelWidth; x++)
+                {
+                    for (int y = 0; y < bitmap.PixelHeight; y++)
+                    {
+                        StartIndexBuffer[x, y] = prefixSum;
+                        prefixSum += DepthBuffer[x, y];
+                    }
+                }
+
+                LayersBuffer = new Layer[prefixSum];
+
+                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
+                {
+                    for (int i = range.Item1; i < range.Item2; i++)
+                    {
+                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
+                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
+                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
+                        Rasterize(a, b, c, i, RasterizationMods.Layer);
+                    }
+                });
+                DrawLayers();
+            }
+            else
+            {
+                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
+                {
+                    for (int i = range.Item1; i < range.Item2; i++)
+                    {
+                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
+                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
+                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
+                        if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
+                            Rasterize(a, b, c, i, RasterizationMods.View);
+                    }
+                });
+                DrawViewBuffer();
+            }
 
             bitmap.Source.Lock();
             bitmap.Clear();
 
-            DrawBitmap();
+            DrawHDRBuffer();
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             
@@ -566,14 +666,16 @@ namespace lab1
                 MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void CreateBuffers()
         {
-
             bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
             bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Canvas.Source = bitmap.Source;
             spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
             viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            DepthBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            StartIndexBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            OffsetBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
             for (int i = 0; i < bitmap.PixelWidth; i++)
             {
                 for (int j = 0; j < bitmap.PixelHeight; j++)
@@ -582,10 +684,15 @@ namespace lab1
                     bufferHDR[i, j] = backColor;
                 }
             }
+            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+        }
 
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            CreateBuffers();
             DateTime t = DateTime.Now;
-            LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            //LoadModel("./model/Shovel Knight");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -605,8 +712,6 @@ namespace lab1
             t = DateTime.Now;
             BVH.Build(model.Faces, model.Vertices);
             BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
-
-            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
 
             camera.MinZoomR = model.GetMinZoomR();
             camera.Target = model.GetCenter();
@@ -646,20 +751,7 @@ namespace lab1
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
-            bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            Canvas.Source = bitmap.Source;
-            spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            for (int i = 0; i < bitmap.PixelWidth; i++)
-            {
-                for (int j = 0; j < bitmap.PixelHeight; j++)
-                {
-                    spins[i, j] = new(false);
-                    bufferHDR[i, j] = backColor;
-                }
-            }
-            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            CreateBuffers();
             if (IsLoaded)
                 Draw();
         }
@@ -668,20 +760,7 @@ namespace lab1
 
         private void ResizeHandler()
         {
-            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
-            bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            Canvas.Source = bitmap.Source;
-            spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            viewBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
-            for (int i = 0; i < bitmap.PixelWidth; i++)
-            {
-                for (int j = 0; j < bitmap.PixelHeight; j++)
-                {
-                    spins[i, j] = new(false);
-                    bufferHDR[i, j] = backColor;
-                }
-            }
-            ZBuffer = new(bitmap.PixelWidth, bitmap.PixelHeight);
+            CreateBuffers();
             Draw();
         }
 
@@ -886,6 +965,11 @@ namespace lab1
                     Material.MaxAnisotropy *= 2;
                     if (Material.MaxAnisotropy > 16) 
                         Material.MaxAnisotropy = 1;
+                    Draw();
+                    break;
+
+                case Key.L:
+                    UsingTransparency = !UsingTransparency;
                     Draw();
                     break;
             }

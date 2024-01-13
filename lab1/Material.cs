@@ -1,11 +1,7 @@
 ﻿using Rasterization;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 namespace lab1
 {
@@ -23,6 +19,7 @@ namespace lab1
 
         public float Pm = 0;
         public float Pr = 1;
+        public float Pt = 0;
         public Vector3 Kd = Vector3.Zero;
 
         public static bool UsingMIPMapping = false;
@@ -204,7 +201,7 @@ namespace lab1
 
         public float GetTrasmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Trasmission, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
+            return GetColorFromTexture(Trasmission, uv, new(Pt), uv1, uv2, uv3, uv4).X;
         }
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
@@ -218,7 +215,6 @@ namespace lab1
 
         public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            
             return GetColorFromTexture(Normals, uv, defaultNormal, uv1, uv2, uv3, uv4);
         }
 
