@@ -191,7 +191,7 @@ namespace lab1
 
         public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Diffuse, uv, ToneMapping.SrgbToLinear(Kd), uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Diffuse, uv, Kd, uv1, uv2, uv3, uv4);
         }
 
         public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)

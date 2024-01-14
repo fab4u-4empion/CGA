@@ -103,7 +103,7 @@ namespace lab1
                             .Split(' ')
                             .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
                             .ToArray();
-                        material.Kd = new(Kd[0], Kd[1], Kd[2]);
+                        material.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
                     }
 
                     if (mtlLine.StartsWith("Pr"))
@@ -466,23 +466,20 @@ namespace lab1
             }
 
             Vector3 color = Vector3.Zero;
-            float alpha = 1;
+            float alpha = 0;
 
             for (int i = 0; i < length; i++)
             {
                 layer = LayersBuffer[i + start];
                 Vector4 pixelColor = GetPixelColor(layer.Index, new(x, y));
-                color += alpha * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
-                alpha *= pixelColor.W;
+
+                color += (1 - alpha) * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
+                alpha += (1 - alpha) * pixelColor.W;
                 if (pixelColor.W == 1)
-                {
-                    alpha = 1;
                     break;
-                }
             }
 
-            if (alpha != 1)
-                color += backColor * alpha;
+            color += (1 - alpha) * backColor;
 
             return color;
         }
@@ -688,7 +685,7 @@ namespace lab1
             BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             camera.MinZoomR = model.GetMinZoomR();
-            camera.Target = model.GetCenter();
+            camera.Target = model.GetCenter() + Vector3.UnitY * 0.9f;
             camera.UpdatePosition(0, 0, 0);
 
             Draw();
