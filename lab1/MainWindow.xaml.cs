@@ -459,18 +459,6 @@ namespace lab1
             }
         }
 
-        //public Vector3 GetResultColor(int x, int y)
-        //{
-        //    List<Layer> layer = layers[x, y];
-        //    layer.Sort((a, b) => b.Z.CompareTo(a.Z));
-        //    Vector3 color = Vector3.Zero;
-        //    for (int i = 0; i < layer.Count; i++)
-        //    {
-        //        color = layer[i].Color + color * (1 - layer[i].Opacity);
-        //    }
-        //    return color;
-        //}
-
         public void DrawViewBuffer(Vector4[] viewVertices)
         {
             Parallel.For(0, bitmap.PixelWidth, (x) =>
