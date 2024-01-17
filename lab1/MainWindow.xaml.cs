@@ -307,7 +307,8 @@ namespace lab1
                 for (int x = left; x < right; x++)
                 {
                     Vector4 p = p1 + (x - p1.X) * k;
-                    action(x, y, p.Z, X);
+                    if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && p.Z > 0 && p.Z < 1)
+                        action(x, y, p.Z, X);
                 }
             }
         }
@@ -378,72 +379,38 @@ namespace lab1
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
         {
-            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
+            bool gotLock = false;
+            while (!gotLock)
+                spins[x, y].Enter(ref gotLock);
+
+            if (z <= ZBuffer[x, y])
             {
-                bool gotLock = false;
-                bool flag = true;
-                while (flag)
-                {
-                    try
-                    {
-                        spins[x, y].Enter(ref gotLock);
-                        if (gotLock && z <= ZBuffer[x, y])
-                        {
-                            viewBuffer[x, y] = index;
-                            ZBuffer[x, y] = z;
-                        }
-                    }
-                    finally
-                    {
-                        if (gotLock)
-                        {
-                            spins[x, y].Exit(false);
-                            flag = false;
-                        }
-                    }
-                }
+                viewBuffer[x, y] = index;
+                ZBuffer[x, y] = z;
             }
+
+            spins[x, y].Exit(false);
         }
 
         private void IncDepth(int x, int y, float z, int index)
         {
-            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
-            {
-                Interlocked.Increment(ref OffsetBuffer[x, y]);
-            }
+            Interlocked.Increment(ref OffsetBuffer[x, y]);
         }
 
         private void DrawPixelIntoLayers(int x, int y, float z, int index)
         {
-            if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && z > 0 && z < 1)
+            bool gotLock = false;
+            while (!gotLock)
+                spins[x, y].Enter(ref gotLock);
+
+            LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
             {
-                bool gotLock = false;
-                bool flag = true;
-                while (flag)
-                {
-                    try
-                    {
-                        spins[x, y].Enter(ref gotLock);
-                        if (gotLock)
-                        {
-                            LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
-                            {
-                                Index = index,
-                                Z = z
-                            };
-                            CountBuffer[x, y] += 1;
-                        }
-                    }
-                    finally
-                    {
-                        if (gotLock)
-                        {
-                            spins[x, y].Exit(false);
-                            flag = false;
-                        }
-                    }
-                }
-            }
+                Index = index,
+                Z = z
+            };
+            CountBuffer[x, y] += 1;
+
+            spins[x, y].Exit(false);
         }
 
         public Vector3 GetResultColor(int start, int length, int x, int y)
@@ -664,14 +631,14 @@ namespace lab1
             DateTime t = DateTime.Now;
             //LoadModel("./model/Shovel Knight");
             //LoadModel("./model/Cyber Mancubus");
-            LoadModel("./model/Doom Slayer");
+            //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
             //LoadModel("./model/Mimic Chest");
             //LoadModel("./model/Pink Soldier");
             //LoadModel("./model/Robot Steampunk");
             //LoadModel("./model/Tree Man");
-            //LoadModel("./model/Box");
+            LoadModel("./model/Box");
             //LoadModel("./model/Bottled car");
             //LoadModel("./model/Car");
             //LoadModel("./model/Egor");
@@ -685,7 +652,7 @@ namespace lab1
             BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             camera.MinZoomR = model.GetMinZoomR();
-            camera.Target = model.GetCenter() + Vector3.UnitY * 0.9f;
+            camera.Target = model.GetCenter();
             camera.UpdatePosition(0, 0, 0);
 
             Draw();
