@@ -69,7 +69,7 @@ namespace lab1
                 - 28.72f * x2 * color
                 + 4.361f * x2
                 - 0.1718f * color
-                - 0.00232f * One;
+                + 0.002857f * One;
 
             return color;
         }
