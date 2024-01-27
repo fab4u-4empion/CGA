@@ -39,19 +39,19 @@ namespace lab1.Effects
             int rW = w - 1;
             int rH = h - 1;
 
-            rW = rW | (rW >> 1);
-            rW = rW | (rW >> 2);
-            rW = rW | (rW >> 4);
-            rW = rW | (rW >> 8);
-            rW = rW | (rW >> 16);
-            rW = rW | (rW >> 32);
+            rW |= (rW >> 1);
+            rW |= (rW >> 2);
+            rW |= (rW >> 4);
+            rW |= (rW >> 8);
+            rW |= (rW >> 16);
+            rW |= (rW >> 32);
 
-            rH = rH | (rH >> 1);
-            rH = rH | (rH >> 2);
-            rH = rH | (rH >> 4);
-            rH = rH | (rH >> 8);
-            rH = rH | (rH >> 16);
-            rH = rH | (rH >> 32);
+            rH |= (rH >> 1);
+            rH |= (rH >> 2);
+            rH |= (rH >> 4);
+            rH |= (rH >> 8);
+            rH |= (rH >> 16);
+            rH |= (rH >> 32);
 
             return (rW + 1, rH + 1);
         }
@@ -73,15 +73,6 @@ namespace lab1.Effects
                 for (int i = -r; i <= r; i++)
                 {
                     g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
-                }
-
-                float sigmaH = (r * 2f * 100) / 6f;
-
-                float[] gH = new float[r * 100 * 2 + 1];
-
-                for (int i = -r * 100; i <= r * 100; i++)
-                {
-                    gH[i + r * 100] = float.Exp(-1 * i * i / (2 * sigmaH * sigmaH)) / float.Sqrt(2 * float.Pi * sigmaH * sigmaH);
                 }
 
                 Parallel.For(0, width, (x) =>
@@ -132,7 +123,12 @@ namespace lab1.Effects
             float[,] R = new float[w, h];
             float[,] G = new float[w, h];
             float[,] B = new float[w, h];
-            float[,] K = new float[w, h];
+
+            float[,] Kr = new float[w, h];
+            float[,] Kg = new float[w, h];
+            float[,] Kb = new float[w, h];
+
+            Vector3 sum = Vector3.Zero;
 
             Parallel.For(0, w, (i) =>
             {
@@ -144,28 +140,36 @@ namespace lab1.Effects
                 }
             });
 
-
+            for (int i = 0; i < kernel.PixelWidth; i++)
+                for (int j = 0; j <= kernel.PixelHeight; j++)
+                    sum += kernel.GetPixel(i, j);
 
             for (int a = w / 2 - kernel.PixelWidth / 2, i = 0; i < kernel.PixelWidth; i++, a++)
             {
                 for (int b = h / 2 - kernel.PixelHeight / 2, j = 0; j < kernel.PixelHeight; j++, b++)
                 {
-                    K[a, b] = kernel.GetPixel(i, j).X / kernel.PixelHeight;
+                    Vector3 color = kernel.GetPixel(i, j) / sum;
+                    Kr[a, b] = color.X;
+                    Kg[a, b] = color.Y;
+                    Kb[a, b] = color.Z;
                 }
             }
 
             Complex[,] Rc = FFT.DFFT_2D(R, w, h);
             Complex[,] Gc = FFT.DFFT_2D(G, w, h);
             Complex[,] Bc = FFT.DFFT_2D(B, w, h);
-            Complex[,] Kc = FFT.DFFT_2D(K, w, h);
+
+            Complex[,] Krc = FFT.DFFT_2D(Kr, w, h);
+            Complex[,] Kgc = FFT.DFFT_2D(Kg, w, h);
+            Complex[,] Kbc = FFT.DFFT_2D(Kb, w, h);
 
             Parallel.For(0, w, (i) =>
             {
                 for (int j = 0; j < h; j++)
                 {
-                    Rc[i, j] *= Kc[i, j];
-                    Gc[i, j] *= Kc[i, j];
-                    Bc[i, j] *= Kc[i, j];
+                    Rc[i, j] *= Krc[i, j];
+                    Gc[i, j] *= Kgc[i, j];
+                    Bc[i, j] *= Kbc[i, j];
                 }
             });
 
@@ -187,37 +191,3 @@ namespace lab1.Effects
         }
     }
 }
-
-
-
-
-
-
-
-//float[,] kernel = new float[2 * r + 1, 2 * r + 1];
-
-//float sigma = (r * 2f) / 6f;
-
-//for (int i = -r; i <= r; i++)
-//{
-//    for (int j = -r; j <= r; j++)
-//    {
-//        kernel[i + r, j + r] = float.Exp(-1 * (i * i + j * j) / (2 * sigma * sigma)) / (2 * float.Pi * sigma * sigma);
-//    }
-//}
-
-//float[,] kernel = { { 1 } };
-
-//loat[,] kernel = { { 1f, 2f, 1f }, { 2f, 4f, 2f }, { 1f, 2f, 1f } };
-
-
-
-
-
-//for (int a = w / 2 - kernel.GetLength(0) / 2, i = 0; i < kernel.GetLength(0); i++, a++)
-//{
-//    for (int b = h / 2 - kernel.GetLength(1) / 2, j = 0; j < kernel.GetLength(1); j++, b++)
-//    {
-//        K[a, b] = kernel[i, j];
-//    }
-//}
