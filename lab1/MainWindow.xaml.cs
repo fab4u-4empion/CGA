@@ -55,8 +55,6 @@ namespace lab1
         Stopwatch timer = new();
 
         Point mouse_position;
-
-        bool UsingTransparency = false;
         
         public MainWindow()
         {
@@ -93,6 +91,7 @@ namespace lab1
                     if (mtlLine.StartsWith("map_Transmission"))
                     {
                         material.AddTransmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
+                        material.BlendMode = BlendModes.AlphaBlending;
                     }
 
                     if (mtlLine.StartsWith("Kd"))
@@ -114,6 +113,7 @@ namespace lab1
                     if (mtlLine.StartsWith("Tr"))
                     {
                         material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                        material.BlendMode = BlendModes.AlphaBlending;
                     }
 
                     if (mtlLine.StartsWith("map_Kd"))
@@ -206,12 +206,12 @@ namespace lab1
                                 .ToList();
                         for (int i = 0; i < vertices.Count - 2;  i++)
                         {
-                            model.AddFace(new() {
+                            List<Vector3> face = new() {
                                 vertices[0],
                                 vertices[i + 1],
                                 vertices[i + 2]
-                            });
-                            model.FacesMaterials.Add(materialIndex);
+                            };
+                            model.AddFace(face, materialIndex);
                         }
                     }
 
@@ -369,7 +369,7 @@ namespace lab1
             Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
-            float opacity = UsingTransparency ? 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4) : 1;
+            float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
             (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
             Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
@@ -380,10 +380,9 @@ namespace lab1
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
         {
             bool gotLock = false;
-            while (!gotLock)
-                spins[x, y].Enter(ref gotLock);
+            spins[x, y].Enter(ref gotLock);
 
-            if (z <= ZBuffer[x, y])
+            if (z < ZBuffer[x, y])
             {
                 viewBuffer[x, y] = index;
                 ZBuffer[x, y] = z;
@@ -394,23 +393,26 @@ namespace lab1
 
         private void IncDepth(int x, int y, float z, int index)
         {
-            Interlocked.Increment(ref OffsetBuffer[x, y]);
+            if (z < ZBuffer[x, y])
+                Interlocked.Increment(ref OffsetBuffer[x, y]);
         }
 
         private void DrawPixelIntoLayers(int x, int y, float z, int index)
         {
-            bool gotLock = false;
-            while (!gotLock)
+            if (z < ZBuffer[x, y])
+            {
+                bool gotLock = false;
                 spins[x, y].Enter(ref gotLock);
 
-            LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
-            {
-                Index = index,
-                Z = z
-            };
-            CountBuffer[x, y] += 1;
+                LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
+                {
+                    Index = index,
+                    Z = z
+                };
+                CountBuffer[x, y] += 1;
 
-            spins[x, y].Exit(false);
+                spins[x, y].Exit(false);
+            }
         }
 
         public Vector3 GetResultColor(int start, int length, int x, int y)
@@ -437,16 +439,16 @@ namespace lab1
 
             for (int i = 0; i < length; i++)
             {
-                layer = LayersBuffer[i + start];
-                Vector4 pixelColor = GetPixelColor(layer.Index, new(x, y));
+                Vector4 pixelColor = GetPixelColor(LayersBuffer[i + start].Index, new(x, y));
 
                 color += (1 - alpha) * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
                 alpha += (1 - alpha) * pixelColor.W;
+
                 if (pixelColor.W == 1)
                     break;
             }
 
-            color += (1 - alpha) * backColor;
+            color += (1 - alpha) * bufferHDR[x, y];
 
             return color;
         }
@@ -512,7 +514,7 @@ namespace lab1
 
             viewVertices = TransformCoordinates();
 
-            Parallel.For(0, bitmap.PixelWidth, (x) =>
+            for (int x = 0; x < bitmap.PixelWidth; x++)
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
                 {
@@ -521,18 +523,36 @@ namespace lab1
                     CountBuffer[x, y] = 0;
                     OffsetBuffer[x, y] = 0;
                 }
-            });          
-            
-            if (UsingTransparency)
+            }         
+
+            Parallel.ForEach(Partitioner.Create(0, model.OpaqueFacesIndexes.Count), (range) =>
             {
-                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
+                for (int i = range.Item1; i < range.Item2; i++)
+                {
+                    int faceIndex = model.OpaqueFacesIndexes[i];
+                    List<Vector3> face = model.Faces[faceIndex];
+                    Vector4 a = viewVertices[(int)face[0].X - 1];
+                    Vector4 b = viewVertices[(int)face[1].X - 1];
+                    Vector4 c = viewVertices[(int)face[2].X - 1];
+                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
+                        Rasterize(a, b, c, faceIndex, DrawPixelIntoViewBuffer);
+                }
+            });
+
+            DrawViewBuffer();
+
+            if (model.TransparentFacesIndexes.Count > 0)
+            {
+                Parallel.ForEach(Partitioner.Create(0, model.TransparentFacesIndexes.Count), (range) =>
                 {
                     for (int i = range.Item1; i < range.Item2; i++)
                     {
-                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
-                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
-                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                        Rasterize(a, b, c, i, IncDepth);
+                        int faceIndex = model.TransparentFacesIndexes[i];
+                        List<Vector3> face = model.Faces[faceIndex];
+                        Vector4 a = viewVertices[(int)face[0].X - 1];
+                        Vector4 b = viewVertices[(int)face[1].X - 1];
+                        Vector4 c = viewVertices[(int)face[2].X - 1];
+                        Rasterize(a, b, c, faceIndex, IncDepth);
                     }
                 });
 
@@ -551,32 +571,20 @@ namespace lab1
 
                 LayersBuffer = new Layer[prefixSum];
 
-                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
+                Parallel.ForEach(Partitioner.Create(0, model.TransparentFacesIndexes.Count), (range) =>
                 {
                     for (int i = range.Item1; i < range.Item2; i++)
                     {
-                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
-                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
-                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                        Rasterize(a, b, c, i, DrawPixelIntoLayers);
+                        int faceIndex = model.TransparentFacesIndexes[i];
+                        List<Vector3> face = model.Faces[faceIndex];
+                        Vector4 a = viewVertices[(int)face[0].X - 1];
+                        Vector4 b = viewVertices[(int)face[1].X - 1];
+                        Vector4 c = viewVertices[(int)face[2].X - 1];
+                        Rasterize(a, b, c, faceIndex, DrawPixelIntoLayers);
                     }
                 });
+
                 DrawLayers();
-            }
-            else
-            {
-                Parallel.ForEach(Partitioner.Create(0, model.Faces.Count), (range) =>
-                {
-                    for (int i = range.Item1; i < range.Item2; i++)
-                    {
-                        Vector4 a = viewVertices[(int)model.Faces[i][0].X - 1];
-                        Vector4 b = viewVertices[(int)model.Faces[i][1].X - 1];
-                        Vector4 c = viewVertices[(int)model.Faces[i][2].X - 1];
-                        if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
-                            Rasterize(a, b, c, i, DrawPixelIntoViewBuffer);
-                    }
-                });
-                DrawViewBuffer();
             }
 
             bitmap.Source.Lock();
@@ -630,7 +638,7 @@ namespace lab1
             CreateBuffers();
             DateTime t = DateTime.Now;
             //LoadModel("./model/Shovel Knight");
-            //LoadModel("./model/Cyber Mancubus");
+            LoadModel("./model/Cyber Mancubus");
             //LoadModel("./model/Doom Slayer");
             //LoadModel("./model/Intergalactic Spaceship");
             //LoadModel("./model/Material Ball");
@@ -638,7 +646,7 @@ namespace lab1
             //LoadModel("./model/Pink Soldier");
             //LoadModel("./model/Robot Steampunk");
             //LoadModel("./model/Tree Man");
-            LoadModel("./model/Box");
+            //LoadModel("./model/Box");
             //LoadModel("./model/Bottled car");
             //LoadModel("./model/Car");
             //LoadModel("./model/Egor");
@@ -648,7 +656,7 @@ namespace lab1
             Model_time.Content = "Model loaded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             t = DateTime.Now;
-            BVH.Build(model.Faces, model.Vertices);
+            BVH.Build(model.Faces, model.Vertices, model.OpaqueFacesIndexes);
             BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
 
             camera.MinZoomR = model.GetMinZoomR();
@@ -906,8 +914,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.L:
-                    UsingTransparency = !UsingTransparency;
+                case Key.B:
                     Draw();
                     break;
             }

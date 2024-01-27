@@ -67,8 +67,6 @@ namespace lab1.Shadow
 
             for (int j = 0; j < RayCount; j++)
             {
-                bool intersected = false;
-
                 float phi = random.NextSingle() * 2 * Pi;
                 float theta = Acos(random.NextSingle() * 2 - 1);
 

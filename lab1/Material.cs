@@ -5,6 +5,12 @@ using System.Numerics;
 
 namespace lab1
 {
+    public enum BlendModes
+    {
+        Opaque,
+        AlphaBlending
+    }
+
     public class Material
     {
         public List<Buffer<Vector3>> Diffuse = new(15);
@@ -21,6 +27,8 @@ namespace lab1
         public float Pr = 1;
         public float Tr = 0;
         public Vector3 Kd = Vector3.Zero;
+
+        public BlendModes BlendMode = BlendModes.Opaque;
 
         public static bool UsingMIPMapping = false;
         public static int MaxAnisotropy = 1;

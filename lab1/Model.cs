@@ -15,6 +15,9 @@ namespace lab1
         public List<int> FacesMaterials = new();
         public Dictionary<string, int> MaterialsIndexes = new();
 
+        public List<int> OpaqueFacesIndexes = new();
+        public List<int> TransparentFacesIndexes = new();
+
         public float Scale { get; set; }
 
         public Vector3 Translation { get; set; }
@@ -56,9 +59,15 @@ namespace lab1
             Vertices.Add(new(x, y, z, 1));
         }
 
-        public void AddFace(List<Vector3> vertex)
+        public void AddFace(List<Vector3> vertex, int materialIndex)
         {
             Faces.Add(vertex);
+            FacesMaterials.Add(materialIndex);
+
+            if (Materials[materialIndex].BlendMode == BlendModes.Opaque)
+                OpaqueFacesIndexes.Add(Faces.Count - 1);
+            else
+                TransparentFacesIndexes.Add(Faces.Count - 1);
         }
 
         public void AddNormal(float x, float y, float z)
