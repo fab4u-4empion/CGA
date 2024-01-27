@@ -1,21 +1,23 @@
 ﻿using Rasterization;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 namespace lab1
 {
+    public enum BlendModes
+    {
+        Opaque,
+        AlphaBlending
+    }
+
     public class Material
     {
         public List<Buffer<Vector3>> Diffuse = new(15);
         public List<Buffer<Vector3>> Normals = new(15);
         public List<Buffer<Vector3>> MRAO = new(15);
         public List<Buffer<Vector3>> Emission = new(15);
-        public List<Buffer<Vector3>> Trasmission = new(15);
+        public List<Buffer<Vector3>> Transmission = new(15);
 
         public List<Buffer<Vector3>> ClearCoat = new(15);
         public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
@@ -23,7 +25,10 @@ namespace lab1
 
         public float Pm = 0;
         public float Pr = 1;
+        public float Tr = 0;
         public Vector3 Kd = Vector3.Zero;
+
+        public BlendModes BlendMode = BlendModes.Opaque;
 
         public static bool UsingMIPMapping = false;
         public static int MaxAnisotropy = 1;
@@ -93,9 +98,9 @@ namespace lab1
             Emission.AddRange(CalculateMIP(src, true));
         }
 
-        public void AddTrasmission(Pbgra32Bitmap src)
+        public void AddTransmission(Pbgra32Bitmap src)
         {
-            Trasmission.AddRange(CalculateMIP(src));
+            Transmission.AddRange(CalculateMIP(src));
         }
 
         public void AddClearCoat(Pbgra32Bitmap src)
@@ -194,7 +199,7 @@ namespace lab1
 
         public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Diffuse, uv, ToneMapping.SrgbToLinear(Kd), uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Diffuse, uv, Kd, uv1, uv2, uv3, uv4);
         }
 
         public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
@@ -202,9 +207,9 @@ namespace lab1
             return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2, uv3, uv4);
         }
 
-        public float GetTrasmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            return GetColorFromTexture(Trasmission, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
+            return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2, uv3, uv4).X;
         }
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
@@ -218,7 +223,6 @@ namespace lab1
 
         public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            
             return GetColorFromTexture(Normals, uv, defaultNormal, uv1, uv2, uv3, uv4);
         }
 

@@ -29,24 +29,24 @@ namespace lab1
 
         private static int rootNodeIndx = 0, nodesUsed = 1;
 
-        public static void Build(List<List<Vector3>> faces, List<Vector4> vertices)
+        public static void Build(List<List<Vector3>> faces, List<Vector4> vertices, List<int> opaqueFacesIndexes)
         {
-            Tris = new Tri[faces.Count];
-            nodes = new BVHNode[faces.Count * 2 - 1];
+            Tris = new Tri[opaqueFacesIndexes.Count];
+            nodes = new BVHNode[opaqueFacesIndexes.Count * 2 - 1];
 
             for (int i = 0; i < nodes.Length; i++)
             {
                 nodes[i] = new();
             }
 
-            for (int i = 0; i < faces.Count; i++)
+            for (int i = 0; i < opaqueFacesIndexes.Count; i++)
             {
-                List<Vector3> face = faces[i];
+                List<Vector3> face = faces[opaqueFacesIndexes[i]];
                 Vector4 v0 = vertices[(int)face[0].X - 1];
                 Vector4 v1 = vertices[(int)face[1].X - 1];
                 Vector4 v2 = vertices[(int)face[2].X - 1];
                 Tri tri = new() {
-                    Index = i,
+                    Index = opaqueFacesIndexes[i],
                     v0 = new(v0.X, v0.Y, v0.Z),
                     v1 = new(v1.X, v1.Y, v1.Z),
                     v2 = new(v2.X, v2.Y, v2.Z),
