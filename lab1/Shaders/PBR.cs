@@ -1,51 +1,14 @@
 ﻿using System.Numerics;
-using System.Windows.Documents;
 using static System.Numerics.Vector3;
 using static System.Single;
-using System.Collections.Generic;
 using lab1.Shadow;
+using static lab1.LightingConfig;
 
 namespace lab1.Shaders
 {
     public class PBR
     {
-        public static float LightIntensity = 1000;
-        public static float LP = 20;
-        public static float AmbientIntensity = 0.15f;
-        public static float EmissionIntensity = 1;
-        public static bool ClearCoatEnable = false;
-
         public static bool UseShadow = false;
-
-        //public static float X = 0;
-        //public static float Y = 3.6f;
-        //public static float Z = 0;
-
-        public static float X = 5;
-        public static float Y = 5;
-        public static float Z = 5;
-
-        private static Vector3[] Lights = new Vector3[] {
-            new (LP, LP, LP),
-            new (-LP, LP, LP),
-            new (LP, LP, -LP),
-            new (-LP, LP, -LP),
-            //new(-1.6f, 3.6f, -1.6f),
-            //new(1.6f, 3.6f, -1.6f),
-            //new(-1.6f, 3.6f, 1.6f),
-            //new(X, Y, Z)
-        }; 
-
-        private static Vector3[] LightsColors = new Vector3[] {
-            new (1, 0.5f, 1f),
-            new (0.5f, 1f, 0.5f),
-            new (0.5f, 0.5f, 1),
-            new (0.5f, 1, 1)
-            //new(1, 1, 1)
-            //new(1, 0, 0),
-            //new(0, 1, 0),
-            //new(0, 0, 1),
-        };
 
         private static Vector3 FresnelSchlick(float VdotH, Vector3 F0)
         {
@@ -73,22 +36,6 @@ namespace lab1.Shaders
             float l = NdotV * Sqrt(NdotL * NdotL * (1 - a2) + a2);
 
             return Min(1e12f, 0.5f / (v + l));
-        }
-
-        public static void ChangeLightsPos()
-        {
-            Lights = new Vector3[] {
-                new(LP, LP, LP),
-                new(-LP, LP, LP),
-                new(LP, LP, -LP),
-                new(-LP, LP, -LP),
-                //new(-1.6f, 3.6f, -1.6f),
-                //new(1.6f, 3.6f, -1.6f),
-                //new(-1.6f, 3.6f, 1.6f),
-            };
-            //Lights = new Vector3[] {
-            //    new(X, Y, Z)
-            //};
         }
 
         public static Vector3 GetPixelColor(
@@ -121,20 +68,20 @@ namespace lab1.Shaders
 
             Vector3 color = Zero;
 
-            for (int i = 0; i < Lights.Length; i++)
+            for (int i = 0; i < Lights.Count; i++)
             {
-                Vector3 L = Normalize(Lights[i] - p);
+                Vector3 L = Normalize(Lights[i].Position - p);
                 Vector3 H = Normalize(V + L);
 
-                float distance = Distance(Lights[i], p);
+                float distance = Distance(Lights[i].Position, p);
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p, faceIndex) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
 
+                float NdotL = Max(Dot(N, L), 0);
+                float ONdotL = Max(Dot(ON, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
                 float VdotH = Max(Dot(V, H), 0);
-                float NdotL = Max(Dot(N, L), 0);
                 float ONdotH = Max(Dot(ON, H), 0);
-                float ONdotL = Max(Dot(ON, L), 0);
 
                 float distribution = Distribution(NdotH, roughness);
                 float visibility = Visibility(NdotV, NdotL, roughness);
@@ -143,7 +90,7 @@ namespace lab1.Shaders
                 Vector3 diffuse = (1 - metallic) * albedo / Pi * opacity;
                 Vector3 specular = reflectance * visibility * distribution;
 
-                Vector3 irradiance = LightsColors[i] * LightIntensity / (distance * distance);
+                Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
 
                 float clearCoatDistribution = Distribution(ONdotH, clearCoatRougness);
                 float clearCoatVisibility = Visibility(ONdotV, ONdotL, clearCoatRougness);

@@ -33,6 +33,8 @@ namespace lab1
         {
             Tris = new Tri[opaqueFacesIndexes.Count];
             nodes = new BVHNode[opaqueFacesIndexes.Count * 2 - 1];
+            rootNodeIndx = 0;
+            nodesUsed = 1;
 
             for (int i = 0; i < nodes.Length; i++)
             {

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Threading;
@@ -17,21 +18,17 @@ using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace lab1
 {
-    
-    public struct Layer
-    {
-        public float Z { get; set; }
-        public int Index { get; set; }
-    }
+    using Layer = (int Index, float Z);
+    using Color = (Vector3 Color, float Alpha);
+    using DPIScale = (double X, double Y);
 
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
-
-        Vector4[] viewVertices;
 
         Buffer<Vector3> bufferHDR;
         Buffer<SpinLock> spins;
@@ -42,26 +39,29 @@ namespace lab1
         Buffer<byte> CountBuffer;
         Layer[] LayersBuffer;
 
-        Model model = new();
+        Model mainModel;
+        Model Sphere;
         Camera camera = new();
 
-        Vector3 light = new(0, 0, 0);
         Vector3 backColor = new(0.1f, 0.1f, 0.1f);
 
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
         float BlurRadius = 0;
+        DPIScale scale = (1, 1);
 
         Stopwatch timer = new();
 
         Point mouse_position;
-        
+
+        WindowState LastState;
+
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private void LoadMaterials(string fold, string mtl)
+        private void LoadMaterials(string fold, string mtl, Model model)
         {
             using (StreamReader mtlReader = new($"{fold}/{mtl}"))
             {
@@ -88,9 +88,15 @@ namespace lab1
                         material.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
-                    if (mtlLine.StartsWith("map_Transmission"))
+                    if (mtlLine.StartsWith("map_Tr"))
                     {
-                        material.AddTransmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
+                        material.AddTransmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                        material.BlendMode = BlendModes.AlphaBlending;
+                    }
+
+                    if (mtlLine.StartsWith("Tr"))
+                    {
+                        material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -110,12 +116,6 @@ namespace lab1
                         material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
                     }
 
-                    if (mtlLine.StartsWith("Tr"))
-                    {
-                        material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                        material.BlendMode = BlendModes.AlphaBlending;
-                    }
-
                     if (mtlLine.StartsWith("map_Kd"))
                     {
                         material.AddDiffuse(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
@@ -131,19 +131,32 @@ namespace lab1
                         material.AddMRAO(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 8).Trim()}", UriKind.Relative))));
                     }
 
-                    if (mtlLine.StartsWith("map_ClearCoat"))
+                    if (mtlLine.StartsWith("map_Pcr"))
                     {
-                        material.AddClearCoat(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 13).Trim()}", UriKind.Relative))));
+                        material.AddClearCoatRoughness(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 7).Trim()}", UriKind.Relative))));
+                        continue;
                     }
 
-                    if (mtlLine.StartsWith("map_CCRoughness"))
+                    if (mtlLine.StartsWith("Pcr"))
                     {
-                        material.AddClearCoatRoughness(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 15).Trim()}", UriKind.Relative))));
+                        material.Pcr = float.Parse(mtlLine.Remove(0, 3).Trim(), CultureInfo.InvariantCulture);
+                        continue;
                     }
 
-                    if (mtlLine.StartsWith("CCNorm"))
+                    if (mtlLine.StartsWith("map_Pc"))
                     {
-                        material.AddClearCoatNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                        material.AddClearCoat(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                    }
+
+                    if (mtlLine.StartsWith("Pc"))
+                    {
+                        material.Pc = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                    }
+
+                    if (mtlLine.StartsWith("norm_pc"))
+                    {
+                        material.AddClearCoatNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 7).Trim()}", UriKind.Relative))));
+                        continue;
                     }
 
                     if (mtlLine.StartsWith("norm"))
@@ -155,10 +168,10 @@ namespace lab1
             }
         }
 
-        private void LoadModel(string fold)
+        private void LoadModel(string foldName, Model model)
         {
             int materialIndex = 0;
-            using (StreamReader reader = new(fold + "/model.obj"))
+            using (StreamReader reader = new($"{foldName}/model.obj"))
             {
                 while (!reader.EndOfStream)
                 {
@@ -167,7 +180,7 @@ namespace lab1
                     if (line.StartsWith("mtllib "))
                     {
                         String mtl = line.Remove(0, 7).Trim();
-                        LoadMaterials(fold, mtl);
+                        LoadMaterials(foldName, mtl, model);
                     }
 
                     if (line.StartsWith("usemtl"))
@@ -244,7 +257,7 @@ namespace lab1
             }
         }
 
-        private Vector4[] TransformCoordinates()
+        private void TransformCoordinates(Model model)
         {
             Matrix4x4 scaleMatrix = Matrix4x4.CreateScale(model.Scale);
             Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
@@ -252,20 +265,17 @@ namespace lab1
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
             Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.FoV, (float)bitmap.PixelWidth / (float)bitmap.PixelHeight, 0.1f, 500f);
-            Matrix4x4 modelViewProjectionMatrix = modelMatrix * viewMatrix * projectionMatrix;
             Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, bitmap.PixelWidth, bitmap.PixelHeight, 0, 1);
 
-            Vector4[] windowVertices = new Vector4[model.Vertices.Count];
-            for (int i = 0; i < windowVertices.Length; i++)
-            {
-                windowVertices[i] = Vector4.Transform(model.Vertices[i], modelViewProjectionMatrix);
-                float w = 1 / windowVertices[i].W;
-                windowVertices[i] *= w;
-                windowVertices[i] = Vector4.Transform(windowVertices[i], viewportMatrix);
-                windowVertices[i].W = w;
-            }
+            Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix * viewportMatrix;
 
-            return windowVertices;
+            model.ViewVertices = new Vector4[model.Vertices.Count];
+            for (int i = 0; i < model.ViewVertices.Length; i++)
+            {
+                Vector4 vertex = Vector4.Transform(model.Vertices[i], matrix);
+                vertex /= new Vector4(new(vertex.W), vertex.W * vertex.W);
+                model.ViewVertices[i] = vertex;
+            }
         }
 
         private float PerpDotProduct(Vector2 a, Vector2 b)
@@ -273,54 +283,68 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        private void Rasterize(Vector4 a, Vector4 b, Vector4 c, int X, Action<int, int, float, int> action)
+        private void Rasterize(List<int> facesIndexes, Model model, Action<int, int, float, int> action)
         {
-            if (b.Y < a.Y)
-                (a, b) = (b, a);
-
-            if (c.Y < a.Y)
-                (a, c) = (c, a);
-
-            if (c.Y < b.Y)
-                (b, c) = (c, b);
-
-            Vector4 k1 = (c - a) / (c.Y - a.Y);
-            Vector4 k2 = (b - a) / (b.Y - a.Y);
-            Vector4 k3 = (c - b) / (c.Y - b.Y);
-
-            int top = int.Max((int)float.Ceiling(a.Y), 0);
-            int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
-
-            for (int y = top; y < bottom; y++)
+            Parallel.ForEach(Partitioner.Create(0, facesIndexes.Count), (range) =>
             {
-                Vector4 p1 = a + (y - a.Y) * k1;
-                Vector4 p2 = y < b.Y ? a + (y - a.Y) * k2 : b + (y - b.Y) * k3;
-
-                if (p1.X > p2.X)
-                    (p1, p2) = (p2, p1);
-
-                Vector4 k = (p2 - p1) / (p2.X - p1.X);
-
-                int left = int.Max((int)float.Ceiling(p1.X), 0);
-                int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
-
-                for (int x = left; x < right; x++)
+                for (int i = range.Item1; i < range.Item2; i++)
                 {
-                    Vector4 p = p1 + (x - p1.X) * k;
-                    if (x >= 0 && y >= 0 && x < bitmap.PixelWidth && y < bitmap.PixelHeight && p.Z > 0 && p.Z < 1)
-                        action(x, y, p.Z, X);
+                    int faceIndex = facesIndexes[i];
+                    List<Vector3> face = model.Faces[faceIndex];
+                    Vector4 a = model.ViewVertices[(int)face[0].X - 1];
+                    Vector4 b = model.ViewVertices[(int)face[1].X - 1];
+                    Vector4 c = model.ViewVertices[(int)face[2].X - 1];
+                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
+                    {
+                        if (b.Y < a.Y)
+                            (a, b) = (b, a);
+
+                        if (c.Y < a.Y)
+                            (a, c) = (c, a);
+
+                        if (c.Y < b.Y)
+                            (b, c) = (c, b);
+
+                        Vector4 k1 = (c - a) / (c.Y - a.Y);
+                        Vector4 k2 = (b - a) / (b.Y - a.Y);
+                        Vector4 k3 = (c - b) / (c.Y - b.Y);
+
+                        int top = int.Max((int)float.Ceiling(a.Y), 0);
+                        int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
+
+                        for (int y = top; y < bottom; y++)
+                        {
+                            Vector4 p1 = a + (y - a.Y) * k1;
+                            Vector4 p2 = y < b.Y ? a + (y - a.Y) * k2 : b + (y - b.Y) * k3;
+
+                            if (p1.X > p2.X)
+                                (p1, p2) = (p2, p1);
+
+                            Vector4 k = (p2 - p1) / (p2.X - p1.X);
+
+                            int left = int.Max((int)float.Ceiling(p1.X), 0);
+                            int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
+
+                            for (int x = left; x < right; x++)
+                            {
+                                Vector4 p = p1 + (x - p1.X) * k;
+                                if (p.Z >= 0 && p.Z <= 1)
+                                    action(x, y, p.Z, faceIndex);
+                            }
+                        }
+                    }
                 }
-            }
+            });
         }
 
-        private Vector4 GetPixelColor(int faceIndex, Vector2 p)
+        private Color GetPixelColor(int faceIndex, Vector2 p, Model model)
         {
             List<Vector3> face = model.Faces[faceIndex];
             int materialIndex = model.FacesMaterials[faceIndex];
 
-            Vector4 a = viewVertices[(int)face[0].X - 1];
-            Vector4 b = viewVertices[(int)face[1].X - 1];
-            Vector4 c = viewVertices[(int)face[2].X - 1];
+            Vector4 a = model.ViewVertices[(int)face[0].X - 1];
+            Vector4 b = model.ViewVertices[(int)face[1].X - 1];
+            Vector4 c = model.ViewVertices[(int)face[2].X - 1];
 
             Vector2 pa = new Vector2(a.X, a.Y) - p;
             Vector2 pb = new Vector2(b.X, b.Y) - p;
@@ -374,7 +398,7 @@ namespace lab1
 
             Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
 
-            return new(color, opacity);
+            return (color, opacity);
         }
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
@@ -404,11 +428,7 @@ namespace lab1
                 bool gotLock = false;
                 spins[x, y].Enter(ref gotLock);
 
-                LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = new()
-                {
-                    Index = index,
-                    Z = z
-                };
+                LayersBuffer[OffsetBuffer[x, y] + CountBuffer[x, y]] = (index, z);
                 CountBuffer[x, y] += 1;
 
                 spins[x, y].Exit(false);
@@ -420,31 +440,31 @@ namespace lab1
             float key;
             Layer layer;
             int j;
-            for (int i = 1; i < length; i++)
+            for (int i = 1 + start; i < length + start; i++)
             {
-                key = LayersBuffer[i + start].Z;
-                layer = LayersBuffer[i + start];
+                key = LayersBuffer[i].Z;
+                layer = LayersBuffer[i];
                 j = i - 1;
 
-                while (j >= 0 && LayersBuffer[j + start].Z > key)
+                while (j >= start && LayersBuffer[j].Z > key)
                 {
-                    LayersBuffer[j + 1 + start] = LayersBuffer[j + start];
+                    LayersBuffer[j + 1] = LayersBuffer[j];
                     j--;
                 }
-                LayersBuffer[j + 1 + start] = layer;
+                LayersBuffer[j + 1] = layer;
             }
 
             Vector3 color = Vector3.Zero;
             float alpha = 0;
 
-            for (int i = 0; i < length; i++)
+            for (int i = start; i < length + start; i++)
             {
-                Vector4 pixelColor = GetPixelColor(LayersBuffer[i + start].Index, new(x, y));
+                Color pixel = GetPixelColor(LayersBuffer[i].Index, new(x, y), mainModel);
 
-                color += (1 - alpha) * new Vector3(pixelColor.X, pixelColor.Y, pixelColor.Z);
-                alpha += (1 - alpha) * pixelColor.W;
+                color += (1 - alpha) * pixel.Color;
+                alpha += (1 - alpha) * pixel.Alpha;
 
-                if (pixelColor.W == 1)
+                if (pixel.Alpha == 1)
                     break;
             }
 
@@ -461,7 +481,7 @@ namespace lab1
                 {
                     if (viewBuffer[x, y] != -1)
                     {
-                        Vector4 color = GetPixelColor(viewBuffer[x, y], new(x, y));
+                        (Vector3 color, float alpha) = GetPixelColor(viewBuffer[x, y], new(x, y), mainModel);
                         bufferHDR[x, y] = new(color.X, color.Y, color.Z);
                     }
                 }
@@ -507,54 +527,72 @@ namespace lab1
             }
         }
 
-        private void Draw()
+        private void UpdateInfo()
         {
-            
-            timer.Restart();
+            Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
 
-            viewVertices = TransformCoordinates();
+            Ray_Count.Content = $"Ray count: {RTX.RayCount}";
+            Light_size.Content = $"Light size: {RTX.LightSize}";
 
-            for (int x = 0; x < bitmap.PixelWidth; x++)
+            ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
+            if (ToneMapping.Mode == ToneMappingMode.AgX)
+                ToneMode.Content += $" {ToneMapping.LookMode}";
+
+            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
+            if (Material.UsingMIPMapping)
+                MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
+
+            CurrLamp.Content = $"Current lamp: {LightingConfig.CurrentLamp + 1}";
+        }
+
+        private void DrawLights()
+        {
+            if (LightingConfig.DrawLights)
             {
-                for (int y = 0; y < bitmap.PixelHeight; y++)
+                for (int i = 0; i < LightingConfig.Lights.Count; i++)
                 {
-                    ZBuffer[x, y] = float.MaxValue;
-                    viewBuffer[x, y] = -1;
-                    CountBuffer[x, y] = 0;
-                    OffsetBuffer[x, y] = 0;
-                }
-            }         
+                    Lamp lamp = LightingConfig.Lights[i];
 
-            Parallel.ForEach(Partitioner.Create(0, model.OpaqueFacesIndexes.Count), (range) =>
-            {
-                for (int i = range.Item1; i < range.Item2; i++)
-                {
-                    int faceIndex = model.OpaqueFacesIndexes[i];
-                    List<Vector3> face = model.Faces[faceIndex];
-                    Vector4 a = viewVertices[(int)face[0].X - 1];
-                    Vector4 b = viewVertices[(int)face[1].X - 1];
-                    Vector4 c = viewVertices[(int)face[2].X - 1];
-                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
-                        Rasterize(a, b, c, faceIndex, DrawPixelIntoViewBuffer);
+                    Vector3 a = camera.Target - camera.Position;
+                    Vector3 b = camera.Target - lamp.Position;
+                    if (Vector3.Dot(a, b) > 0 && a.Length() < b.Length())
+                        continue;
+
+                    Sphere.Translation = lamp.Position;
+                    Sphere.Scale = 0.2f;
+
+                    TransformCoordinates(Sphere);
+
+                    Rasterize(Sphere.OpaqueFacesIndexes, Sphere, (int x, int y, float z, int unused) =>
+                    {
+                        bool gotLock = false;
+                        spins[x, y].Enter(ref gotLock);
+
+                        if (z < ZBuffer[x, y])
+                        {
+                            bufferHDR[x, y] = lamp.Color;
+                            ZBuffer[x, y] = z;
+                        }
+
+                        spins[x, y].Exit(false);
+                    });
                 }
-            });
+            }
+        }
+
+        private void DrawScene()
+        {
+            TransformCoordinates(mainModel);
+
+            Rasterize(mainModel.OpaqueFacesIndexes, mainModel, DrawPixelIntoViewBuffer);
 
             DrawViewBuffer();
 
-            if (model.TransparentFacesIndexes.Count > 0)
+            DrawLights();
+
+            if (mainModel.TransparentFacesIndexes.Count > 0)
             {
-                Parallel.ForEach(Partitioner.Create(0, model.TransparentFacesIndexes.Count), (range) =>
-                {
-                    for (int i = range.Item1; i < range.Item2; i++)
-                    {
-                        int faceIndex = model.TransparentFacesIndexes[i];
-                        List<Vector3> face = model.Faces[faceIndex];
-                        Vector4 a = viewVertices[(int)face[0].X - 1];
-                        Vector4 b = viewVertices[(int)face[1].X - 1];
-                        Vector4 c = viewVertices[(int)face[2].X - 1];
-                        Rasterize(a, b, c, faceIndex, IncDepth);
-                    }
-                });
+                Rasterize(mainModel.TransparentFacesIndexes, mainModel, IncDepth);
 
                 int prefixSum = 0;
                 int depth = 0;
@@ -571,21 +609,33 @@ namespace lab1
 
                 LayersBuffer = new Layer[prefixSum];
 
-                Parallel.ForEach(Partitioner.Create(0, model.TransparentFacesIndexes.Count), (range) =>
-                {
-                    for (int i = range.Item1; i < range.Item2; i++)
-                    {
-                        int faceIndex = model.TransparentFacesIndexes[i];
-                        List<Vector3> face = model.Faces[faceIndex];
-                        Vector4 a = viewVertices[(int)face[0].X - 1];
-                        Vector4 b = viewVertices[(int)face[1].X - 1];
-                        Vector4 c = viewVertices[(int)face[2].X - 1];
-                        Rasterize(a, b, c, faceIndex, DrawPixelIntoLayers);
-                    }
-                });
+                Rasterize(mainModel.TransparentFacesIndexes, mainModel, DrawPixelIntoLayers);
 
                 DrawLayers();
             }
+        }
+
+        private void Draw()
+        {
+            UpdateInfo();
+
+            timer.Restart();
+
+            for (int x = 0; x < bitmap.PixelWidth; x++)
+            {
+                for (int y = 0; y < bitmap.PixelHeight; y++)
+                {
+                    ZBuffer[x, y] = float.MaxValue;
+                    viewBuffer[x, y] = -1;
+                    CountBuffer[x, y] = 0;
+                    OffsetBuffer[x, y] = 0;
+                }
+            }
+
+            if (mainModel !=  null)
+                DrawScene();
+            else
+                DrawLights();
 
             bitmap.Source.Lock();
             bitmap.Clear();
@@ -593,29 +643,16 @@ namespace lab1
             DrawHDRBuffer();
        
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
-            
             bitmap.Source.Unlock();
 
             timer.Stop();
 
             Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
-            Reso.Content = $"{bitmap.PixelWidth}×{bitmap.PixelHeight}";
-
-            Ray_Count.Content = $"Ray count: {RTX.RayCount}";
-            Light_size.Content = $"Light size: {RTX.LightSize}";
-
-            ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
-            if (ToneMapping.Mode == ToneMappingMode.AgX)
-                ToneMode.Content += $" {ToneMapping.LookMode}";
-
-            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
-            if (Material.UsingMIPMapping)
-                MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
         }
 
         private void CreateBuffers()
         {
-            bitmap = new((int)(Grid.ActualWidth * smoothing), (int)(Grid.ActualHeight * smoothing));
+            bitmap = new((int)(Grid.ActualWidth * smoothing * scale.X), (int)(Grid.ActualHeight * smoothing * scale.Y));
             bufferHDR = new(bitmap.PixelWidth, bitmap.PixelHeight);
             Canvas.Source = bitmap.Source;
             spins = new(bitmap.PixelWidth, bitmap.PixelHeight);
@@ -636,33 +673,8 @@ namespace lab1
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             CreateBuffers();
-            DateTime t = DateTime.Now;
-            //LoadModel("./model/Shovel Knight");
-            LoadModel("./model/Cyber Mancubus");
-            //LoadModel("./model/Doom Slayer");
-            //LoadModel("./model/Intergalactic Spaceship");
-            //LoadModel("./model/Material Ball");
-            //LoadModel("./model/Mimic Chest");
-            //LoadModel("./model/Pink Soldier");
-            //LoadModel("./model/Robot Steampunk");
-            //LoadModel("./model/Tree Man");
-            //LoadModel("./model/Box");
-            //LoadModel("./model/Bottled car");
-            //LoadModel("./model/Car");
-            //LoadModel("./model/Egor");
-            //LoadModel("./model/other/chess");
-            //LoadModel("./model/Model");
-            //LoadModel("./model/Napoleon");
-            Model_time.Content = "Model loaded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
-
-            t = DateTime.Now;
-            BVH.Build(model.Faces, model.Vertices, model.OpaqueFacesIndexes);
-            BVH_time.Content = "BVH builded in " + (double.Round((DateTime.Now - t).TotalMilliseconds)).ToString() + " ms";
-
-            camera.MinZoomR = model.GetMinZoomR();
-            camera.Target = model.GetCenter();
-            camera.UpdatePosition(0, 0, 0);
-
+            Sphere = new Model();
+            LoadModel(".", Sphere);
             Draw();
         }
 
@@ -697,12 +709,14 @@ namespace lab1
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            DpiScale dpi = VisualTreeHelper.GetDpi(this);
+            scale = (dpi.DpiScaleX, dpi.DpiScaleY);
+
             CreateBuffers();
+            
             if (IsLoaded)
                 Draw();
         }
-
-        private WindowState LastState;
 
         private void ResizeHandler()
         {
@@ -715,89 +729,74 @@ namespace lab1
             switch (e.Key)
             {
                 case Key.NumPad1:
-                    light.X -= 0.5f;
-                    PBR.X -= 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad2:
-                    light.X += 0.5f;
-                    PBR.X += 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad4:
-                    light.Y -= 0.5f;
-                    PBR.Y -= 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad5:
-                    light.Y += 0.5f;
-                    PBR.Y += 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad7:
-                    light.Z -= 0.5f;
-                    PBR.Z -= 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
                     Draw();
                     break;
 
                 case Key.NumPad8:
-                    light.Z += 0.5f;
-                    PBR.Z += 0.1f;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
                     Draw();
                     break;
 
                 case Key.Right:
-                    PBR.LightIntensity += 10;
+                    LightingConfig.ChangeLampIntensity(10);
                     Draw();
                     break;
 
                 case Key.Left:
-                    PBR.LightIntensity -= 10;
-                    PBR.LightIntensity = float.Max(PBR.LightIntensity, 0);
+                    LightingConfig.ChangeLampIntensity(-10);
                     Draw();
                     break;
 
                 case Key.Up:
-                    PBR.LP += 1;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLamp(1);
                     Draw(); 
                     break;
 
                 case Key.Down:
-                    PBR.LP -= 1;
-                    PBR.ChangeLightsPos();
+                    LightingConfig.ChangeLamp(-1);
                     Draw();
                     break;
 
                 case Key.Add:
-                    PBR.AmbientIntensity += 0.01f;
+                    LightingConfig.AmbientIntensity += 0.01f;
                     Draw();
                     break;
 
                 case Key.Subtract:
-                    PBR.AmbientIntensity -= 0.01f;
-                    PBR.AmbientIntensity = float.Max(PBR.AmbientIntensity, 0);
+                    LightingConfig.AmbientIntensity -= 0.01f;
+                    LightingConfig.AmbientIntensity = float.Max(LightingConfig.AmbientIntensity, 0);
                     Draw();
                     break;
 
                 case Key.Divide:
-                    PBR.EmissionIntensity -= 0.2f;
-                    PBR.EmissionIntensity = float.Max(PBR.EmissionIntensity, 0);
+                    LightingConfig.EmissionIntensity -= 0.2f;
+                    LightingConfig.EmissionIntensity = float.Max(LightingConfig.EmissionIntensity, 0);
                     Draw();
                     break;
 
                 case Key.Multiply:
-                    PBR.EmissionIntensity += 0.2f;
+                    LightingConfig.EmissionIntensity += 0.2f;
                     Draw();
                     break;
 
@@ -874,20 +873,20 @@ namespace lab1
                     break;
 
                 case Key.Q:
-                    PngBitmapEncoder encoder = new PngBitmapEncoder();
+                    PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap.Source as BitmapSource));
                     DirectoryInfo info = Directory.CreateDirectory("img");
-                    using (FileStream st = new FileStream($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
+                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
                     {
                         encoder.Save(st);
                     }
                     break;
 
-                case Key.O:
-                    OpenFileDialog dlg = new OpenFileDialog();
-                    if (dlg.ShowDialog() == true)
+                case Key.U:
+                    OpenFileDialog ofd = new();
+                    if (ofd.ShowDialog() == true)
                     {
-                        Bloom.KernelImg = dlg.FileName;
+                        Bloom.KernelImg = ofd.FileName;
                     }
                     Draw();
                     break;
@@ -915,7 +914,32 @@ namespace lab1
                     break;
 
                 case Key.B:
+                    LightingConfig.DrawLights = !LightingConfig.DrawLights;
                     Draw();
+                    break;
+
+                case Key.O:
+                    OpenFolderDialog dlg = new();
+                    if (dlg.ShowDialog() == true)
+                    {
+                        mainModel = new();
+
+                        timer.Restart();
+                        LoadModel(dlg.FolderName, mainModel);
+                        timer.Stop();
+                        Model_time.Content = $"Model loaded in {double.Round(timer.ElapsedMilliseconds)} ms";
+
+                        timer.Restart();
+                        BVH.Build(mainModel.Faces, mainModel.Vertices, mainModel.OpaqueFacesIndexes);
+                        BVH_time.Content = $"BVH builded in {double.Round(timer.ElapsedMilliseconds)} ms";
+                        timer.Stop();
+
+                        camera.MinZoomR = mainModel.GetMinZoomR();
+                        camera.Target = mainModel.GetCenter();
+                        camera.UpdatePosition(0, 0, 0);
+
+                        Draw();
+                    }
                     break;
             }
 
@@ -966,6 +990,7 @@ namespace lab1
                         break;
                 }
             }
+
         }
     }
 }

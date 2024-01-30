@@ -1,7 +1,9 @@
 ﻿using Rasterization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace lab1
 {
@@ -27,6 +29,8 @@ namespace lab1
         public float Pr = 1;
         public float Tr = 0;
         public Vector3 Kd = Vector3.Zero;
+        public float Pc = 0;
+        public float Pcr = 0;
 
         public BlendModes BlendMode = BlendModes.Opaque;
 
@@ -38,15 +42,19 @@ namespace lab1
             List<Buffer<Vector3>> lvls = new(15);
 
             Buffer<Vector3> mainLvl = new(src.PixelWidth, src.PixelHeight);
-            for (int x = 0; x < src.PixelWidth; x++)
+
+            Parallel.ForEach(Partitioner.Create(0, src.PixelWidth), (range) =>
             {
-                for (int y = 0; y < src.PixelHeight; y++)
+                for (int x = range.Item1; x < range.Item2; x++)
                 {
-                    mainLvl[x, y] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(x, y)) : src.GetPixel(x, y);
-                    if (isNormal)
-                        mainLvl[x, y] = 2 * mainLvl[x, y] - Vector3.One;
+                    for (int y = 0; y < src.PixelHeight; y++)
+                    {
+                        mainLvl[x, y] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(x, y)) : src.GetPixel(x, y);
+                        if (isNormal)
+                            mainLvl[x, y] = 2 * mainLvl[x, y] - Vector3.One;
+                    }
                 }
-            }
+            });
 
             lvls.Add(mainLvl);
 
@@ -56,23 +64,29 @@ namespace lab1
 
             do
             {
-                Buffer<Vector3> nextLvl = new(sizeW / 2, sizeH / 2);
-                for (int x = 0; x < lvls[currentLvl].Width; x += 2)
-                {
-                    for (int y = 0; y < lvls[currentLvl].Height; y += 2)
-                    {
-                        Vector3 color = lvls[currentLvl][x, y]
-                        + lvls[currentLvl][x + 1, y]
-                        + lvls[currentLvl][x, y + 1]
-                        + lvls[currentLvl][x + 1, y + 1];
-                        color /= 4;
-                        nextLvl[x / 2, y / 2] = color;
-                    }
-                }
-                lvls.Add(nextLvl);
-                currentLvl++;
                 sizeW /= 2;
                 sizeH /= 2;
+                Buffer<Vector3> nextLvl = new(sizeW, sizeH);
+                Parallel.ForEach(Partitioner.Create(0, nextLvl.Width), (range) =>
+                {
+                    for (int x = range.Item1; x < range.Item2; x++)
+                    {
+                        for (int y = 0; y < nextLvl.Height; y++)
+                        {
+                            int px = x * 2;
+                            int py = y * 2;
+
+                            Vector3 color = lvls[currentLvl][px, py]
+                                + lvls[currentLvl][px + 1, py]
+                                + lvls[currentLvl][px, py + 1]
+                                + lvls[currentLvl][px + 1, py + 1];
+                            color /= 4;
+                            nextLvl[x, y] = color;
+                        }
+                    }
+                });
+                lvls.Add(nextLvl);
+                currentLvl++;
             } while (sizeW > 1 && sizeH > 1);
 
             return lvls;
@@ -110,12 +124,18 @@ namespace lab1
 
         public void AddClearCoatRoughness(Pbgra32Bitmap src)
         {
-            ClearCoatRoughness.AddRange(CalculateMIP(src));
+            Task.Run(() =>
+            {
+                ClearCoatRoughness.AddRange(CalculateMIP(src));
+            });
         }
 
         public void AddClearCoatNormals(Pbgra32Bitmap src)
         {
-            ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
+            Task.Run(() =>
+            {
+                ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
+            });
         }
 
         private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
@@ -214,8 +234,8 @@ namespace lab1
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
-            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
-            float clearCoat = GetColorFromTexture(ClearCoat, uv, Vector3.Zero, uv1, uv2, uv3, uv4).X;
+            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, new(Pcr), uv1, uv2, uv3, uv4).X;
+            float clearCoat = GetColorFromTexture(ClearCoat, uv, new(Pc), uv1, uv2, uv3, uv4).X;
             Vector3 normal = GetColorFromTexture(ClearCoatNormals, uv, defaultNormal, uv1, uv2, uv3, uv4);
 
             return (roughness, clearCoat, normal);

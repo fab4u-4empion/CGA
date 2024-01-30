@@ -18,6 +18,8 @@ namespace lab1
         public List<int> OpaqueFacesIndexes = new();
         public List<int> TransparentFacesIndexes = new();
 
+        public Vector4[] ViewVertices;
+
         public float Scale { get; set; }
 
         public Vector3 Translation { get; set; }
@@ -64,10 +66,17 @@ namespace lab1
             Faces.Add(vertex);
             FacesMaterials.Add(materialIndex);
 
-            if (Materials[materialIndex].BlendMode == BlendModes.Opaque)
-                OpaqueFacesIndexes.Add(Faces.Count - 1);
+            if (Materials.Count > 0)
+            {
+                if (Materials[materialIndex].BlendMode == BlendModes.Opaque)
+                    OpaqueFacesIndexes.Add(Faces.Count - 1);
+                else
+                    TransparentFacesIndexes.Add(Faces.Count - 1);
+            }
             else
-                TransparentFacesIndexes.Add(Faces.Count - 1);
+            {
+                OpaqueFacesIndexes.Add(Faces.Count - 1);
+            }
         }
 
         public void AddNormal(float x, float y, float z)

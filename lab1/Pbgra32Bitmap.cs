@@ -21,7 +21,6 @@ namespace Rasterization
             InitializeProperties();
         }
 
-
         public void Clear()
         {
             for (int i = 0; i < PixelHeight * PixelWidth; i++)
