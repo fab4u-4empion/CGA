@@ -7,10 +7,13 @@ using System.Windows.Media.Imaging;
 
 namespace lab1.Effects
 {
+    using Smoothstep = (float A, float B);
+
     public class Bloom
     {
         public static string KernelImg = null;
         public static int KernelCount = 1;
+        public static Smoothstep Smoothstep = (0, 5);
 
         public static Buffer<Vector3> GetBoolmBuffer(int r, Buffer<Vector3> src, int width, int height)
         {
@@ -21,9 +24,9 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    float X = float.Clamp(luminance / 5f, 0, 1);
+                    float X = float.Clamp((luminance - Smoothstep.A) / (Smoothstep.B - Smoothstep.A), 0, 1);
                     float factor = X * X * (3 - 2 * X);
-                    tmp[x, y] = color * factor;
+                    tmp[x, y] = Vector3.Min(new(50f), color * factor);
                 }
             });
 

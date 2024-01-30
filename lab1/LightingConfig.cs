@@ -5,7 +5,7 @@ using System.Windows.Media.Media3D;
 
 namespace lab1
 {
-    public struct Lamp
+    public class Lamp
     {
         public Vector3 Position;
         public Vector3 Color;
@@ -31,16 +31,17 @@ namespace lab1
 
         public static void ChangeLamp(int delta)
         {
-            CurrentLamp = Lights.Count > 0 ? (CurrentLamp + delta) & (Lights.Count - 1) : -1;
+            if (Lights.Count > 0)
+                CurrentLamp = int.Clamp(CurrentLamp + delta, 0, Lights.Count - 1);
+            else
+                CurrentLamp = -1;
         }
 
         public static void ChangeLampIntensity(float delta)
         {
             if (CurrentLamp > -1)
             {
-                Lamp lamp = Lights[CurrentLamp];
-                lamp.Intensity = float.Max(lamp.Intensity + delta, 0);
-                Lights[CurrentLamp] = lamp;
+                Lights[CurrentLamp].Intensity = float.Max(Lights[CurrentLamp].Intensity + delta, 0);
             }
         }
 
@@ -48,9 +49,7 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                Lamp lamp = Lights[CurrentLamp];
-                lamp.Position += delta;
-                Lights[CurrentLamp] = lamp;
+                Lights[CurrentLamp].Position += delta;
             }
         }
     }

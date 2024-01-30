@@ -294,7 +294,7 @@ namespace lab1
                     Vector4 a = model.ViewVertices[(int)face[0].X - 1];
                     Vector4 b = model.ViewVertices[(int)face[1].X - 1];
                     Vector4 c = model.ViewVertices[(int)face[2].X - 1];
-                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0)
+                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 && a.W > 0 && b.W > 0 && c.W > 0)
                     {
                         if (b.Y < a.Y)
                             (a, b) = (b, a);
@@ -553,13 +553,8 @@ namespace lab1
                 {
                     Lamp lamp = LightingConfig.Lights[i];
 
-                    Vector3 a = camera.Target - camera.Position;
-                    Vector3 b = camera.Target - lamp.Position;
-                    if (Vector3.Dot(a, b) > 0 && a.Length() < b.Length())
-                        continue;
-
                     Sphere.Translation = lamp.Position;
-                    Sphere.Scale = 0.2f;
+                    Sphere.Scale = float.Max(0.05f, RTX.LightSize);
 
                     TransformCoordinates(Sphere);
 
@@ -570,7 +565,7 @@ namespace lab1
 
                         if (z < ZBuffer[x, y])
                         {
-                            bufferHDR[x, y] = lamp.Color;
+                            bufferHDR[x, y] = lamp.Color * (lamp.Intensity + 0.15f);
                             ZBuffer[x, y] = z;
                         }
 
