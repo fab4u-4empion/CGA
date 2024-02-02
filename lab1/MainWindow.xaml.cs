@@ -18,7 +18,6 @@ using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace lab1
 {
@@ -55,6 +54,8 @@ namespace lab1
         Point mouse_position;
 
         WindowState LastState;
+
+        bool camera_control = false;
 
         public MainWindow()
         {
@@ -294,7 +295,7 @@ namespace lab1
                     Vector4 a = model.ViewVertices[(int)face[0].X - 1];
                     Vector4 b = model.ViewVertices[(int)face[1].X - 1];
                     Vector4 c = model.ViewVertices[(int)face[2].X - 1];
-                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 && a.W > 0 && b.W > 0 && c.W > 0)
+                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
                     {
                         if (b.Y < a.Y)
                             (a, b) = (b, a);
@@ -542,7 +543,9 @@ namespace lab1
             if (Material.UsingMIPMapping)
                 MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
 
-            CurrLamp.Content = $"Current lamp: {LightingConfig.CurrentLamp + 1}";
+            CurrLamp.Content = $"Current lamp: {(LightingConfig.CurrentLamp > -1 ? LightingConfig.CurrentLamp + 1 : "*")}";
+
+            Contrl.Content = $"NumPad control mode: {(camera_control ? "camera" : "light")}";
         }
 
         private void DrawLights()
@@ -565,7 +568,7 @@ namespace lab1
 
                         if (z < ZBuffer[x, y])
                         {
-                            bufferHDR[x, y] = lamp.Color * (lamp.Intensity + 0.15f);
+                            bufferHDR[x, y] = lamp.Color * (lamp.Intensity + 1f);
                             ZBuffer[x, y] = z;
                         }
 
@@ -694,10 +697,10 @@ namespace lab1
         {
             if (e.Delta > 0)
             {
-                camera.UpdatePosition(-1f, 0, 0);
+                camera.UpdatePosition(-0.3f, 0, 0);
             } else
             {
-                camera.UpdatePosition(1f, 0, 0);
+                camera.UpdatePosition(0.3f, 0, 0);
             }
             Draw();
         }
@@ -724,32 +727,50 @@ namespace lab1
             switch (e.Key)
             {
                 case Key.NumPad1:
-                    LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
+                    if (camera_control)
+                        camera.Move(new(-0.2f, 0, 0));
+                    else
+                        LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad2:
-                    LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
+                    if (camera_control)
+                        camera.Move(new(0.2f, 0, 0));
+                    else
+                        LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad4:
-                    LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
+                    if (camera_control)
+                        camera.Move(new(0, -0.2f, 0));
+                    else
+                        LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad5:
-                    LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
+                    if (camera_control)
+                        camera.Move(new(0, 0.2f, 0));
+                    else
+                        LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad7:
-                    LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
+                    if (camera_control)
+                        camera.Move(new(0, 0, -0.2f));
+                    else
+                        LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
                     Draw();
                     break;
 
                 case Key.NumPad8:
-                    LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
+                    if (camera_control)
+                        camera.Move(new(0, 0, 0.2f));
+                    else
+                        LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
                     Draw();
                     break;
 
@@ -913,6 +934,17 @@ namespace lab1
                     Draw();
                     break;
 
+                case Key.L:
+                    camera_control = !camera_control;
+                    Draw();
+                    break;
+
+                case Key.NumPad9:
+                    camera.Target = mainModel.GetCenter();
+                    camera.UpdatePosition(0, 0, 0);
+                    Draw();
+                    break;
+
                 case Key.O:
                     OpenFolderDialog dlg = new();
                     if (dlg.ShowDialog() == true)
@@ -929,7 +961,6 @@ namespace lab1
                         BVH_time.Content = $"BVH builded in {double.Round(timer.ElapsedMilliseconds)} ms";
                         timer.Stop();
 
-                        camera.MinZoomR = mainModel.GetMinZoomR();
                         camera.Target = mainModel.GetCenter();
                         camera.UpdatePosition(0, 0, 0);
 
@@ -982,6 +1013,12 @@ namespace lab1
                             ResizeMode = ResizeMode.CanResize;
                             WindowState = LastState;
                         }
+                        break;
+
+                    case Key.F2:
+                        LightingConfigWindow window = new();
+                        window.ShowDialog();
+                        Draw();
                         break;
                 }
             }

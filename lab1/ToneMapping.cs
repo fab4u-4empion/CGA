@@ -54,7 +54,7 @@ namespace lab1
             float min_ev = -12.47393f;
             float max_ev = 4.026069f;
 
-            color = new(Log2(color.X), Log2(color.Y), Log2(color.Z));
+            color = Clamp(new Vector3(Log2(color.X), Log2(color.Y), Log2(color.Z)), new(min_ev), new(max_ev));
             color = (color - min_ev * One) / (max_ev - min_ev);
 
             Vector3 x2 = color * color;
