@@ -24,10 +24,10 @@ namespace lab1
         public static bool DrawLights = true;
 
         public static List<Lamp> Lights = [
-            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 100, Name = "Default 0"},
-            new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 100, Name = "Default 1" },
-            new() { Position = new(10, 10, -10), Color = new(0.5f, 0.5f, 1), Intensity = 100, Name = "Default 2" },
-            new() { Position = new(-10, 10, -10), Color = new(0.5f, 1, 1), Intensity = 100, Name = "Default 3" },
+            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 500, Name = "Default 0"},
+            new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
+            new() { Position = new(10, 10, -10), Color = new(0.5f, 0.5f, 1), Intensity = 500, Name = "Default 2" },
+            new() { Position = new(-10, 10, -10), Color = new(0.5f, 1, 1), Intensity = 500, Name = "Default 3" },
         ];
 
         public static void ChangeLamp(int delta)

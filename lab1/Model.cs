@@ -126,7 +126,7 @@ namespace lab1
                 Vector3 e1 = p1 - p0;
                 Vector3 e2 = p2 - p0;
 
-                float x1 = uv0.X - uv1.X, x2 = uv0.X - uv2.X;
+                float x1 = uv1.X - uv0.X, x2 = uv2.X - uv0.X;
                 float y1 = uv0.Y - uv1.Y, y2 = uv0.Y - uv2.Y;
 
                 float r = 1 / (x1 * y2 - x2 * y1);    

@@ -391,7 +391,7 @@ namespace lab1
             Vector3 pw = (u * aw + v * bw + w * cw) / sum;
 
             Vector3 T = (u * t1 + v * t2 + w * t3) / sum;
-            Vector3 B = Vector3.Cross(T, oN) * model.Signs[faceIndex];
+            Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
 
             Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
 
