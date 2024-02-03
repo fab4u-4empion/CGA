@@ -159,7 +159,7 @@ namespace lab1
             y1 &= (src.Height - 1);
 
             return Vector3.Lerp(
-                Vector3.Lerp(src[x0, y0], src[x1, y1], u_ratio),
+                Vector3.Lerp(src[x0, y0], src[x1, y0], u_ratio),
                 Vector3.Lerp(src[x0, y1], src[x1, y1], u_ratio),
                 v_ratio
             );
