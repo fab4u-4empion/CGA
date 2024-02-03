@@ -81,7 +81,7 @@ namespace lab1
                             mtlIndex++;
                         }
                         material = new();
-                        model.MaterialsIndexes.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
+                        model.MaterialNames.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
                     }
 
                     if (mtlLine.StartsWith("Pm"))
@@ -172,6 +172,7 @@ namespace lab1
         private void LoadModel(string foldName, Model model)
         {
             int materialIndex = 0;
+            int faceIndex = 0;
             using (StreamReader reader = new($"{foldName}/model.obj"))
             {
                 while (!reader.EndOfStream)
@@ -186,7 +187,7 @@ namespace lab1
 
                     if (line.StartsWith("usemtl"))
                     {
-                        model.MaterialsIndexes.TryGetValue(line.Remove(0, 6).Trim(), out materialIndex);
+                        model.MaterialNames.TryGetValue(line.Remove(0, 6).Trim(), out materialIndex);
                     }
 
                     if (line.StartsWith("v "))
@@ -204,7 +205,7 @@ namespace lab1
 
                     if (line.StartsWith("f "))
                     {
-                        List<Vector3> vertices = line
+                        List<(int, int, int)> vertices = line
                                 .Remove(0, 2)
                                 .Trim()
                                 .Split(" ")
@@ -214,18 +215,14 @@ namespace lab1
                                         .Split("/")
                                         .Select(i => int.Parse(i, CultureInfo.InvariantCulture))
                                         .ToList();
-                                    return new Vector3(indexes[0], indexes[1], indexes[2]);
+                                    return (indexes[0], indexes[1], indexes[2]);
                                 }
                                 )
                                 .ToList();
                         for (int i = 0; i < vertices.Count - 2;  i++)
                         {
-                            List<Vector3> face = new() {
-                                vertices[0],
-                                vertices[i + 1],
-                                vertices[i + 2]
-                            };
-                            model.AddFace(face, materialIndex);
+                            model.AddFace(vertices[0], vertices[i + 1], vertices[i + 2], materialIndex, faceIndex);
+                            faceIndex++;
                         }
                     }
 
@@ -270,10 +267,10 @@ namespace lab1
 
             Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix * viewportMatrix;
 
-            model.ViewVertices = new Vector4[model.Vertices.Count];
+            model.ViewVertices = new Vector4[model.Positions.Count];
             for (int i = 0; i < model.ViewVertices.Length; i++)
             {
-                Vector4 vertex = Vector4.Transform(model.Vertices[i], matrix);
+                Vector4 vertex = Vector4.Transform(model.Positions[i], matrix);
                 vertex /= new Vector4(new(vertex.W), vertex.W * vertex.W);
                 model.ViewVertices[i] = vertex;
             }
@@ -284,17 +281,16 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        private void Rasterize(List<int> facesIndexes, Model model, Action<int, int, float, int> action)
+        private void Rasterize(List<int> facesIndices, Model model, Action<int, int, float, int> action)
         {
-            Parallel.ForEach(Partitioner.Create(0, facesIndexes.Count), (range) =>
+            Parallel.ForEach(Partitioner.Create(0, facesIndices.Count), (range) =>
             {
                 for (int i = range.Item1; i < range.Item2; i++)
                 {
-                    int faceIndex = facesIndexes[i];
-                    List<Vector3> face = model.Faces[faceIndex];
-                    Vector4 a = model.ViewVertices[(int)face[0].X - 1];
-                    Vector4 b = model.ViewVertices[(int)face[1].X - 1];
-                    Vector4 c = model.ViewVertices[(int)face[2].X - 1];
+                    int index = facesIndices[i] * 3;
+                    Vector4 a = model.ViewVertices[model.PositionIndices[index]];
+                    Vector4 b = model.ViewVertices[model.PositionIndices[index + 1]];
+                    Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
                     if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
                     {
                         if (b.Y < a.Y)
@@ -330,7 +326,7 @@ namespace lab1
                             {
                                 Vector4 p = p1 + (x - p1.X) * k;
                                 if (p.Z >= 0 && p.Z <= 1)
-                                    action(x, y, p.Z, faceIndex);
+                                    action(x, y, p.Z, facesIndices[i]);
                             }
                         }
                     }
@@ -340,12 +336,12 @@ namespace lab1
 
         private Color GetPixelColor(int faceIndex, Vector2 p, Model model)
         {
-            List<Vector3> face = model.Faces[faceIndex];
-            int materialIndex = model.FacesMaterials[faceIndex];
+            int materialIndex = model.MaterialIndices[faceIndex];
+            int index = faceIndex * 3;
 
-            Vector4 a = model.ViewVertices[(int)face[0].X - 1];
-            Vector4 b = model.ViewVertices[(int)face[1].X - 1];
-            Vector4 c = model.ViewVertices[(int)face[2].X - 1];
+            Vector4 a = model.ViewVertices[model.PositionIndices[index]];
+            Vector4 b = model.ViewVertices[model.PositionIndices[index + 1]];
+            Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
 
             Vector2 pa = new Vector2(a.X, a.Y) - p;
             Vector2 pb = new Vector2(b.X, b.Y) - p;
@@ -369,17 +365,21 @@ namespace lab1
             (float u3, float v3, float w3) = (u + dudx, v + dvdx, w + dwdx);
             (float u4, float v4, float w4) = (u - dudy, v - dvdy, w - dwdy);
 
-            Vector3 n1 = model.Normals[(int)face[0].Z - 1];
-            Vector3 n2 = model.Normals[(int)face[1].Z - 1];
-            Vector3 n3 = model.Normals[(int)face[2].Z - 1];
+            Vector3 n1 = model.Normals[model.NormalIndices[index]];
+            Vector3 n2 = model.Normals[model.NormalIndices[index + 1]];
+            Vector3 n3 = model.Normals[model.NormalIndices[index + 2]];
 
-            Vector2 uv_1 = model.UV[(int)face[0].Y - 1];
-            Vector2 uv_2 = model.UV[(int)face[1].Y - 1];
-            Vector2 uv_3 = model.UV[(int)face[2].Y - 1];
+            Vector2 uv_1 = model.UV[model.UVIndices[index]];
+            Vector2 uv_2 = model.UV[model.UVIndices[index + 1]];
+            Vector2 uv_3 = model.UV[model.UVIndices[index + 2]];
 
-            Vector4 aw = model.Vertices[(int)face[0].X - 1];
-            Vector4 bw = model.Vertices[(int)face[1].X - 1];
-            Vector4 cw = model.Vertices[(int)face[2].X - 1];
+            Vector4 aw = model.Positions[model.PositionIndices[index]];
+            Vector4 bw = model.Positions[model.PositionIndices[index + 1]];
+            Vector4 cw = model.Positions[model.PositionIndices[index + 2]];
+
+            Tangent t1 = model.Tangents[model.TangentIndices[index]];
+            Tangent t2 = model.Tangents[model.TangentIndices[index + 1]];
+            Tangent t3 = model.Tangents[model.TangentIndices[index + 2]];
 
             Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3) / sum;
             Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3) / (u1 + v1 + w1);
@@ -390,8 +390,14 @@ namespace lab1
             Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
             Vector4 pw = (u * aw + v * bw + w * cw) / sum;
 
+            Vector3 T = (u * t1.T + v * t2.T + w * t3.T) / sum;
+            Vector3 B = Vector3.Cross(T, oN) * t1.S;
+
             Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
+
             Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
+            n = T * n.X + B * n.Y + oN * n.Z;
+
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
@@ -561,7 +567,7 @@ namespace lab1
 
                     TransformCoordinates(Sphere);
 
-                    Rasterize(Sphere.OpaqueFacesIndexes, Sphere, (int x, int y, float z, int unused) =>
+                    Rasterize(Sphere.OpaqueFacesIndices, Sphere, (int x, int y, float z, int unused) =>
                     {
                         bool gotLock = false;
                         spins[x, y].Enter(ref gotLock);
@@ -582,15 +588,15 @@ namespace lab1
         {
             TransformCoordinates(mainModel);
 
-            Rasterize(mainModel.OpaqueFacesIndexes, mainModel, DrawPixelIntoViewBuffer);
+            Rasterize(mainModel.OpaqueFacesIndices, mainModel, DrawPixelIntoViewBuffer);
 
             DrawViewBuffer();
 
             DrawLights();
 
-            if (mainModel.TransparentFacesIndexes.Count > 0)
+            if (mainModel.TransparentFacesIndices.Count > 0)
             {
-                Rasterize(mainModel.TransparentFacesIndexes, mainModel, IncDepth);
+                Rasterize(mainModel.TransparentFacesIndices, mainModel, IncDepth);
 
                 int prefixSum = 0;
                 int depth = 0;
@@ -607,7 +613,7 @@ namespace lab1
 
                 LayersBuffer = new Layer[prefixSum];
 
-                Rasterize(mainModel.TransparentFacesIndexes, mainModel, DrawPixelIntoLayers);
+                Rasterize(mainModel.TransparentFacesIndices, mainModel, DrawPixelIntoLayers);
 
                 DrawLayers();
             }
@@ -953,11 +959,12 @@ namespace lab1
 
                         timer.Restart();
                         LoadModel(dlg.FolderName, mainModel);
+                        mainModel.CalculateTangents();
                         timer.Stop();
                         Model_time.Content = $"Model loaded in {double.Round(timer.ElapsedMilliseconds)} ms";
 
                         timer.Restart();
-                        BVH.Build(mainModel.Faces, mainModel.Vertices, mainModel.OpaqueFacesIndexes);
+                        BVH.Build(mainModel.Positions, mainModel.OpaqueFacesIndices, mainModel.PositionIndices);
                         BVH_time.Content = $"BVH builded in {double.Round(timer.ElapsedMilliseconds)} ms";
                         timer.Stop();
 
