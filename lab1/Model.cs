@@ -4,19 +4,13 @@ using System.Numerics;
 
 namespace lab1
 {
-    public class Tangent
-    {
-        public Vector3 T = new();
-        public sbyte S = 0;
-    }
-
     public class Model
     {
-        public List<Vector4> Positions = [];
+        public List<Vector3> Positions = [];
         public List<Vector3> Normals = [];
         public List<Vector2> UV = [];
         public List<Material> Materials = [];
-        public List<Tangent> Tangents = [];
+        public List<Vector3> Tangents = [];
         public Vector4[] ViewVertices;
 
         public Dictionary<string, int> MaterialNames = [];
@@ -26,6 +20,7 @@ namespace lab1
         public List<int> NormalIndices = [];
         public List<int> MaterialIndices = [];
         public List<int> TangentIndices = [];
+        public List<sbyte> Signs = [];
 
         public List<int> OpaqueFacesIndices = [];
         public List<int> TransparentFacesIndices = [];        
@@ -68,7 +63,7 @@ namespace lab1
             minY = float.Min(minY, y);
             minZ = float.Min(minZ, z);
 
-            Positions.Add(new(x, y, z, 1));
+            Positions.Add(new(x, y, z));
         }
 
         public void AddFace((int, int, int) v1, (int, int, int) v2, (int, int, int) v3, int materialIndex, int faceIndex)
@@ -116,63 +111,52 @@ namespace lab1
 
         public void CalculateTangents()
         {
-            int tangentIndex = 0;
-            List<Vector3> tangent = [];
-            List<Vector3> bitangent = [];
             Dictionary<(int, int, int, int, int), int> tangentDictionary = [];
 
             for (int i = 0; i < PositionIndices.Count; i += 3) 
             {
-                Vector4 p0 = Positions[PositionIndices[i]];
-                Vector4 p1 = Positions[PositionIndices[i + 1]];
-                Vector4 p2 = Positions[PositionIndices[i + 2]];
+                Vector3 p0 = Positions[PositionIndices[i]];
+                Vector3 p1 = Positions[PositionIndices[i + 1]];
+                Vector3 p2 = Positions[PositionIndices[i + 2]];
 
                 Vector2 uv0 = UV[UVIndices[i]];
                 Vector2 uv1 = UV[UVIndices[i + 1]];
                 Vector2 uv2 = UV[UVIndices[i + 2]];
 
-                Vector3 e1 = new Vector3(p1.X, p1.Y, p1.Z) - new Vector3(p0.X, p0.Y, p0.Z);
-                Vector3 e2 = new Vector3(p2.X, p2.Y, p2.Z) - new Vector3(p0.X, p0.Y, p0.Z);
+                Vector3 e1 = p1 - p0;
+                Vector3 e2 = p2 - p0;
 
-                float x1 = uv1.X - uv0.X, x2 = uv2.X - uv0.X;
-                float y1 = uv1.Y - uv0.Y, y2 = uv2.Y - uv0.Y;
+                float x1 = uv0.X - uv1.X, x2 = uv0.X - uv2.X;
+                float y1 = uv0.Y - uv1.Y, y2 = uv0.Y - uv2.Y;
 
                 float r = 1 / (x1 * y2 - x2 * y1);    
                 Vector3 t = (e1 * y2 - e2 * y1) * r;
                 Vector3 b = (e2 * x1 - e1 * x2) * r;
 
+                sbyte sign = (sbyte)float.Sign(Vector3.Dot(Vector3.Cross(e1, e2), Vector3.Cross(t, b)));
+                Signs.Add(sign);
+
                 for (int j = i; j < i + 3; j++)
                 {
-                    Vector3 n = Normals[NormalIndices[j]];
-                    int s = float.Sign(Vector3.Dot(Vector3.Cross(t, b), n));
+                    (int, int, int, int, int) key = (PositionIndices[j], UVIndices[j], NormalIndices[j], MaterialIndices[i / 3], sign);
 
-                    (int, int, int, int, int) key = (PositionIndices[j], UVIndices[j], NormalIndices[j], MaterialIndices[i / 3], s);
-
-                    if (!tangentDictionary.TryGetValue(key, out int ti))
+                    if (!tangentDictionary.TryGetValue(key, out int tangentIndex))
                     {
-                        tangentDictionary.Add(key, tangentIndex);
-                        
-                        ti = tangentIndex;
+                        tangentDictionary.Add(key, Tangents.Count);
+                        tangentIndex = Tangents.Count;
                         Tangents.Add(new());
-                        tangent.Add(new());
-                        bitangent.Add(new());
-                        tangentIndex++;
                     }
 
-                    TangentIndices.Add(ti);
-                    tangent[ti] += t;
-                    bitangent[ti] += b;
+                    TangentIndices.Add(tangentIndex);
+                    Vector3 n = Normals[NormalIndices[j]];
+
+                    Tangents[tangentIndex] += t - Vector3.Dot(t, n) * n;
                 }
             }
 
             for (int i = 0; i < PositionIndices.Count; i++)
             {
-                Vector3 t = tangent[TangentIndices[i]];
-                Vector3 b = bitangent[TangentIndices[i]];
-                Vector3 n = Normals[NormalIndices[i]];
-
-                Tangents[TangentIndices[i]].T = Vector3.Normalize(t - Vector3.Dot(t, n) * n);
-                Tangents[TangentIndices[i]].S = (sbyte)float.Sign(Vector3.Dot(Vector3.Cross(t, b), n));
+                Tangents[TangentIndices[i]] = Vector3.Normalize(Tangents[TangentIndices[i]]);
             }
 
         }

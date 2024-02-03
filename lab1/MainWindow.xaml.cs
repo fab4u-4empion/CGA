@@ -373,13 +373,13 @@ namespace lab1
             Vector2 uv_2 = model.UV[model.UVIndices[index + 1]];
             Vector2 uv_3 = model.UV[model.UVIndices[index + 2]];
 
-            Vector4 aw = model.Positions[model.PositionIndices[index]];
-            Vector4 bw = model.Positions[model.PositionIndices[index + 1]];
-            Vector4 cw = model.Positions[model.PositionIndices[index + 2]];
+            Vector3 aw = model.Positions[model.PositionIndices[index]];
+            Vector3 bw = model.Positions[model.PositionIndices[index + 1]];
+            Vector3 cw = model.Positions[model.PositionIndices[index + 2]];
 
-            Tangent t1 = model.Tangents[model.TangentIndices[index]];
-            Tangent t2 = model.Tangents[model.TangentIndices[index + 1]];
-            Tangent t3 = model.Tangents[model.TangentIndices[index + 2]];
+            Vector3 t1 = model.Tangents[model.TangentIndices[index]];
+            Vector3 t2 = model.Tangents[model.TangentIndices[index + 1]];
+            Vector3 t3 = model.Tangents[model.TangentIndices[index + 2]];
 
             Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3) / sum;
             Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3) / (u1 + v1 + w1);
@@ -388,10 +388,10 @@ namespace lab1
             Vector2 uv4 = (u4 * uv_1 + v4 * uv_2 + w4 * uv_3) / (u4 + v4 + w4);
 
             Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
-            Vector4 pw = (u * aw + v * bw + w * cw) / sum;
+            Vector3 pw = (u * aw + v * bw + w * cw) / sum;
 
-            Vector3 T = (u * t1.T + v * t2.T + w * t3.T) / sum;
-            Vector3 B = Vector3.Cross(T, oN) * t1.S;
+            Vector3 T = (u * t1 + v * t2 + w * t3) / sum;
+            Vector3 B = Vector3.Cross(T, oN) * model.Signs[faceIndex];
 
             Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
 
@@ -403,7 +403,7 @@ namespace lab1
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
             (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
-            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, new(pw.X, pw.Y, pw.Z), faceIndex);
+            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
 
             return (color, opacity);
         }
