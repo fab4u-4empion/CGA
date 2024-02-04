@@ -39,19 +39,20 @@ namespace lab1.Shaders
         }
 
         public static Vector3 GetPixelColor(
-            Vector3 albedo, 
-            float metallic, 
-            float roughness, 
-            float ao, 
+            Vector3 albedo,
+            float metallic,
+            float roughness,
+            float ao,
             float opacity,
-            Vector3 emission, 
-            Vector3 n, 
+            Vector3 emission,
+            Vector3 n,
             Vector3 clearCoatN,
             float clearCoat,
             float clearCoatRougness,
-            Vector3 camera, 
+            Vector3 camera,
             Vector3 p,
-            int faceIndex
+            int faceIndex,
+            float dissolve
         )
         {
             roughness *= roughness;
@@ -103,7 +104,7 @@ namespace lab1.Shaders
 
             color += albedo * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
 
-            return color;
+            return color * dissolve;
         }
     }
 }

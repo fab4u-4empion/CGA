@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace lab1
 {
@@ -20,6 +21,7 @@ namespace lab1
         public List<Buffer<Vector3>> MRAO = new(15);
         public List<Buffer<Vector3>> Emission = new(15);
         public List<Buffer<Vector3>> Transmission = new(15);
+        public List<Buffer<Vector3>> Dissolve = new(15);
 
         public List<Buffer<Vector3>> ClearCoat = new(15);
         public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
@@ -31,6 +33,7 @@ namespace lab1
         public Vector3 Kd = Vector3.Zero;
         public float Pc = 0;
         public float Pcr = 0;
+        public float D = 1;
 
         public BlendModes BlendMode = BlendModes.Opaque;
 
@@ -117,6 +120,11 @@ namespace lab1
             Transmission.AddRange(CalculateMIP(src));
         }
 
+        public void AddDissolve(Pbgra32Bitmap src)
+        {
+            Dissolve.AddRange(CalculateMIP(src));
+        }
+
         public void AddClearCoat(Pbgra32Bitmap src)
         {
             ClearCoat.AddRange(CalculateMIP(src));
@@ -124,18 +132,12 @@ namespace lab1
 
         public void AddClearCoatRoughness(Pbgra32Bitmap src)
         {
-            Task.Run(() =>
-            {
-                ClearCoatRoughness.AddRange(CalculateMIP(src));
-            });
+            ClearCoatRoughness.AddRange(CalculateMIP(src));
         }
 
         public void AddClearCoatNormals(Pbgra32Bitmap src)
         {
-            Task.Run(() =>
-            {
-                ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
-            });
+            ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
         }
 
         private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
@@ -174,6 +176,9 @@ namespace lab1
             {
                 float length1 = ((uv3 - uv1) * src[0].Size).Length();
                 float length2 = ((uv4 - uv2) * src[0].Size).Length();
+
+                if (length1 == 0 || length2 == 0)
+                    return def;
 
                 float max = float.Max(length1, length2);
                 float min = float.Min(length1, length2);
@@ -230,6 +235,11 @@ namespace lab1
         public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2, uv3, uv4).X;
+        }
+
+        public float GetDissolve(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        {
+            return GetColorFromTexture(Dissolve, uv, new(D), uv1, uv2, uv3, uv4).X;
         }
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)

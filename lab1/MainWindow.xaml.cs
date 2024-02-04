@@ -22,7 +22,7 @@ using System.Diagnostics;
 namespace lab1
 {
     using Layer = (int Index, float Z);
-    using Color = (Vector3 Color, float Alpha);
+    using Color = (Vector3 Color, float Alpha, float Dissolve);
     using DPIScale = (double X, double Y);
 
     public partial class MainWindow : Window
@@ -98,6 +98,18 @@ namespace lab1
                     if (mtlLine.StartsWith("Tr"))
                     {
                         material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                        material.BlendMode = BlendModes.AlphaBlending;
+                    }
+
+                    if (mtlLine.StartsWith("d"))
+                    {
+                        material.D = float.Parse(mtlLine.Remove(0, 1).Trim(), CultureInfo.InvariantCulture);
+                        material.BlendMode = BlendModes.AlphaBlending;
+                    }
+
+                    if (mtlLine.StartsWith("map_D"))
+                    {
+                        material.AddDissolve(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 5).Trim()}", UriKind.Relative))));
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -401,11 +413,12 @@ namespace lab1
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
+            float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2, uv3, uv4);
             (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
 
-            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
+            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex, dissolve);
 
-            return (color, opacity);
+            return (color, opacity, dissolve);
         }
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
@@ -469,7 +482,7 @@ namespace lab1
                 Color pixel = GetPixelColor(LayersBuffer[i].Index, new(x, y), mainModel);
 
                 color += (1 - alpha) * pixel.Color;
-                alpha += (1 - alpha) * pixel.Alpha;
+                alpha += (1 - alpha) * pixel.Alpha * pixel.Dissolve;
 
                 if (pixel.Alpha == 1)
                     break;
@@ -488,8 +501,8 @@ namespace lab1
                 {
                     if (viewBuffer[x, y] != -1)
                     {
-                        (Vector3 color, float alpha) = GetPixelColor(viewBuffer[x, y], new(x, y), mainModel);
-                        bufferHDR[x, y] = new(color.X, color.Y, color.Z);
+                        Color color = GetPixelColor(viewBuffer[x, y], new(x, y), mainModel);
+                        bufferHDR[x, y] = color.Color;
                     }
                 }
             });

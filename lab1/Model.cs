@@ -162,7 +162,8 @@ namespace lab1
 
             for (int i = 0; i < PositionIndices.Count; i++)
             {
-                Tangents[TangentIndices[i]] = Vector3.Normalize(Tangents[TangentIndices[i]]);
+                if (Tangents[TangentIndices[i]].Length() > 0)
+                    Tangents[TangentIndices[i]] = Vector3.Normalize(Tangents[TangentIndices[i]]);
             }
 
         }
