@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
-using System.Xml;
+using System.Windows;
 
 namespace lab1
 {
@@ -177,13 +177,13 @@ namespace lab1
                 float length1 = ((uv3 - uv1) * src[0].Size).Length();
                 float length2 = ((uv4 - uv2) * src[0].Size).Length();
 
-                if (length1 == 0 || length2 == 0)
-                    return def;
-
                 float max = float.Max(length1, length2);
                 float min = float.Min(length1, length2);
 
-                float aniso = float.Min(max / min, MaxAnisotropy);
+                if (max == 0 && min == 0)
+                    MessageBox.Show($"{float.MaxNumber(max / min, 1)}   {float.MaxNumber(0 / 0f, 1)}");
+
+                float aniso = float.Min(max / min is float x && x > 1 ? x : 1, MaxAnisotropy);
 
                 int N = (int)float.Round(aniso, MidpointRounding.AwayFromZero);
                 float lvl = float.Clamp(float.Log2(max / aniso), 0, src.Count - 1);

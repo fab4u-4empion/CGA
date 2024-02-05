@@ -293,7 +293,7 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        private void Rasterize(List<int> facesIndices, Model model, Action<int, int, float, int> action)
+        private void Rasterize(List<int> facesIndices, Model model, Action<int, int, float, int> action, BlendModes blendMode)
         {
             Parallel.ForEach(Partitioner.Create(0, facesIndices.Count), (range) =>
             {
@@ -303,7 +303,7 @@ namespace lab1
                     Vector4 a = model.ViewVertices[model.PositionIndices[index]];
                     Vector4 b = model.ViewVertices[model.PositionIndices[index + 1]];
                     Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
-                    if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
+                    if ((PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending) && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
                     {
                         if (b.Y < a.Y)
                             (a, b) = (b, a);
@@ -592,7 +592,7 @@ namespace lab1
                         }
 
                         spins[x, y].Exit(false);
-                    });
+                    }, BlendModes.Opaque);
                 }
             }
         }
@@ -601,7 +601,7 @@ namespace lab1
         {
             TransformCoordinates(mainModel);
 
-            Rasterize(mainModel.OpaqueFacesIndices, mainModel, DrawPixelIntoViewBuffer);
+            Rasterize(mainModel.OpaqueFacesIndices, mainModel, DrawPixelIntoViewBuffer, BlendModes.Opaque);
 
             DrawViewBuffer();
 
@@ -609,7 +609,7 @@ namespace lab1
 
             if (mainModel.TransparentFacesIndices.Count > 0)
             {
-                Rasterize(mainModel.TransparentFacesIndices, mainModel, IncDepth);
+                Rasterize(mainModel.TransparentFacesIndices, mainModel, IncDepth, BlendModes.AlphaBlending);
 
                 int prefixSum = 0;
                 int depth = 0;
@@ -626,7 +626,7 @@ namespace lab1
 
                 LayersBuffer = new Layer[prefixSum];
 
-                Rasterize(mainModel.TransparentFacesIndices, mainModel, DrawPixelIntoLayers);
+                Rasterize(mainModel.TransparentFacesIndices, mainModel, DrawPixelIntoLayers, BlendModes.AlphaBlending);
 
                 DrawLayers();
             }
@@ -911,7 +911,7 @@ namespace lab1
                     PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap.Source as BitmapSource));
                     DirectoryInfo info = Directory.CreateDirectory("img");
-                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
+                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff orig}.png", FileMode.Create))
                     {
                         encoder.Save(st);
                     }

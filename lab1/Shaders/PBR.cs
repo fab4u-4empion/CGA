@@ -62,7 +62,11 @@ namespace lab1.Shaders
             Vector3 ON = Normalize(clearCoatN);
             Vector3 V = Normalize(camera - p);
 
-            float NdotV = Max(Dot(N, V), 0);
+            float NdotV = Dot(N, V);
+
+            int useSpecular = NdotV < 0 ? 0 : 1;
+
+            NdotV = Max(Dot(N, V), 0);
             float ONdotV = Max(Dot(ON, V), 0);
 
             Vector3 F0 = Lerp(new(0.04f), albedo, metallic);
@@ -89,7 +93,7 @@ namespace lab1.Shaders
                 Vector3 reflectance = FresnelSchlick(VdotH, F0);
 
                 Vector3 diffuse = (1 - metallic) * albedo / Pi * opacity;
-                Vector3 specular = reflectance * visibility * distribution;
+                Vector3 specular = reflectance * visibility * distribution * useSpecular;
 
                 Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
 
@@ -97,7 +101,7 @@ namespace lab1.Shaders
                 float clearCoatVisibility = Visibility(ONdotV, ONdotL, clearCoatRougness);
                 Vector3 clearCoatReflectance = FresnelSchlick(VdotH, new(0.04f)) * clearCoat;
 
-                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution;
+                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution * useSpecular;
 
                 color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * ONdotL) * irradiance * intensity;
             }
