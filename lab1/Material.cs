@@ -40,7 +40,7 @@ namespace lab1
         public static bool UsingMIPMapping = false;
         public static int MaxAnisotropy = 1;
 
-        private List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
+        public static List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
             List<Buffer<Vector3>> lvls = new(15);
 
@@ -95,51 +95,6 @@ namespace lab1
             return lvls;
         }
 
-        public void AddDiffuse(Pbgra32Bitmap src)
-        {
-            Diffuse.AddRange(CalculateMIP(src, true));
-        }
-
-        public void AddNormals(Pbgra32Bitmap src)
-        {
-            Normals.AddRange(CalculateMIP(src, false, true));
-        }
-
-        public void AddMRAO(Pbgra32Bitmap src)
-        {
-            MRAO.AddRange(CalculateMIP(src));
-        }
-
-        public void AddEmission(Pbgra32Bitmap src)
-        {
-            Emission.AddRange(CalculateMIP(src, true));
-        }
-
-        public void AddTransmission(Pbgra32Bitmap src)
-        {
-            Transmission.AddRange(CalculateMIP(src));
-        }
-
-        public void AddDissolve(Pbgra32Bitmap src)
-        {
-            Dissolve.AddRange(CalculateMIP(src));
-        }
-
-        public void AddClearCoat(Pbgra32Bitmap src)
-        {
-            ClearCoat.AddRange(CalculateMIP(src));
-        }
-
-        public void AddClearCoatRoughness(Pbgra32Bitmap src)
-        {
-            ClearCoatRoughness.AddRange(CalculateMIP(src));
-        }
-
-        public void AddClearCoatNormals(Pbgra32Bitmap src)
-        {
-            ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
-        }
-
         private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
         {
             float u = uv.X * src.Width - 0.5f;
@@ -180,10 +135,7 @@ namespace lab1
                 float max = float.Max(length1, length2);
                 float min = float.Min(length1, length2);
 
-                if (max == 0 && min == 0)
-                    MessageBox.Show($"{float.MaxNumber(max / min, 1)}   {float.MaxNumber(0 / 0f, 1)}");
-
-                float aniso = float.Min(max / min is float x && x > 1 ? x : 1, MaxAnisotropy);
+                float aniso = float.MaxMagnitudeNumber(float.Min(max / min, MaxAnisotropy), 1);
 
                 int N = (int)float.Round(aniso, MidpointRounding.AwayFromZero);
                 float lvl = float.Clamp(float.Log2(max / aniso), 0, src.Count - 1);

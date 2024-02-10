@@ -91,7 +91,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Tr"))
                     {
-                        material.AddTransmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                        material.Transmission = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}");
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -109,7 +109,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_D"))
                     {
-                        material.AddDissolve(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 5).Trim()}", UriKind.Relative))));
+                        material.Dissolve = model.AddTexture($"{fold}/{mtlLine.Remove(0, 5).Trim()}");
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -130,23 +130,23 @@ namespace lab1
                     }
 
                     if (mtlLine.StartsWith("map_Kd"))
-                    {
-                        material.AddDiffuse(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                    {                        
+                        material.Diffuse = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}", true);
                     }
 
                     if (mtlLine.StartsWith("map_Ke"))
                     {
-                        material.AddEmission(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                        material.Emission = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}", true);
                     }
 
                     if (mtlLine.StartsWith("map_MRAO"))
                     {
-                        material.AddMRAO(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 8).Trim()}", UriKind.Relative))));
+                        material.MRAO = model.AddTexture($"{fold}/{mtlLine.Remove(0, 8).Trim()}");
                     }
 
                     if (mtlLine.StartsWith("map_Pcr"))
                     {
-                        material.AddClearCoatRoughness(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 7).Trim()}", UriKind.Relative))));
+                        material.ClearCoatRoughness = model.AddTexture($"{fold}/{mtlLine.Remove(0, 7).Trim()}");
                         continue;
                     }
 
@@ -158,7 +158,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Pc"))
                     {
-                        material.AddClearCoat(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 6).Trim()}", UriKind.Relative))));
+                        material.ClearCoat = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}");
                     }
 
                     if (mtlLine.StartsWith("Pc"))
@@ -168,13 +168,13 @@ namespace lab1
 
                     if (mtlLine.StartsWith("norm_pc"))
                     {
-                        material.AddClearCoatNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 7).Trim()}", UriKind.Relative))));
+                        material.ClearCoatNormals = model.AddTexture($"{fold}/{mtlLine.Remove(0, 7).Trim()}", false, true);
                         continue;
                     }
 
                     if (mtlLine.StartsWith("norm"))
                     {
-                        material.AddNormals(new(new BitmapImage(new Uri($"{fold}/{mtlLine.Remove(0, 4).Trim()}", UriKind.Relative))));
+                        material.Normals = model.AddTexture($"{fold}/{mtlLine.Remove(0, 4).Trim()}", false, true);
                     }
                 }
                 model.Materials.Add(material);

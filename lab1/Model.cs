@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Windows.Media.Imaging;
 
 namespace lab1
 {
@@ -23,7 +25,9 @@ namespace lab1
         public List<sbyte> Signs = [];
 
         public List<int> OpaqueFacesIndices = [];
-        public List<int> TransparentFacesIndices = [];        
+        public List<int> TransparentFacesIndices = [];
+
+        public Dictionary<string, List<Buffer<Vector3>>> Textures = [];
 
         public float Scale { get; set; }
 
@@ -64,6 +68,17 @@ namespace lab1
             minZ = float.Min(minZ, z);
 
             Positions.Add(new(x, y, z));
+        }
+
+        public List<Buffer<Vector3>> AddTexture(string uri, bool useSrgbToLinearTransform = false, bool isNormal = false)
+        {
+            if (!Textures.TryGetValue(uri, out List<Buffer<Vector3>> texture))
+            {
+                texture = Material.CalculateMIP(new(new BitmapImage(new Uri(uri, UriKind.Relative))), useSrgbToLinearTransform, isNormal);
+                Textures.Add(uri, texture);
+            }
+
+            return texture;
         }
 
         public void AddFace((int, int, int) v1, (int, int, int) v2, (int, int, int) v3, int materialIndex, int faceIndex)
