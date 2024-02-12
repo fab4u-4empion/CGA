@@ -42,7 +42,7 @@ namespace lab1
         Model Sphere;
         Camera camera = new();
 
-        Vector3 backColor = new(0.1f, 0.1f, 0.1f);
+        Vector3 backColor = new(0.3f, 0.3f, 0.3f);
 
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
@@ -484,7 +484,7 @@ namespace lab1
                 color += (1 - alpha) * pixel.Color;
                 alpha += (1 - alpha) * pixel.Alpha * pixel.Dissolve;
 
-                if (pixel.Alpha == 1)
+                if (pixel.Alpha == 1 && pixel.Dissolve == 1)
                     break;
             }
 
@@ -911,7 +911,7 @@ namespace lab1
                     PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap.Source as BitmapSource));
                     DirectoryInfo info = Directory.CreateDirectory("img");
-                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff orig}.png", FileMode.Create))
+                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
                     {
                         encoder.Save(st);
                     }

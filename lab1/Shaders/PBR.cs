@@ -78,6 +78,9 @@ namespace lab1.Shaders
                 Vector3 L = Normalize(Lights[i].Position - p);
                 Vector3 H = Normalize(V + L);
 
+                if (Dot(N, L) <= 0)
+                    continue;
+
                 float distance = Distance(Lights[i].Position, p);
 
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
