@@ -18,6 +18,7 @@ using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Windows.Controls.Primitives;
 
 namespace lab1
 {
@@ -57,14 +58,17 @@ namespace lab1
 
         bool camera_control = false;
 
+        int totalFrames = 0;
+
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private void LoadMaterials(string fold, string mtl, Model model)
+        private void LoadMaterials(string fileName, Model model)
         {
-            using (StreamReader mtlReader = new($"{fold}/{mtl}"))
+            string fold = Path.GetDirectoryName(fileName);
+            using (StreamReader mtlReader = new(fileName))
             {
                 Material? material = null;
                 int mtlIndex = 0;
@@ -91,7 +95,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Tr"))
                     {
-                        material.Transmission = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}");
+                        material.Transmission = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()));
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -109,7 +113,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_D"))
                     {
-                        material.Dissolve = model.AddTexture($"{fold}/{mtlLine.Remove(0, 5).Trim()}");
+                        material.Dissolve = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 5).Trim()));
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
@@ -131,22 +135,22 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Kd"))
                     {                        
-                        material.Diffuse = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}", true);
+                        material.Diffuse = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
                     }
 
                     if (mtlLine.StartsWith("map_Ke"))
                     {
-                        material.Emission = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}", true);
+                        material.Emission = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
                     }
 
                     if (mtlLine.StartsWith("map_MRAO"))
                     {
-                        material.MRAO = model.AddTexture($"{fold}/{mtlLine.Remove(0, 8).Trim()}");
+                        material.MRAO = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 8).Trim()));
                     }
 
                     if (mtlLine.StartsWith("map_Pcr"))
                     {
-                        material.ClearCoatRoughness = model.AddTexture($"{fold}/{mtlLine.Remove(0, 7).Trim()}");
+                        material.ClearCoatRoughness = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 7).Trim()));
                         continue;
                     }
 
@@ -158,7 +162,7 @@ namespace lab1
 
                     if (mtlLine.StartsWith("map_Pc"))
                     {
-                        material.ClearCoat = model.AddTexture($"{fold}/{mtlLine.Remove(0, 6).Trim()}");
+                        material.ClearCoat = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()));
                     }
 
                     if (mtlLine.StartsWith("Pc"))
@@ -168,24 +172,24 @@ namespace lab1
 
                     if (mtlLine.StartsWith("norm_pc"))
                     {
-                        material.ClearCoatNormals = model.AddTexture($"{fold}/{mtlLine.Remove(0, 7).Trim()}", false, true);
+                        material.ClearCoatNormals = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 7).Trim()), false, true);
                         continue;
                     }
 
                     if (mtlLine.StartsWith("norm"))
                     {
-                        material.Normals = model.AddTexture($"{fold}/{mtlLine.Remove(0, 4).Trim()}", false, true);
+                        material.Normals = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 4).Trim()), false, true);
                     }
                 }
                 model.Materials.Add(material);
             }
         }
 
-        private void LoadModel(string foldName, Model model)
+        private void LoadModel(string fileName, Model model)
         {
             int materialIndex = 0;
             int faceIndex = 0;
-            using (StreamReader reader = new($"{foldName}/model.obj"))
+            using (StreamReader reader = new(fileName))
             {
                 while (!reader.EndOfStream)
                 {
@@ -194,7 +198,7 @@ namespace lab1
                     if (line.StartsWith("mtllib "))
                     {
                         String mtl = line.Remove(0, 7).Trim();
-                        LoadMaterials(foldName, mtl, model);
+                        LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), mtl), model);
                     }
 
                     if (line.StartsWith("usemtl"))
@@ -305,38 +309,38 @@ namespace lab1
                     Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
                     if ((PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending) && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
                     {
-                        if (b.Y < a.Y)
+                        if (b.X < a.X)
                             (a, b) = (b, a);
 
-                        if (c.Y < a.Y)
+                        if (c.X < a.X)
                             (a, c) = (c, a);
 
-                        if (c.Y < b.Y)
+                        if (c.X < b.X)
                             (b, c) = (c, b);
 
-                        Vector4 k1 = (c - a) / (c.Y - a.Y);
-                        Vector4 k2 = (b - a) / (b.Y - a.Y);
-                        Vector4 k3 = (c - b) / (c.Y - b.Y);
+                        Vector4 k1 = (c - a) / (c.X - a.X);
+                        Vector4 k2 = (b - a) / (b.X - a.X);
+                        Vector4 k3 = (c - b) / (c.X - b.X);
 
-                        int top = int.Max((int)float.Ceiling(a.Y), 0);
-                        int bottom = int.Min((int)float.Ceiling(c.Y), bitmap.PixelHeight);
+                        int left = int.Max((int)float.Ceiling(a.X), 0);
+                        int right = int.Min((int)float.Ceiling(c.X), bitmap.PixelWidth);
 
-                        for (int y = top; y < bottom; y++)
+                        for (int x = left; x < right; x++)
                         {
-                            Vector4 p1 = a + (y - a.Y) * k1;
-                            Vector4 p2 = y < b.Y ? a + (y - a.Y) * k2 : b + (y - b.Y) * k3;
+                            Vector4 p1 = a + (x - a.X) * k1;
+                            Vector4 p2 = x < b.X ? a + (x - a.X) * k2 : b + (x - b.X) * k3;
 
-                            if (p1.X > p2.X)
+                            if (p1.Y > p2.Y)
                                 (p1, p2) = (p2, p1);
 
-                            Vector4 k = (p2 - p1) / (p2.X - p1.X);
+                            Vector4 k = (p2 - p1) / (p2.Y - p1.Y);
 
-                            int left = int.Max((int)float.Ceiling(p1.X), 0);
-                            int right = int.Min((int)float.Ceiling(p2.X), bitmap.PixelWidth);
+                            int top = int.Max((int)float.Ceiling(p1.Y), 0);
+                            int bottom = int.Min((int)float.Ceiling(p2.Y), bitmap.PixelHeight);
 
-                            for (int x = left; x < right; x++)
+                            for (int y = top; y < bottom; y++)
                             {
-                                Vector4 p = p1 + (x - p1.X) * k;
+                                Vector4 p = p1 + (y - p1.Y) * k;
                                 if (p.Z >= 0 && p.Z <= 1)
                                     action(x, y, p.Z, facesIndices[i]);
                             }
@@ -407,7 +411,7 @@ namespace lab1
 
             Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
 
-            Vector3 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
+            Vector3 n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
             n = T * n.X + B * n.Y + oN * n.Z;
 
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
@@ -636,8 +640,6 @@ namespace lab1
         {
             UpdateInfo();
 
-            timer.Restart();
-
             for (int x = 0; x < bitmap.PixelWidth; x++)
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
@@ -662,9 +664,7 @@ namespace lab1
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             bitmap.Source.Unlock();
 
-            timer.Stop();
-
-            Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
+            totalFrames += 1;
         }
 
         private void CreateBuffers()
@@ -691,7 +691,25 @@ namespace lab1
         {
             CreateBuffers();
             Sphere = new Model();
-            LoadModel(".", Sphere);
+            LoadModel(Path.Combine(Directory.GetCurrentDirectory(), "model.obj"), Sphere);
+            timer.Start();
+
+            Task.Run(() =>
+            {
+                while(true)
+                {
+                    if (timer.ElapsedMilliseconds > 1000)
+                    {
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            Time.Content = (double.Round(totalFrames) + " fps");
+                            totalFrames = 0;
+                            timer.Restart();
+                        });
+                    }
+                }
+            });
+
             Draw();
         }
 
@@ -965,13 +983,14 @@ namespace lab1
                     break;
 
                 case Key.O:
-                    OpenFolderDialog dlg = new();
+                    OpenFileDialog dlg = new();
+                    dlg.Filter = "Wavefront (*.obj)|*.obj";
                     if (dlg.ShowDialog() == true)
                     {
                         mainModel = new();
 
                         timer.Restart();
-                        LoadModel(dlg.FolderName, mainModel);
+                        LoadModel(dlg.FileName, mainModel);
                         mainModel.CalculateTangents();
                         timer.Stop();
                         Model_time.Content = $"Model loaded in {double.Round(timer.ElapsedMilliseconds)} ms";
