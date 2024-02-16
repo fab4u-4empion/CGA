@@ -29,7 +29,7 @@ namespace lab1
 
         private static int rootNodeIndx = 0, nodesUsed = 1;
 
-        public static void Build(List<List<Vector3>> faces, List<Vector4> vertices, List<int> opaqueFacesIndexes)
+        public static void Build(List<Vector3> vertices, List<int> opaqueFacesIndexes, List<int> verticesIndices)
         {
             Tris = new Tri[opaqueFacesIndexes.Count];
             nodes = new BVHNode[opaqueFacesIndexes.Count * 2 - 1];
@@ -43,15 +43,15 @@ namespace lab1
 
             for (int i = 0; i < opaqueFacesIndexes.Count; i++)
             {
-                List<Vector3> face = faces[opaqueFacesIndexes[i]];
-                Vector4 v0 = vertices[(int)face[0].X - 1];
-                Vector4 v1 = vertices[(int)face[1].X - 1];
-                Vector4 v2 = vertices[(int)face[2].X - 1];
+                int index = opaqueFacesIndexes[i] * 3;
+                Vector3 v0 = vertices[verticesIndices[index]];
+                Vector3 v1 = vertices[verticesIndices[index + 1]];
+                Vector3 v2 = vertices[verticesIndices[index + 2]];
                 Tri tri = new() {
                     Index = opaqueFacesIndexes[i],
-                    v0 = new(v0.X, v0.Y, v0.Z),
-                    v1 = new(v1.X, v1.Y, v1.Z),
-                    v2 = new(v2.X, v2.Y, v2.Z),
+                    v0 = v0,
+                    v1 = v1,
+                    v2 = v2,
                 };
                 tri.Centroid = (tri.v0 + tri.v1 + tri.v2) * 0.3333f;
                 Tris[i] = tri;

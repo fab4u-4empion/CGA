@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace lab1
 {
@@ -20,6 +21,7 @@ namespace lab1
         public List<Buffer<Vector3>> MRAO = new(15);
         public List<Buffer<Vector3>> Emission = new(15);
         public List<Buffer<Vector3>> Transmission = new(15);
+        public List<Buffer<Vector3>> Dissolve = new(15);
 
         public List<Buffer<Vector3>> ClearCoat = new(15);
         public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
@@ -31,13 +33,14 @@ namespace lab1
         public Vector3 Kd = Vector3.Zero;
         public float Pc = 0;
         public float Pcr = 0;
+        public float D = 1;
 
         public BlendModes BlendMode = BlendModes.Opaque;
 
         public static bool UsingMIPMapping = false;
         public static int MaxAnisotropy = 1;
 
-        private List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
+        public static List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
             List<Buffer<Vector3>> lvls = new(15);
 
@@ -92,52 +95,6 @@ namespace lab1
             return lvls;
         }
 
-        public void AddDiffuse(Pbgra32Bitmap src)
-        {
-            Diffuse.AddRange(CalculateMIP(src, true));
-        }
-
-        public void AddNormals(Pbgra32Bitmap src)
-        {
-            Normals.AddRange(CalculateMIP(src, false, true));
-        }
-
-        public void AddMRAO(Pbgra32Bitmap src)
-        {
-            MRAO.AddRange(CalculateMIP(src));
-        }
-
-        public void AddEmission(Pbgra32Bitmap src)
-        {
-            Emission.AddRange(CalculateMIP(src, true));
-        }
-
-        public void AddTransmission(Pbgra32Bitmap src)
-        {
-            Transmission.AddRange(CalculateMIP(src));
-        }
-
-        public void AddClearCoat(Pbgra32Bitmap src)
-        {
-            ClearCoat.AddRange(CalculateMIP(src));
-        }
-
-        public void AddClearCoatRoughness(Pbgra32Bitmap src)
-        {
-            Task.Run(() =>
-            {
-                ClearCoatRoughness.AddRange(CalculateMIP(src));
-            });
-        }
-
-        public void AddClearCoatNormals(Pbgra32Bitmap src)
-        {
-            Task.Run(() =>
-            {
-                ClearCoatNormals.AddRange(CalculateMIP(src, false, true));
-            });
-        }
-
         private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
         {
             float u = uv.X * src.Width - 0.5f;
@@ -159,7 +116,7 @@ namespace lab1
             y1 &= (src.Height - 1);
 
             return Vector3.Lerp(
-                Vector3.Lerp(src[x0, y0], src[x1, y1], u_ratio),
+                Vector3.Lerp(src[x0, y0], src[x1, y0], u_ratio),
                 Vector3.Lerp(src[x0, y1], src[x1, y1], u_ratio),
                 v_ratio
             );
@@ -178,7 +135,7 @@ namespace lab1
                 float max = float.Max(length1, length2);
                 float min = float.Min(length1, length2);
 
-                float aniso = float.Min(max / min, MaxAnisotropy);
+                float aniso = float.MaxMagnitudeNumber(float.Min(max / min, MaxAnisotropy), 1);
 
                 int N = (int)float.Round(aniso, MidpointRounding.AwayFromZero);
                 float lvl = float.Clamp(float.Log2(max / aniso), 0, src.Count - 1);
@@ -230,6 +187,11 @@ namespace lab1
         public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2, uv3, uv4).X;
+        }
+
+        public float GetDissolve(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        {
+            return GetColorFromTexture(Dissolve, uv, new(D), uv1, uv2, uv3, uv4).X;
         }
 
         public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
