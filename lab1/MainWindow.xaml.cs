@@ -18,7 +18,6 @@ using lab1.Shadow;
 using lab1.Effects;
 using Microsoft.Win32;
 using System.Diagnostics;
-using System.Windows.Controls.Primitives;
 
 namespace lab1
 {
@@ -57,8 +56,6 @@ namespace lab1
         WindowState LastState;
 
         bool camera_control = false;
-
-        int totalFrames = 0;
 
         public MainWindow()
         {
@@ -105,13 +102,13 @@ namespace lab1
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
-                    if (mtlLine.StartsWith("d"))
+                    if (mtlLine.StartsWith('d'))
                     {
                         material.D = float.Parse(mtlLine.Remove(0, 1).Trim(), CultureInfo.InvariantCulture);
                         material.BlendMode = BlendModes.AlphaBlending;
                     }
 
-                    if (mtlLine.StartsWith("map_D"))
+                    if (mtlLine.StartsWith("map_d"))
                     {
                         material.Dissolve = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 5).Trim()));
                         material.BlendMode = BlendModes.AlphaBlending;
@@ -418,9 +415,10 @@ namespace lab1
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
             float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2, uv3, uv4);
-            (float clearCoatRougness, float clearCoat, Vector3 clearCoatNormal) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
+            (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+            nc = T * nc.X + B * nc.Y + oN * nc.Z;
 
-            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, clearCoatNormal, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex, dissolve);
+            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex, dissolve);
 
             return (color, opacity, dissolve);
         }
@@ -534,6 +532,7 @@ namespace lab1
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
+                        //bitmap.SetPixel(x, y, ToneMapping.CompressColor(bloomBuffer[x, y] * BlurIntensity));
                         bufferHDR[x, y] = backColor;
                     }
                 });
@@ -640,6 +639,8 @@ namespace lab1
         {
             UpdateInfo();
 
+            timer.Restart();
+
             for (int x = 0; x < bitmap.PixelWidth; x++)
             {
                 for (int y = 0; y < bitmap.PixelHeight; y++)
@@ -664,7 +665,9 @@ namespace lab1
             bitmap.Source.AddDirtyRect(new(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
             bitmap.Source.Unlock();
 
-            totalFrames += 1;
+            timer.Stop();
+
+            Time.Content = (double.Round(timer.ElapsedMilliseconds) + " ms");
         }
 
         private void CreateBuffers()
@@ -692,23 +695,6 @@ namespace lab1
             CreateBuffers();
             Sphere = new Model();
             LoadModel(Path.Combine(Directory.GetCurrentDirectory(), "model.obj"), Sphere);
-            timer.Start();
-
-            Task.Run(() =>
-            {
-                while(true)
-                {
-                    if (timer.ElapsedMilliseconds > 1000)
-                    {
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            Time.Content = (double.Round(totalFrames) + " fps");
-                            totalFrames = 0;
-                            timer.Restart();
-                        });
-                    }
-                }
-            });
 
             Draw();
         }

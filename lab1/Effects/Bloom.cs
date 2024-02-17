@@ -1,8 +1,10 @@
 ﻿using Rasterization;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace lab1.Effects
@@ -61,60 +63,94 @@ namespace lab1.Effects
 
         public static Buffer<Vector3> GetGaussianClassicBlur(int r, Buffer<Vector3> src, int width, int height)
         {
-            Buffer<Vector3> resultTMP = new(width, height);
-            Buffer<Vector3> result = new(width, height);
+            Buffer<Vector3> tmp1 = new(width, height);
+            Buffer<Vector3> tmp2 = new(width, height);
+            Buffer<Vector3> dest = new(width, height);
 
-            float sigma;
+            //float sigma;
             float factor = 1f;
             
             for (int a = 0; a < KernelCount; a++)
             {
-                sigma = (r * 2f) / 6f;
+                //sigma = (r * 2f) / 6f;
 
-                float[] g = new float[r * 2 + 1];
+                //float[] g = new float[r * 2 + 1];
 
-                for (int i = -r; i <= r; i++)
+                //for (int i = -r; i <= r; i++)
+                //{
+                //    g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
+                //}
+
+                //Parallel.For(0, width, (x) =>
+                //{
+                //    for (int y = 0; y < height; y++)
+                //    {
+                //        Vector3 sum = Vector3.Zero;
+                //        for (int i = x - r; i <= x + r; i++)
+                //        {
+                //            sum += src[
+                //                int.Min(int.Max(i, 0), width - 1),
+                //                y
+                //            ] * g[i + r - x];
+                //        }
+                //        resultTMP[x, y] = sum;
+                //    }
+                //});
+
+                //Parallel.For(0, width, (x) =>
+                //{
+                //    for (int y = 0; y < height; y++)
+                //    {
+                //        Vector3 sum = Vector3.Zero;
+                //        for (int i = y - r; i <= y + r; i++)
+                //        {
+                //            sum += resultTMP[
+                //            x,
+                //                int.Min(int.Max(i, 0), height - 1)
+                //            ] * g[i + r - y];
+                //        }
+                //        result[x, y] += sum * factor;
+                //    }
+                //});
+
+                for (int b = 0; b < 5; b++)
                 {
-                    g[i + r] = float.Exp(-1 * i * i / (2 * sigma * sigma)) / float.Sqrt(2 * float.Pi * sigma * sigma);
+                    Buffer<Vector3> read = b == 0 ? src : tmp1;
+
+                    Parallel.ForEach(Partitioner.Create(0, height), (range) =>
+                    {
+                        for (int y = range.Item1; y < range.Item2; y++)
+                        {
+                            for (int x = -r; x <= r; x++)
+                                tmp2[0, y] += read[int.Clamp(x, 0, width - 1), y];
+
+                            for (int x = 1; x < width; x++)
+                                tmp2[x, y] = tmp2[x - 1, y] + read[int.Clamp(x + r, 0, width - 1), y] - read[int.Clamp(x - r - 1, 0, width - 1), y];
+                        }
+                    });
+
+                    Parallel.ForEach(Partitioner.Create(0, width), (range) =>
+                    {
+                        for (int x = range.Item1; x < range.Item2; x++)
+                        {
+                            for (int y = -r; y <= r; y++)
+                                tmp1[x, 0] += tmp2[x, int.Clamp(y, 0, height - 1)];
+
+                            for (int y = 1; y < height; y++)
+                                tmp1[x, y] = tmp1[x, y - 1] + tmp2[x, int.Clamp(y + r, 0, height - 1)] - tmp2[x, int.Clamp(y - r - 1, 0, height - 1)];
+                        }
+                    });
                 }
 
-                Parallel.For(0, width, (x) =>
-                {
+                for (int x = 0; x < width; x++)
                     for (int y = 0; y < height; y++)
-                    {
-                        Vector3 sum = Vector3.Zero;
-                        for (int i = x - r; i <= x + r; i++)
-                        {
-                            sum += src[
-                                int.Min(int.Max(i, 0), width - 1),
-                                y
-                            ] * g[i + r - x];
-                        }
-                        resultTMP[x, y] = sum;
-                    }
-                });
-
-                Parallel.For(0, width, (x) =>
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        Vector3 sum = Vector3.Zero;
-                        for (int i = y - r; i <= y + r; i++)
-                        {
-                            sum += resultTMP[
-                            x,
-                                int.Min(int.Max(i, 0), height - 1)
-                            ] * g[i + r - y];
-                        }
-                        result[x, y] += sum * factor;
-                    }
-                });
+                        dest[x, y] += tmp1[x, y] / float.Pow(2 * r + 1, 2 * 5) * factor;
 
                 r *= 4;
                 factor *= 0.75f;
             }
 
-            return result;
+            return dest;
         }
 
         public static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
