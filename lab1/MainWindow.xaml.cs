@@ -42,11 +42,11 @@ namespace lab1
         Model Sphere;
         Camera camera = new();
 
-        Vector3 backColor = new(0.3f, 0.3f, 0.3f);
+        Vector3 backColor = new(0.1f, 0.1f, 0.1f);
 
         float smoothing = 1f;
         float BlurIntensity = 0.15f;
-        float BlurRadius = 0;
+        int BlurRadius = 0;
         DPIScale scale = (1, 1);
 
         Stopwatch timer = new();
@@ -526,13 +526,13 @@ namespace lab1
         {
             if (BlurRadius > 0)
             {
-                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer((int)(BlurRadius * smoothing), bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
+                Bloom.Smoothing = smoothing;
+                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
                 Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
                     for (int y = 0; y < bitmap.PixelHeight; y++)
                     {
                         bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
-                        //bitmap.SetPixel(x, y, ToneMapping.CompressColor(bloomBuffer[x, y] * BlurIntensity));
                         bufferHDR[x, y] = backColor;
                     }
                 });
@@ -851,13 +851,29 @@ namespace lab1
                     break;
 
                 case Key.D:
-                    BlurRadius += 1f;
+                    BlurRadius += 1;
+                    if (Bloom.Kernels.Length == 1)
+                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
+                    else
+                        Bloom.Kernels = [
+                            new() { R = BlurRadius, Intensity = 1 },
+                            new() { R = BlurRadius * 3, Intensity = 1.25f },
+                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
+                        ];
                     Draw();
                     break;
 
                 case Key.A:
-                    BlurRadius -= 1f;
-                    BlurRadius = float.Max(BlurRadius, 0);
+                    BlurRadius -= 1;
+                    BlurRadius = int.Max(BlurRadius, 0);
+                    if (Bloom.Kernels.Length == 1)
+                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
+                    else
+                        Bloom.Kernels = [
+                            new() { R = BlurRadius, Intensity = 1 },
+                            new() { R = BlurRadius * 3, Intensity = 1.25f },
+                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
+                        ];
                     Draw();
                     break;
 
@@ -936,7 +952,14 @@ namespace lab1
                     break;
 
                 case Key.I:
-                    Bloom.KernelCount = Bloom.KernelCount == 1 ? 3 : 1;
+                    if (Bloom.Kernels.Length > 1)
+                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
+                    else
+                        Bloom.Kernels = [
+                            new() { R = BlurRadius, Intensity = 1 },
+                            new() { R = BlurRadius * 3, Intensity = 1.25f },
+                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
+                        ];
                     Draw();
                     break;
 
