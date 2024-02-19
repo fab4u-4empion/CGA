@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
         Title="3D visualizer" Height="700" Width="800"
+        WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         MouseMove="Window_MouseMove"
         MouseDown="Window_MouseDown"

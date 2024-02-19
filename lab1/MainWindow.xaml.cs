@@ -524,30 +524,15 @@ namespace lab1
 
         public void DrawHDRBuffer()
         {
-            if (BlurRadius > 0)
+            Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight, smoothing);
+            Parallel.For(0, bitmap.PixelWidth, (x) =>
             {
-                Bloom.Smoothing = smoothing;
-                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight);
-                Parallel.For(0, bitmap.PixelWidth, (x) =>
+                for (int y = 0; y < bitmap.PixelHeight; y++)
                 {
-                    for (int y = 0; y < bitmap.PixelHeight; y++)
-                    {
-                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
-                        bufferHDR[x, y] = backColor;
-                    }
-                });
-            }
-            else
-            {
-                Parallel.For(0, bitmap.PixelWidth, (x) =>
-                {
-                    for (int y = 0; y < bitmap.PixelHeight; y++)
-                    {
-                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
-                        bufferHDR[x, y] = backColor;
-                    }
-                });
-            }
+                    bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
+                    bufferHDR[x, y] = backColor;
+                }
+            });
         }
 
         private void UpdateInfo()
@@ -850,33 +835,6 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.D:
-                    BlurRadius += 1;
-                    if (Bloom.Kernels.Length == 1)
-                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
-                    else
-                        Bloom.Kernels = [
-                            new() { R = BlurRadius, Intensity = 1 },
-                            new() { R = BlurRadius * 3, Intensity = 1.25f },
-                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
-                        ];
-                    Draw();
-                    break;
-
-                case Key.A:
-                    BlurRadius -= 1;
-                    BlurRadius = int.Max(BlurRadius, 0);
-                    if (Bloom.Kernels.Length == 1)
-                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
-                    else
-                        Bloom.Kernels = [
-                            new() { R = BlurRadius, Intensity = 1 },
-                            new() { R = BlurRadius * 3, Intensity = 1.25f },
-                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
-                        ];
-                    Draw();
-                    break;
-
                 case Key.R:
                     PBR.UseShadow = !PBR.UseShadow;
                     Draw();
@@ -935,32 +893,6 @@ namespace lab1
                     {
                         encoder.Save(st);
                     }
-                    break;
-
-                case Key.U:
-                    OpenFileDialog ofd = new();
-                    if (ofd.ShowDialog() == true)
-                    {
-                        Bloom.KernelImg = ofd.FileName;
-                    }
-                    Draw();
-                    break;
-
-                case Key.P:
-                    Bloom.KernelImg = null;
-                    Draw();
-                    break;
-
-                case Key.I:
-                    if (Bloom.Kernels.Length > 1)
-                        Bloom.Kernels = [new() { R = BlurRadius, Intensity = 1 }];
-                    else
-                        Bloom.Kernels = [
-                            new() { R = BlurRadius, Intensity = 1 },
-                            new() { R = BlurRadius * 3, Intensity = 1.25f },
-                            new() { R = BlurRadius * 3, Intensity = 1.5625f },
-                        ];
-                    Draw();
                     break;
 
                 case Key.M:
@@ -1064,8 +996,14 @@ namespace lab1
                         break;
 
                     case Key.F2:
-                        LightingConfigWindow window = new();
-                        window.ShowDialog();
+                        LightingConfigWindow lightingConfigWindow = new();
+                        lightingConfigWindow.ShowDialog();
+                        Draw();
+                        break;
+
+                    case Key.F3:
+                        BloomConfigWindow bloomConfigWindow = new();
+                        bloomConfigWindow.ShowDialog();
                         Draw();
                         break;
                 }

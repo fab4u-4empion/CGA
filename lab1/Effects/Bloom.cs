@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
@@ -9,21 +10,16 @@ namespace lab1.Effects
 {
     using Smoothstep = (float A, float B);
 
-    public struct Kernel
-    {
-        public int R;
-        public float Intensity;
-    }
-
     public class Bloom
     {
-        public static string KernelImg = null;
-        public static Kernel[] Kernels = [new(){ R = 1, Intensity = 1 }];
         public static Smoothstep Smoothstep = (0, 5);
         public static float Smoothing = 1;
 
-        public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height)
+        public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
         {
+            if (BloomConfig.Kernels.Count == 0 && BloomConfig.KernelImg == null)
+                return new(width, height);
+
             Buffer<Vector3> tmp = new(width, height);
             Parallel.For(0, width, (x) =>
             {
@@ -37,9 +33,9 @@ namespace lab1.Effects
                 }
             });
 
-            if (KernelImg == null)
+            if (BloomConfig.KernelImg == null)
             {
-                return GetGaussianClassicBlur(tmp, width, height);
+                return GetGaussianClassicBlur(tmp, width, height, smoothing);
             }
 
             return GetImageBasedBlur(tmp, width, height);
@@ -66,15 +62,15 @@ namespace lab1.Effects
             return (rW + 1, rH + 1);
         }
 
-        public static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height)
+        public static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float smoothing)
         {
             Buffer<Vector3> tmp1 = new(width, height);
             Buffer<Vector3> tmp2 = new(width, height);
             Buffer<Vector3> dest = new(width, height);
             
-            foreach (Kernel kernel in Kernels)
+            foreach (Kernel kernel in BloomConfig.Kernels)
             {
-                int r = (int)(kernel.R * Smoothing);
+                int r = (int)(kernel.Radius * smoothing);
 
                 for (int b = 0; b < 4; b++)
                 {
@@ -123,7 +119,7 @@ namespace lab1.Effects
         {
             (int w, int h) = GetRealSize(width, height);
 
-            Pbgra32Bitmap kernel = new(new BitmapImage(new Uri($"{KernelImg}")));
+            Pbgra32Bitmap kernel = BloomConfig.KernelImg;
 
             float[,] R = new float[w, h];
             float[,] G = new float[w, h];

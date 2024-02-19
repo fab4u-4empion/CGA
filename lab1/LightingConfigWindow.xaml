@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
         Title="Lighting settings" Height="400" Width="500"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Loaded="Window_Loaded">
     <Grid>
