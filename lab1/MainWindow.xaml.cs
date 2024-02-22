@@ -45,8 +45,7 @@ namespace lab1
         Vector3 backColor = new(0.1f, 0.1f, 0.1f);
 
         float smoothing = 1f;
-        float BlurIntensity = 0.15f;
-        int BlurRadius = 0;
+        bool UseBloom = true;
         DPIScale scale = (1, 1);
 
         Stopwatch timer = new();
@@ -524,15 +523,29 @@ namespace lab1
 
         public void DrawHDRBuffer()
         {
-            Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight, smoothing);
-            Parallel.For(0, bitmap.PixelWidth, (x) =>
+            if (UseBloom)
             {
-                for (int y = 0; y < bitmap.PixelHeight; y++)
+                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(bufferHDR, bitmap.PixelWidth, bitmap.PixelHeight, smoothing);
+                Parallel.For(0, bitmap.PixelWidth, (x) =>
                 {
-                    bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y] * BlurIntensity));
-                    bufferHDR[x, y] = backColor;
-                }
-            });
+                    for (int y = 0; y < bitmap.PixelHeight; y++)
+                    {
+                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y] + bloomBuffer[x, y]));
+                        bufferHDR[x, y] = backColor;
+                    }
+                });
+            }
+            else
+            {
+                Parallel.For(0, bitmap.PixelWidth, (x) =>
+                {
+                    for (int y = 0; y < bitmap.PixelHeight; y++)
+                    {
+                        bitmap.SetPixel(x, y, ToneMapping.CompressColor(bufferHDR[x, y]));
+                        bufferHDR[x, y] = backColor;
+                    }
+                });
+            }
         }
 
         private void UpdateInfo()
@@ -824,17 +837,6 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.W:
-                    BlurIntensity += 0.05f;
-                    Draw();
-                    break;
-
-                case Key.S:
-                    BlurIntensity -= 0.05f;
-                    BlurIntensity = float.Max(BlurIntensity, 0);
-                    Draw();
-                    break;
-
                 case Key.R:
                     PBR.UseShadow = !PBR.UseShadow;
                     Draw();
@@ -859,6 +861,11 @@ namespace lab1
 
                 case Key.V:
                     RTX.RayCount += 1;
+                    Draw();
+                    break;
+
+                case Key.W:
+                    UseBloom = !UseBloom;
                     Draw();
                     break;
 

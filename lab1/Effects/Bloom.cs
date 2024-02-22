@@ -117,9 +117,12 @@ namespace lab1.Effects
 
         public static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
         {
-            (int w, int h) = GetRealSize(width, height);
-
             Pbgra32Bitmap kernel = BloomConfig.KernelImg;
+
+            (int wp, int hp) = GetRealSize(width, height);
+            (int wk, int hk) = GetRealSize(kernel.PixelWidth, kernel.PixelHeight);
+
+            (int w, int h) = (int.Max(wp, wk), int.Max(hp, hk));
 
             float[,] R = new float[w, h];
             float[,] G = new float[w, h];
