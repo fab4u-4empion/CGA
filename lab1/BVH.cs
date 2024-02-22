@@ -133,7 +133,8 @@ namespace lab1
                 if (boundsMin == boundsMax) continue;
 
                 Bin[] bin = new Bin[BINS];
-                Array.Fill<Bin>(bin, new());
+                for (int i = 0; i < BINS; i++)
+                    bin[i] = new();
 
                 float scale = BINS / (boundsMax - boundsMin);
                 for (uint i = 0; i < node.triCount; i++)
