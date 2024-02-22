@@ -1,7 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Numerics;
 using System.Reflection.Emit;
 using System.Security.Permissions;
+using System.Windows.Media.Media3D;
+using System.Xml.Linq;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -22,9 +26,41 @@ namespace lab1
         public int Index;
     }
 
+    public class Bin { 
+        public AABB bounds = new(); 
+        public int triCount = 0; 
+    };
+
+    public class AABB
+    {
+        public Vector3 BMin = new(1e30f), BMax = new(-1e30f);
+
+        public void Grow(Vector3 p)
+        {
+            BMin = Min(p, BMin);
+            BMax = Max(p, BMax);
+        }
+
+        public void Grow(AABB b) 
+        { 
+            if (b.BMin.X != 1e30f) 
+            { 
+                Grow(b.BMin); 
+                Grow(b.BMax); 
+            } 
+        }
+
+        public float Area()
+        {
+            Vector3 e = BMax - BMin;
+            return e.X * e.Y + e.Y * e.Z + e.Z * e.X;
+        }
+    }
+
     public class BVH
     {
         private static BVHNode[] nodes;
+        private static int BINS = 8;
         public static Tri[] Tris;
 
         private static int rootNodeIndx = 0, nodesUsed = 1;
@@ -81,14 +117,82 @@ namespace lab1
             }
         }
 
+        private static float FindBestSplitPlane(BVHNode node, ref int axis, ref float splitPos)
+        {
+            float bestCost = 1e30f;
+            for (int a = 0; a < 3; a++)
+            {
+                float boundsMin = 1e30f, boundsMax = -1e30f;
+                for (int i = 0; i < node.triCount; i++)
+                {
+                    Tri triangle = Tris[node.firstTri + i];
+                    boundsMin = Min(boundsMin, triangle.Centroid[a]);
+                    boundsMax = Max(boundsMax, triangle.Centroid[a]);
+                }
+
+                if (boundsMin == boundsMax) continue;
+
+                Bin[] bin = new Bin[BINS];
+                Array.Fill<Bin>(bin, new());
+
+                float scale = BINS / (boundsMax - boundsMin);
+                for (uint i = 0; i < node.triCount; i++)
+                {
+                    Tri triangle = Tris[node.firstTri + i];
+                    int binIdx = int.Min(BINS - 1, (int)((triangle.Centroid[a] - boundsMin) * scale));
+                    bin[binIdx].triCount++;
+                    bin[binIdx].bounds.Grow(triangle.v0);
+                    bin[binIdx].bounds.Grow(triangle.v1);
+                    bin[binIdx].bounds.Grow(triangle.v2);
+                }
+
+                float[] leftArea = new float[BINS - 1], rightArea = new float[BINS - 1];
+                int[] leftCount = new int[BINS - 1], rightCount = new int[BINS - 1];
+
+                AABB leftBox = new(), rightBox = new();
+                int leftSum = 0, rightSum = 0;
+                for (int i = 0; i < BINS - 1; i++)
+                {
+                    leftSum += bin[i].triCount;
+                    leftCount[i] = leftSum;
+                    leftBox.Grow(bin[i].bounds);
+                    leftArea[i] = leftBox.Area();
+
+                    rightSum += bin[BINS - 1 - i].triCount;
+                    rightCount[BINS - 2 - i] = rightSum;
+                    rightBox.Grow(bin[BINS - 1 - i].bounds);
+                    rightArea[BINS - 2 - i] = rightBox.Area();
+                }
+
+                scale = (boundsMax - boundsMin) / BINS;
+                for (int i = 0; i < BINS - 1; i++)
+                {
+                    float planeCost = leftCount[i] * leftArea[i] + rightCount[i] * rightArea[i];
+                    if (planeCost < bestCost)
+                        (splitPos, axis, bestCost) = (boundsMin + scale * (i + 1), a, planeCost);
+                }
+            }
+            return bestCost;
+        }
+
+        private static float CalculateNodeCost(BVHNode node)
+        {
+            Vector3 e = node.aabbMax - node.aabbMin;
+            float surfaceArea = e.X * e.Y + e.Y * e.Z + e.Z * e.X;
+            return node.triCount * surfaceArea;
+        }
+
         private static void Subdivide(int nodeIndx)
         {
             BVHNode node = nodes[nodeIndx];
-            Vector3 extent = node.aabbMax - node.aabbMin;
+
             int axis = 0;
-            if (extent.Y > extent.X) axis = 1;
-            if (extent.Z > extent[axis]) axis = 2;
-            float splitPos = node.aabbMin[axis] + extent[axis] * 0.5f;
+            float splitPos = 0;
+
+            float splitCost = FindBestSplitPlane(node, ref axis, ref splitPos);
+
+            float nosplitCost = CalculateNodeCost(node);
+            if (splitCost >= nosplitCost) return;
 
             int i = node.firstTri;
             int j = i + node.triCount - 1;
