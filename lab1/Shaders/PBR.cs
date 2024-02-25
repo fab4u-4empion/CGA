@@ -8,8 +8,6 @@ namespace lab1.Shaders
 {
     public class PBR
     {
-        public static bool UseShadow = false;
-
         private static Vector3 FresnelSchlick(float VdotH, Vector3 F0)
         {
             float t = 1 - VdotH;
@@ -38,12 +36,13 @@ namespace lab1.Shaders
             return Min(1e12f, 0.5f / (v + l));
         }
 
-        public static Vector3 GetPixelColor(
-            Vector3 albedo,
+        public static Vector3 GetPixelColorMetallic(
+            Vector3 baseColor,
             float metallic,
             float roughness,
             float ao,
             float opacity,
+            float dissolve,
             Vector3 emission,
             Vector3 n,
             Vector3 clearCoatN,
@@ -51,15 +50,14 @@ namespace lab1.Shaders
             float clearCoatRougness,
             Vector3 camera,
             Vector3 p,
-            int faceIndex,
-            float dissolve
+            int faceIndex
         )
         {
             roughness *= roughness;
             clearCoatRougness *= clearCoatRougness;
 
             Vector3 N = Normalize(n);
-            Vector3 ON = Normalize(clearCoatN);
+            Vector3 CN = Normalize(clearCoatN);
             Vector3 V = Normalize(camera - p);
 
             float NdotV = Dot(N, V);
@@ -67,9 +65,9 @@ namespace lab1.Shaders
             int useSpecular = NdotV < 0 ? 0 : 1;
 
             NdotV = Max(Dot(N, V), 0);
-            float ONdotV = Max(Dot(ON, V), 0);
+            float CNdotV = Max(Dot(CN, V), 0);
 
-            Vector3 F0 = Lerp(new(0.04f), albedo, metallic);
+            Vector3 F0 = Lerp(new(0.04f), baseColor, metallic);
 
             Vector3 color = Zero;
 
@@ -86,30 +84,30 @@ namespace lab1.Shaders
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
 
                 float NdotL = Max(Dot(N, L), 0);
-                float ONdotL = Max(Dot(ON, L), 0);
+                float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
                 float VdotH = Max(Dot(V, H), 0);
-                float ONdotH = Max(Dot(ON, H), 0);
+                float CNdotH = Max(Dot(CN, H), 0);
 
                 float distribution = Distribution(NdotH, roughness);
                 float visibility = Visibility(NdotV, NdotL, roughness);
                 Vector3 reflectance = FresnelSchlick(VdotH, F0);
 
-                Vector3 diffuse = (1 - metallic) * albedo / Pi * opacity;
+                Vector3 diffuse = (1 - metallic) * baseColor / Pi * opacity;
                 Vector3 specular = reflectance * visibility * distribution * useSpecular;
 
                 Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
 
-                float clearCoatDistribution = Distribution(ONdotH, clearCoatRougness);
-                float clearCoatVisibility = Visibility(ONdotV, ONdotL, clearCoatRougness);
+                float clearCoatDistribution = Distribution(CNdotH, clearCoatRougness);
+                float clearCoatVisibility = Visibility(CNdotV, CNdotL, clearCoatRougness);
                 Vector3 clearCoatReflectance = FresnelSchlick(VdotH, new(0.04f)) * clearCoat;
 
                 Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution * useSpecular;
 
-                color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * ONdotL) * irradiance * intensity;
+                color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * CNdotL) * irradiance * intensity;
             }
 
-            color += albedo * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
+            color += baseColor * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
 
             return color * dissolve;
         }

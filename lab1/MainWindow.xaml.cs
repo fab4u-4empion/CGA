@@ -25,6 +25,12 @@ namespace lab1
     using Color = (Vector3 Color, float Alpha, float Dissolve);
     using DPIScale = (double X, double Y);
 
+    public enum ShaderTypes
+    {
+        MetallicPBR,
+        Phong
+    }
+
     public partial class MainWindow : Window
     {
         Pbgra32Bitmap bitmap;
@@ -55,6 +61,9 @@ namespace lab1
         WindowState LastState;
 
         bool camera_control = false;
+        bool UseTangentNormals = true;
+
+        ShaderTypes currentShader = ShaderTypes.MetallicPBR;
 
         public MainWindow()
         {
@@ -405,21 +414,33 @@ namespace lab1
             Vector3 T = (u * t1 + v * t2 + w * t3) / sum;
             Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
 
-            Vector3 albedo = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
-
-            Vector3 n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
-            n = T * n.X + B * n.Y + oN * n.Z;
-
-            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
+            Vector3 baseColor = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
             float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2, uv3, uv4);
-            (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
-            nc = T * nc.X + B * nc.Y + oN * nc.Z;
+            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
 
-            Vector3 color = PBR.GetPixelColor(albedo, MRAO.X, MRAO.Y, MRAO.Z, opacity, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex, dissolve);
+            Vector3 n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+            if (UseTangentNormals)
+                n = T * n.X + B * n.Y + oN * n.Z;
 
-            return (color, opacity, dissolve);
+            if (currentShader == ShaderTypes.MetallicPBR)
+            {
+                (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+                nc = T * nc.X + B * nc.Y + oN * nc.Z;
+
+                Vector3 color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
+
+                return (color, opacity, dissolve);
+            }
+
+            if (currentShader == ShaderTypes.Phong)
+            {
+                Vector3 color = Phong.GetPixelColor(baseColor, n, new(1f), camera.Position, pw, faceIndex, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
+                return (color, opacity, dissolve);
+            }
+
+            return (new(0.5f), 1, 1);
         }
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
@@ -566,6 +587,7 @@ namespace lab1
             CurrLamp.Content = $"Current lamp: {(LightingConfig.CurrentLamp > -1 ? LightingConfig.CurrentLamp + 1 : "*")}";
 
             Contrl.Content = $"NumPad control mode: {(camera_control ? "camera" : "light")}";
+            Shader.Content = $"Shader: {currentShader}";
         }
 
         private void DrawLights()
@@ -838,7 +860,7 @@ namespace lab1
                     break;
 
                 case Key.R:
-                    PBR.UseShadow = !PBR.UseShadow;
+                    LightingConfig.UseShadow = !LightingConfig.UseShadow;
                     Draw();
                     break;
 
@@ -866,6 +888,11 @@ namespace lab1
 
                 case Key.W:
                     UseBloom = !UseBloom;
+                    Draw();
+                    break;
+
+                case Key.I:
+                    UseTangentNormals = !UseTangentNormals;
                     Draw();
                     break;
 
@@ -927,6 +954,20 @@ namespace lab1
                 case Key.NumPad9:
                     camera.Target = mainModel.GetCenter();
                     camera.UpdatePosition(0, 0, 0);
+                    Draw();
+                    break;
+
+                case Key.P:
+                    switch (currentShader)
+                    {
+                        case ShaderTypes.MetallicPBR:
+                            currentShader = ShaderTypes.Phong;
+                            break;
+
+                        case ShaderTypes.Phong:
+                            currentShader = ShaderTypes.MetallicPBR;
+                            break;
+                    }
                     Draw();
                     break;
 
