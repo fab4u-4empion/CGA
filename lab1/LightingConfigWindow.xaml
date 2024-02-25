@@ -3,40 +3,73 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        Title="Lighting settings" Height="400" Width="500"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        TextElement.FontWeight="Medium"
+        TextElement.FontSize="14"
+        FontFamily="{materialDesign:MaterialDesignFont}"
+        Title="Lighting settings" Height="450" Width="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Loaded="Window_Loaded">
-    <Grid>
+    <Grid Margin="10">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="10"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
-            <ListBox x:Name="LightsListBox" Margin="10" VerticalAlignment="Top" Height="330" SelectionChanged="LightsListBox_SelectionChanged"/>
-            <Button Content="Add new lamp" Margin="10" VerticalAlignment="Bottom" Click="Button_Click"/>
+        <Grid>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <ListBox x:Name="LightsListBox" SelectedIndex="0" Background="#404040" SelectionChanged="LightsListBox_SelectionChanged"/>
+                <Button Grid.Row="2" Content="Add new lamp" Click="Button_Click" BorderThickness="3"/>
+            </Grid>
         </Grid>
-        <Grid Grid.Column="1">
-            <Label Content="Name" VerticalAlignment="Top" Margin="10,5,10,0"/>
-            <TextBox x:Name="LampName" VerticalAlignment="Top" Margin="10,28,10,0"/>
-            
-            <Label Content="Position (XYZ)" VerticalAlignment="Top" Margin="10,50,10,0"/>
-            <TextBox x:Name="LampPos_X" VerticalAlignment="Top" Margin="10,72,165,0"/>
-            <TextBox x:Name="LampPos_Y" VerticalAlignment="Top" Margin="78,72,78,0"/>
-            <TextBox x:Name="LampPos_Z" VerticalAlignment="Top" Margin="165,72,10,0"/>
+        <StackPanel Grid.Column="2">
+            <Label Content="Name"/>
+            <TextBox x:Name="LampName"/>
 
-            <Label Content="Color (RGB)" VerticalAlignment="Top" Margin="10,98,10,0"/>
-            <TextBox x:Name="LampCol_R" VerticalAlignment="Top" Margin="10,120,165,0"/>
-            <TextBox x:Name="LampCol_G" VerticalAlignment="Top" Margin="78,120,78,0"/>
-            <TextBox x:Name="LampCol_B" VerticalAlignment="Top" Margin="165,120,10,0"/>
+            <Label Content="Position (XYZ)" Margin="0,10,0,0"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="LampPos_X"/>
+                <TextBox x:Name="LampPos_Y" Grid.Column="2"/>
+                <TextBox x:Name="LampPos_Z" Grid.Column="4"/>
+            </Grid>
 
-            <Label Content="Intensity" VerticalAlignment="Top" Margin="10,145,10,0"/>
-            <TextBox x:Name="LampInt" VerticalAlignment="Top" Margin="10,167,10,0"/>
 
-            <Button Content="Save" VerticalAlignment="Top" Margin="10,200,10,0" Background="LightGreen" Click="Button_Click_2"/>
-            <Button Content="Delete" VerticalAlignment="Top" Margin="10,230,10,0" Background="Tomato" Click="Button_Click_1"/>
-        </Grid>
+            <Label Content="Color (RGB)" Margin="0,10,0,0"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="LampCol_R"/>
+                <TextBox x:Name="LampCol_G" Grid.Column="2"/>
+                <TextBox x:Name="LampCol_B" Grid.Column="4"/>
+            </Grid>
+
+            <Label Content="Intensity" Margin="0,10,0,0"/>
+            <TextBox x:Name="LampInt"/>
+
+            <Button Content="Save" Margin="0,10,0,0" BorderThickness="3" Background="#198754" BorderBrush="#13653f" Click="Button_Click_2"/>
+            <Button Content="Delete" Margin="0,10,0,0" BorderThickness="3" Background="#dc3545" BorderBrush="#a52834" Click="Button_Click_1"/>
+        </StackPanel>
     </Grid>
 </Window>

@@ -3,8 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        TextElement.FontWeight="Medium"
+        TextElement.FontSize="14"
+        FontFamily="{materialDesign:MaterialDesignFont}"
         Title="3D visualizer" Height="700" Width="800"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
@@ -16,15 +22,16 @@
     >
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
-        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top" Foreground="White"/>
-        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top" Foreground="White"/>
-        <Label x:Name="Ray_Count" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Top" Foreground="White"/>
-        <Label x:Name="Light_size" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Top" Foreground="White"/>
-        <Label x:Name="CurrLamp" Content="Label" HorizontalAlignment="Left" Margin="20 120" VerticalAlignment="Top" Foreground="White"/>
-        <Label x:Name="Contrl" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Bottom" Foreground="White"/>
-        <Label x:Name="Model_time" Content="Label" HorizontalAlignment="Left" Margin="20 40" VerticalAlignment="Bottom" Foreground="White"/>
-        <Label x:Name="BVH_time" Content="Label" HorizontalAlignment="Left" Margin="20 20" VerticalAlignment="Bottom" Foreground="White"/>
-        <Label x:Name="ToneMode" Content="Label" HorizontalAlignment="Right" Margin="20 20" VerticalAlignment="Bottom" Foreground="White"/>
-        <Label x:Name="MIPMapping" Content="Label" HorizontalAlignment="Right" Margin="20 40" VerticalAlignment="Bottom" Foreground="White"/>
+        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top"/>
+        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top"/>
+        <Label x:Name="Ray_Count" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Top"/>
+        <Label x:Name="Light_size" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Top"/>
+        <Label x:Name="CurrLamp" Content="Label" HorizontalAlignment="Left" Margin="20 120" VerticalAlignment="Top"/>
+        <Label x:Name="Contrl" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Bottom"/>
+        <Label x:Name="Model_time" Content="Label" HorizontalAlignment="Left" Margin="20 40" VerticalAlignment="Bottom"/>
+        <Label x:Name="BVH_time" Content="Label" HorizontalAlignment="Left" Margin="20 20" VerticalAlignment="Bottom"/>
+        <Label x:Name="ToneMode" Content="Label" HorizontalAlignment="Right" Margin="20 20" VerticalAlignment="Bottom"/>
+        <Label x:Name="MIPMapping" Content="Label" HorizontalAlignment="Right" Margin="20 40" VerticalAlignment="Bottom"/>
+        <Label x:Name="Shader" Content="Label" HorizontalAlignment="Right" Margin="20 60" VerticalAlignment="Bottom"/>
     </Grid>
 </Window>

@@ -3,41 +3,78 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        TextElement.FontWeight="Medium"
+        TextElement.FontSize="14"
+        FontFamily="{materialDesign:MaterialDesignFont}"
         WindowStartupLocation="CenterScreen"
-        Title="Bloom settings" Height="490" Width="500"
+        Title="Bloom settings" Height="600" Width="600"
         Loaded="Window_Loaded"
         ResizeMode="NoResize">
-    <Grid>
+    <Grid Margin="10">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="150"/>
             <ColumnDefinition/>
+            <ColumnDefinition Width="10"/>
+            <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
-            <ListBox x:Name="KernelListBox" Margin="10" VerticalAlignment="Top" Height="330" SelectionChanged="KernelListBox_SelectionChanged"/>
-            <Button Content="Add new kernel" Margin="10" VerticalAlignment="Bottom" Click="Button_Click"/>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <ListBox x:Name="KernelListBox" Background="#404040" SelectionChanged="KernelListBox_SelectionChanged"/>
+            <Button Grid.Row="2" Content="Add new kernel" Click="Button_Click" BorderThickness="3"/>
         </Grid>
-        <Grid Grid.Column="1">
-            <Label Content="Name" VerticalAlignment="Top" Margin="10,5,10,0"/>
-            <TextBox x:Name="KernelName" VerticalAlignment="Top" Margin="10,28,10,0"/>
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <Label Content="Name"/>
+                <TextBox x:Name="KernelName"/>
 
-            <Label Content="Radius" VerticalAlignment="Top" Margin="10,48,10,0"/>
-            <TextBox x:Name="KernelR" VerticalAlignment="Top" Margin="10,71,10,0"/>
+                <Label Content="Radius" Margin="0,10,0,0"/>
+                <TextBox x:Name="KernelR"/>
 
-            <Label Content="Intensity" VerticalAlignment="Top" Margin="10,91,10,0"/>
-            <TextBox x:Name="KernelInt" VerticalAlignment="Top" Margin="10,114,10,0"/>
+                <Label Content="Intensity" Margin="0,10,0,0"/>
+                <TextBox x:Name="KernelInt"/>
 
-            <Button Content="Save" VerticalAlignment="Top" Margin="10,144,10,0" Background="LightGreen" Click="Button_Click_1"/>
-            <Button Content="Delete" VerticalAlignment="Top" Margin="10,170,10,0" Background="Tomato" Click="Button_Click_2"/>
-
-            <Label Content="Kernel Image" VerticalAlignment="Bottom" Margin="10,0,0,235" HorizontalContentAlignment="Center" HorizontalAlignment="Left" Width="150"/>
-            <Image x:Name="ImgKernel" RenderOptions.BitmapScalingMode="Fant" Width="150" Height="150" VerticalAlignment="Bottom" Margin="10,0,0,85" HorizontalAlignment="Left"/>
-            <Button VerticalAlignment="Bottom" Content="Open" Width="150" Margin="10,0,0,40" HorizontalAlignment="Left" Click="Button_Click_4"/>
-            <Button VerticalAlignment="Bottom" Content="Close" Width="150" Margin="10,0,0,10" HorizontalAlignment="Left" Click="Button_Click_3"/>
-
-            <Label Content="Preview" VerticalAlignment="Bottom" Margin="0,0,10,235" HorizontalContentAlignment="Center" Width="150" HorizontalAlignment="Right"/>
-            <Image x:Name="ImgPreview" RenderOptions.BitmapScalingMode="Fant" Width="150" Height="150" VerticalAlignment="Bottom" Margin="0,0,10,85" HorizontalAlignment="Right"/>
+                <Button Content="Save" Margin="0,10,0,0" Background="#198754" BorderBrush="#13653f" BorderThickness="3" Click="Button_Click_1"/>
+                <Button Content="Delete" Margin="0,10,0,0" Background="#dc3545" BorderBrush="#a52834" BorderThickness="3" Click="Button_Click_2"/>
+            </StackPanel>
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Kernel Image" HorizontalAlignment="Center"/>
+                <Label Grid.Column="2" Content="Preview" HorizontalAlignment="Center"/>
+                <Border Grid.Row="2" Background="#404040" Width="150" Height="150">
+                    <Image x:Name="ImgKernel" RenderOptions.BitmapScalingMode="Fant"/>
+                </Border>
+                <Border Grid.Row="2" Grid.Column="2" Background="#404040" Width="150" Height="150">
+                    <Image x:Name="ImgPreview" RenderOptions.BitmapScalingMode="Fant"/>
+                </Border>
+                <Button Grid.Row="4" Content="Open" Click="Button_Click_4" Background="#198754" BorderBrush="#13653f" BorderThickness="3"/>
+                <Button Grid.Row="6" Content="Close" Click="Button_Click_3" Background="#dc3545" BorderBrush="#a52834" BorderThickness="3"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
