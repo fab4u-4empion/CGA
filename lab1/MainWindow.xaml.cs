@@ -28,7 +28,8 @@ namespace lab1
     public enum ShaderTypes
     {
         MetallicPBR,
-        Phong
+        Phong,
+        SpecularPBR
     }
 
     public partial class MainWindow : Window
@@ -133,6 +134,17 @@ namespace lab1
                         material.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
                     }
 
+                    if (mtlLine.StartsWith("Ks"))
+                    {
+                        float[] Kd = mtlLine
+                            .Remove(0, 2)
+                            .Trim()
+                            .Split(' ')
+                            .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
+                            .ToArray();
+                        material.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
+                    }
+
                     if (mtlLine.StartsWith("Pr"))
                     {
                         material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
@@ -141,6 +153,11 @@ namespace lab1
                     if (mtlLine.StartsWith("map_Kd"))
                     {                        
                         material.Diffuse = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
+                    }
+
+                    if (mtlLine.StartsWith("map_Ks"))
+                    {
+                        material.Specular = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
                     }
 
                     if (mtlLine.StartsWith("map_Ke"))
@@ -419,28 +436,35 @@ namespace lab1
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
             float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2, uv3, uv4);
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
+            Vector3 specular = model.Materials[materialIndex].GetSpecular(uv, uv1, uv2, uv3, uv4);
 
             Vector3 n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
             if (UseTangentNormals)
                 n = T * n.X + B * n.Y + oN * n.Z;
 
-            if (currentShader == ShaderTypes.MetallicPBR)
-            {
-                (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+            (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+
+            if (UseTangentNormals)
                 nc = T * nc.X + B * nc.Y + oN * nc.Z;
 
-                Vector3 color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
+            Vector3 color = new(0.5f);
 
-                return (color, opacity, dissolve);
-            }
-
-            if (currentShader == ShaderTypes.Phong)
+            switch (currentShader)
             {
-                Vector3 color = Phong.GetPixelColor(baseColor, n, new(1f), camera.Position, pw, faceIndex, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
-                return (color, opacity, dissolve);
+                case ShaderTypes.MetallicPBR:
+                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
+                    break;
+
+                case ShaderTypes.Phong:
+                    color = Phong.GetPixelColor(baseColor, n, specular, camera.Position, pw, faceIndex, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
+                    break;
+
+                case ShaderTypes.SpecularPBR:
+                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, camera.Position, pw, faceIndex);
+                    break;
             }
 
-            return (new(0.5f), 1, 1);
+            return (color, opacity, dissolve);
         }
 
         private void DrawPixelIntoViewBuffer(int x, int y, float z, int index)
@@ -961,7 +985,11 @@ namespace lab1
                     switch (currentShader)
                     {
                         case ShaderTypes.MetallicPBR:
-                            currentShader = ShaderTypes.Phong;
+                            currentShader = ShaderTypes.SpecularPBR;
+                            break;
+
+                        case ShaderTypes.SpecularPBR:
+                            currentShader = ShaderTypes.Phong; 
                             break;
 
                         case ShaderTypes.Phong:

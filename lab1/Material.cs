@@ -21,6 +21,7 @@ namespace lab1
         public List<Buffer<Vector3>> Emission = new(15);
         public List<Buffer<Vector3>> Transmission = new(15);
         public List<Buffer<Vector3>> Dissolve = new(15);
+        public List<Buffer<Vector3>> Specular = new(15);
 
         public List<Buffer<Vector3>> ClearCoat = new(15);
         public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
@@ -30,6 +31,7 @@ namespace lab1
         public float Pr = 1;
         public float Tr = 0;
         public Vector3 Kd = Vector3.Zero;
+        public Vector3 Ks = Vector3.One;
         public float Pc = 0;
         public float Pcr = 0;
         public float D = 1;
@@ -176,6 +178,11 @@ namespace lab1
         public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             return GetColorFromTexture(Diffuse, uv, Kd, uv1, uv2, uv3, uv4);
+        }
+
+        public Vector3 GetSpecular(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        {
+            return GetColorFromTexture(Specular, uv, Ks, uv1, uv2, uv3, uv4);
         }
 
         public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
