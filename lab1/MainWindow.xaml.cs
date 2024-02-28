@@ -438,14 +438,22 @@ namespace lab1
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
             Vector3 specular = model.Materials[materialIndex].GetSpecular(uv, uv1, uv2, uv3, uv4);
 
-            Vector3 n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+            Vector3 n, nc;
+            float clearCoatRougness, clearCoat;
+
             if (UseTangentNormals)
+            {
+                n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
                 n = T * n.X + B * n.Y + oN * n.Z;
 
-            (float clearCoatRougness, float clearCoat, Vector3 nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
-
-            if (UseTangentNormals)
+                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
                 nc = T * nc.X + B * nc.Y + oN * nc.Z;
+            } 
+            else
+            {
+                n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
+                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
+            }                
 
             Vector3 color = new(0.5f);
 
