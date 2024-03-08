@@ -25,6 +25,8 @@ namespace lab1
 
         public static bool UseShadow = false;
 
+        public static HDRTexture? IBLDiffuseMap = null;
+
         public static List<Lamp> Lights = [
             new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 500, Name = "Default 0"},
             new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
