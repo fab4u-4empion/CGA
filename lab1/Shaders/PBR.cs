@@ -181,7 +181,20 @@ namespace lab1.Shaders
                 color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * CNdotL) * irradiance * intensity;
             }
 
-            color += baseColor * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
+            if (IBLDiffuseMap == null)
+            {
+                color += baseColor * ao * AmbientIntensity * opacity;
+            }
+            else
+            {
+                Vector3 ambientReflectance = FresnelSchlick(Max(0, Dot(N, V)), F0);
+                Vector3 ambientDiffuse = baseColor / Pi * opacity;
+                Vector3 ambientIrradiance = IBLDiffuseMap.GetColor(N);
+
+                color += (One - ambientReflectance) * ambientDiffuse * ambientIrradiance * ao;
+            }
+
+            color += emission * EmissionIntensity;
 
             return color * dissolve;
         }
