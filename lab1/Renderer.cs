@@ -145,6 +145,8 @@ namespace lab1
             Vector2 pb = new Vector2(b.X, b.Y) - p;
             Vector2 pc = new Vector2(c.X, c.Y) - p;
 
+            bool isBackFace = PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) > 0;
+
             float u = PerpDotProduct(pc, pb) * a.W;
             float v = PerpDotProduct(pa, pc) * b.W;
             float w = PerpDotProduct(pb, pa) * c.W;
@@ -214,6 +216,9 @@ namespace lab1
                 n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
                 (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
             }
+
+            if (isBackFace)
+                (n, nc) = (-n, -nc);
 
             Vector3 color = new(0.5f);
 

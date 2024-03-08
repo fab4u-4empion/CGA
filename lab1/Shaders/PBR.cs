@@ -53,63 +53,11 @@ namespace lab1.Shaders
             int faceIndex
         )
         {
-            roughness *= roughness;
-            clearCoatRougness *= clearCoatRougness;
-
-            Vector3 N = Normalize(n);
-            Vector3 CN = Normalize(clearCoatN);
-            Vector3 V = Normalize(camera - p);
-
-            float NdotV = Dot(N, V);
-
-            int useSpecular = NdotV < 0 ? 0 : 1;
-
-            NdotV = Max(Dot(N, V), 0);
-            float CNdotV = Max(Dot(CN, V), 0);
-
             Vector3 F0 = Lerp(new(0.04f), baseColor, metallic);
 
-            Vector3 color = Zero;
+            baseColor *= (1 - metallic);
 
-            for (int i = 0; i < Lights.Count; i++)
-            {
-                Vector3 L = Normalize(Lights[i].Position - p);
-                Vector3 H = Normalize(V + L);
-
-                if (Dot(N, L) <= 0)
-                    continue;
-
-                float distance = Distance(Lights[i].Position, p);
-
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
-
-                float NdotL = Max(Dot(N, L), 0);
-                float CNdotL = Max(Dot(CN, L), 0);
-                float NdotH = Max(Dot(N, H), 0);
-                float VdotH = Max(Dot(V, H), 0);
-                float CNdotH = Max(Dot(CN, H), 0);
-
-                float distribution = Distribution(NdotH, roughness);
-                float visibility = Visibility(NdotV, NdotL, roughness);
-                Vector3 reflectance = FresnelSchlick(VdotH, F0);
-
-                Vector3 diffuse = (1 - metallic) * baseColor / Pi * opacity;
-                Vector3 specular = reflectance * visibility * distribution * useSpecular;
-
-                Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
-
-                float clearCoatDistribution = Distribution(CNdotH, clearCoatRougness);
-                float clearCoatVisibility = Visibility(CNdotV, CNdotL, clearCoatRougness);
-                Vector3 clearCoatReflectance = FresnelSchlick(VdotH, new(0.04f)) * clearCoat;
-
-                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution * useSpecular;
-
-                color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * CNdotL) * irradiance * intensity;
-            }
-
-            color += baseColor * ao * AmbientIntensity * opacity + emission * EmissionIntensity;
-
-            return color * dissolve;
+            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p, faceIndex);
         }
 
         public static Vector3 GetPixelColorSpecular(
@@ -136,28 +84,28 @@ namespace lab1.Shaders
             Vector3 CN = Normalize(clearCoatN);
             Vector3 V = Normalize(camera - p);
 
-            float NdotV = Dot(N, V);
-
-            int useSpecular = NdotV < 0 ? 0 : 1;
-
-            NdotV = Max(Dot(N, V), 0);
+            float NdotV = Max(Dot(N, V), 0);
             float CNdotV = Max(Dot(CN, V), 0);
 
             Vector3 color = Zero;
 
+            Vector3 diffuse = baseColor / Pi * opacity;
+
             for (int i = 0; i < Lights.Count; i++)
             {
                 Vector3 L = Normalize(Lights[i].Position - p);
-                Vector3 H = Normalize(V + L);
+                
+                float NdotL = Dot(N, L);
 
-                if (Dot(N, L) <= 0)
+                if (NdotL <= 0)
                     continue;
+
+                Vector3 H = Normalize(V + L);
 
                 float distance = Distance(Lights[i].Position, p);
 
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
 
-                float NdotL = Max(Dot(N, L), 0);
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
                 float VdotH = Max(Dot(V, H), 0);
@@ -167,16 +115,14 @@ namespace lab1.Shaders
                 float visibility = Visibility(NdotV, NdotL, roughness);
                 Vector3 reflectance = FresnelSchlick(VdotH, F0);
 
-                Vector3 diffuse = baseColor / Pi * opacity;
-                Vector3 specular = reflectance * visibility * distribution * useSpecular;
-
+                Vector3 specular = reflectance * visibility * distribution;
                 Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
 
                 float clearCoatDistribution = Distribution(CNdotH, clearCoatRougness);
                 float clearCoatVisibility = Visibility(CNdotV, CNdotL, clearCoatRougness);
                 Vector3 clearCoatReflectance = FresnelSchlick(VdotH, new(0.04f)) * clearCoat;
 
-                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution * useSpecular;
+                Vector3 clearCoatSpecular = clearCoatReflectance * clearCoatVisibility * clearCoatDistribution;
 
                 color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * CNdotL) * irradiance * intensity;
             }
@@ -187,11 +133,11 @@ namespace lab1.Shaders
             }
             else
             {
-                Vector3 ambientReflectance = FresnelSchlick(Max(0, Dot(N, V)), F0);
+                Vector3 ambientReflectance = FresnelSchlick(NdotV, F0);
                 Vector3 ambientDiffuse = baseColor / Pi * opacity;
                 Vector3 ambientIrradiance = IBLDiffuseMap.GetColor(N);
 
-                color += (One - ambientReflectance) * ambientDiffuse * ambientIrradiance * ao;
+                color += (One - ambientReflectance) * ambientDiffuse * ambientIrradiance * ao * AmbientIntensity * 5;
             }
 
             color += emission * EmissionIntensity;

@@ -15,7 +15,7 @@ namespace lab1
 
     public class LightingConfig
     {
-        public static float AmbientIntensity = 0.15f;
+        public static float AmbientIntensity = 0.2f;
 
         public static float EmissionIntensity = 1;
 
