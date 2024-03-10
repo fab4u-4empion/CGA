@@ -456,10 +456,10 @@ namespace lab1
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
+                        if (UseSkyBox && LightingConfig.SkyBox != null)
                         {
                             Vector3 ray = Vector3.Normalize(p0 + dpdx * x + dpdy * y);
-                            BufferHDR[x, y] = LightingConfig.IBLSpecularMap[0].GetColor(ray);
+                            BufferHDR[x, y] = LightingConfig.SkyBox.GetColor(ray);
                         }
                         else
                         {

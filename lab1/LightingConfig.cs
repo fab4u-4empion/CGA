@@ -26,6 +26,7 @@ namespace lab1
         public static bool UseShadow = false;
 
         public static HDRTexture? IBLDiffuseMap = null;
+        public static HDRTexture? SkyBox = null;
         public static List<HDRTexture> IBLSpecularMap = [];
         public static HDRTexture BRDFLLUT = new();
 

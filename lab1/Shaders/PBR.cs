@@ -154,9 +154,22 @@ namespace lab1.Shaders
                 Vector3 ambientSpecularLight1 = IBLSpecularMap[lod1].GetColor(R);
                 Vector3 ambientSpecularLight = Lerp(ambientSpecularLight0, ambientSpecularLight1, lod - lod0);
                 Vector3 brdf = BRDFLLUT.GetColor(NdotV, 1 - roughness);
+
                 Vector3 ambientSpecular = ambientSpecularLight * (ambientReflectance * brdf.X + new Vector3(brdf.Y));
 
-                color += ((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * ao * AmbientIntensity * 5;
+                Vector3 clearCoatReflectance = FresnelSchlick(CNdotV, new(0.04f), clearCoatRougness) * clearCoat;
+                lod = clearCoatRougness * (IBLSpecularMap.Count - 1);
+                lod0 = (int)lod;
+                lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);
+                R = Reflect(-V, CN);
+
+                Vector3 coatSpecularLight0 = IBLSpecularMap[lod0].GetColor(R);
+                Vector3 coatSpecularLight1 = IBLSpecularMap[lod1].GetColor(R);
+                Vector3 coatSpecularLight = Lerp(coatSpecularLight0, coatSpecularLight1, lod - lod0);
+                brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
+                Vector3 clearCoatSpecular = coatSpecularLight * (clearCoatReflectance * brdf.X + new Vector3(brdf.Y) * clearCoat);
+
+                color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectance) + clearCoatSpecular) * ao * AmbientIntensity * 5;
             }
             color += emission * EmissionIntensity;
 
