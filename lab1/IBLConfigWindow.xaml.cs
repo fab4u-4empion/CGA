@@ -1,18 +1,6 @@
 ﻿using Microsoft.Win32;
-using Rasterization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace lab1
 {
@@ -28,13 +16,40 @@ namespace lab1
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog ofd = new();
-            if (ofd.ShowDialog() == true )
+            OpenFileDialog ofd = new()
             {
-                LightingConfig.IBLDiffuseMap = new();
-                LightingConfig.IBLDiffuseMap.Open(ofd.FileName);
+                Filter = "IBL Configs (*.ibl)|*.ibl"
+            };
 
-                DiffusePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
+            if (ofd.ShowDialog() == true)
+            {
+                LightingConfig.IBLSpecularMap.Clear();
+
+                using (StreamReader reader = new(ofd.FileName))
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        string str = reader.ReadLine();
+
+                        if (str.StartsWith("irradiance"))
+                        {
+                            LightingConfig.IBLDiffuseMap = new();
+                            LightingConfig.IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 10).Trim()));
+
+                            IrradiancePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
+                        }
+
+                        if (str.StartsWith("specular"))
+                        {
+                            HDRTexture texture = new();
+                            texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 8).Trim()));
+
+                            LightingConfig.IBLSpecularMap.Add(texture);
+                        }
+                    }
+                }
+
+                SpecularPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
             }
         }
 
@@ -42,8 +57,20 @@ namespace lab1
         {
             if (LightingConfig.IBLDiffuseMap != null)
             {
-                DiffusePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
+                IrradiancePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
             }
+            if (LightingConfig.IBLSpecularMap.Count > 0)
+            {
+                SpecularPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            LightingConfig.IBLDiffuseMap = null;
+            IrradiancePreview.Source = null;
+            SpecularPreview.Source = null;
+            LightingConfig.IBLSpecularMap.Clear();
         }
     }
 }

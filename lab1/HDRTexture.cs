@@ -78,7 +78,7 @@ namespace lab1
 
             for (int x = 0; x < Source.Width; x++)
                 for (int y = 0; y < Source.Height; y++)
-                    bmp.SetPixel(x, y, ToneMapping.AcesFilmic(Source[x, y]));
+                    bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AcesFilmic(Source[x, y])));
 
             bmp.Source.AddDirtyRect(new(0, 0, Source.Width, Source.Height));
             bmp.Source.Unlock();
@@ -88,7 +88,7 @@ namespace lab1
 
         public Vector3 GetColor(Vector3 N)
         {
-            float theta = float.Acos(N.Y);
+            float theta = float.Acos(float.Clamp(N.Y, -1, 1));
             float phi = float.Atan2(N.X, -N.Z) + float.Pi;
 
             float x = phi / (2 * float.Pi) * Source.Width - 0.5f;
@@ -105,6 +105,33 @@ namespace lab1
 
             x0 &= (Source.Width - 1);
             x1 &= (Source.Width - 1);
+
+            y0 = int.Max(0, y0);
+            y1 = int.Min(Source.Height - 1, y1);
+
+            return Vector3.Lerp(
+                Vector3.Lerp(Source[x0, y0], Source[x1, y0], x_ratio),
+                Vector3.Lerp(Source[x0, y1], Source[x1, y1], x_ratio),
+                y_ratio
+            );
+        }
+
+        public Vector3 GetColor(float u, float v)
+        {
+            float x = u * Source.Width - 0.5f;
+            float y = v * Source.Height - 0.5f;
+
+            int x0 = (int)float.Floor(x);
+            int y0 = (int)float.Floor(y);
+
+            int x1 = x0 + 1;
+            int y1 = y0 + 1;
+
+            float x_ratio = x - x0;
+            float y_ratio = y - y0;
+
+            x0 = int.Max(0, x0); ;
+            x1 = int.Min(Source.Width - 1, x1);
 
             y0 = int.Max(0, y0);
             y1 = int.Min(Source.Height - 1, y1);
