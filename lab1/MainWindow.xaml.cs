@@ -310,6 +310,8 @@ namespace lab1
             Renderer.Sphere = new Model();
             LoadModel(Path.Combine(Directory.GetCurrentDirectory(), "model.obj"), Renderer.Sphere);
 
+            LightingConfig.BRDFLLUT.Open("BRDFIntegrationMap.pfm");
+
             Draw();
         }
 
@@ -569,6 +571,11 @@ namespace lab1
                             Renderer.CurrentShader = ShaderTypes.MetallicPBR;
                             break;
                     }
+                    Draw();
+                    break;
+
+                case Key.S:
+                    Renderer.UseSkyBox = !Renderer.UseSkyBox;
                     Draw();
                     break;
 

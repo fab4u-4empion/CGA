@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Numerics;
 
 namespace lab1
 {
@@ -14,6 +9,9 @@ namespace lab1
         public Vector3 Up { get; set; }
         public float FoV { get; set; }
         public Vector3 LookVector { get; set; }
+
+        public float Yaw { get => DegToRad(f); }
+        public float Pitch { get => DegToRad(o - 90); }
 
         private float r;
         private float o;

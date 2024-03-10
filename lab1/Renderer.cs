@@ -34,6 +34,7 @@ namespace lab1
         public static Model Sphere;
 
         public static ShaderTypes CurrentShader = ShaderTypes.MetallicPBR;
+        public static bool UseSkyBox = true;
 
         public static Vector3 BackColor = new(0.1f, 0.1f, 0.1f);
 
@@ -343,13 +344,12 @@ namespace lab1
         {
             if (UseBloom)
             {
-                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(BufferHDR, width, height, 1);
+                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(BufferHDR, width, height, Smoothing);
                 Parallel.For(0, width, (x) =>
                 {
                     for (int y = 0; y < height; y++)
                     {
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + bloomBuffer[x, y]));
-                        BufferHDR[x, y] = BackColor;
                     }
                 });
             }
@@ -360,7 +360,6 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y]));
-                        BufferHDR[x, y] = BackColor;
                     }
                 });
             }
@@ -431,18 +430,48 @@ namespace lab1
             }
         }
 
+        private (Vector3, Vector3, Vector3) GetSkyBoxParams()
+        {
+            float aspect = (float)width / height;
+            float tan = float.Tan(float.Pi / 4);
+            Matrix4x4 cameraRotation = Matrix4x4.CreateRotationX(Camera.Pitch) * Matrix4x4.CreateRotationY(Camera.Yaw);
+
+            Vector3 X = new(cameraRotation.M11, cameraRotation.M12, cameraRotation.M13);
+            Vector3 Y = new(cameraRotation.M21, cameraRotation.M22, cameraRotation.M23);
+            Vector3 Z = new(cameraRotation.M31, cameraRotation.M32, cameraRotation.M33);
+            Vector3 p0 = (1f / width - 1) * aspect * tan * X + (-1f / height + 1) * tan * Y - Z;
+            Vector3 dpdx = aspect * tan * X * 2 / width;
+            Vector3 dpdy = tan * Y * -2 / height;
+
+            return (p0, dpdx, dpdy);
+        }
+
         public void Draw(Model model)
         {
-            for (int x = 0; x < width; x++)
+            (Vector3 p0, Vector3 dpdx, Vector3 dpdy) = GetSkyBoxParams();
+
+            Parallel.ForEach(Partitioner.Create(0, width), range =>
             {
-                for (int y = 0; y < height; y++)
+                for (int x = range.Item1; x <range.Item2; x++)
                 {
-                    ZBuffer[x, y] = float.MaxValue;
-                    ViewBuffer[x, y] = -1;
-                    CountBuffer[x, y] = 0;
-                    OffsetBuffer[x, y] = 0;
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
+                        {
+                            Vector3 ray = Vector3.Normalize(p0 + dpdx * x + dpdy * y);
+                            BufferHDR[x, y] = LightingConfig.IBLSpecularMap[0].GetColor(ray);
+                        }
+                        else
+                        {
+                            BufferHDR[x, y] = BackColor;
+                        }
+                        ZBuffer[x, y] = float.MaxValue;
+                        ViewBuffer[x, y] = -1;
+                        CountBuffer[x, y] = 0;
+                        OffsetBuffer[x, y] = 0;
+                    }
                 }
-            }
+            });
 
             if (model != null)
                 DrawScene(model);
