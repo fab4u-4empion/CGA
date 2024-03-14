@@ -550,6 +550,16 @@ namespace lab1
                     Draw();
                     break;
 
+                case Key.A:
+                    HDRTexture.Angle += 0.1f;
+                    Draw();
+                    break;
+
+                case Key.D:
+                    HDRTexture.Angle -= 0.1f;
+                    Draw();
+                    break;
+
                 case Key.NumPad9:
                     Renderer.Camera.Target = MainModel.GetCenter();
                     Renderer.Camera.UpdatePosition(0, 0, 0);

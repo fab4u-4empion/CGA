@@ -31,9 +31,9 @@ namespace lab1
             {
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 LampName.Text = lamp.Name;
-                (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InstalledUICulture), lamp.Position.Y.ToString(CultureInfo.InstalledUICulture), lamp.Position.Z.ToString(CultureInfo.InstalledUICulture));
-                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InstalledUICulture), lamp.Color.Y.ToString(CultureInfo.InstalledUICulture), lamp.Color.Z.ToString(CultureInfo.InstalledUICulture));
-                LampInt.Text = lamp.Intensity.ToString(CultureInfo.InstalledUICulture);
+                (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
+                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InvariantCulture), lamp.Color.Y.ToString(CultureInfo.InvariantCulture), lamp.Color.Z.ToString(CultureInfo.InvariantCulture));
+                LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
             }
             else
             {
@@ -69,16 +69,16 @@ namespace lab1
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 lamp.Name = LampName.Text;
                 lamp.Color = new(
-                    float.Parse(LampCol_R.Text, CultureInfo.InstalledUICulture),
-                    float.Parse(LampCol_G.Text, CultureInfo.InstalledUICulture),
-                    float.Parse(LampCol_B.Text, CultureInfo.InstalledUICulture)
+                    float.Parse(LampCol_R.Text, CultureInfo.InvariantCulture),
+                    float.Parse(LampCol_G.Text, CultureInfo.InvariantCulture),
+                    float.Parse(LampCol_B.Text, CultureInfo.InvariantCulture)
                 );
                 lamp.Position = new(
-                    float.Parse(LampPos_X.Text, CultureInfo.InstalledUICulture),
-                    float.Parse(LampPos_Y.Text, CultureInfo.InstalledUICulture),
-                    float.Parse(LampPos_Z.Text, CultureInfo.InstalledUICulture)
+                    float.Parse(LampPos_X.Text, CultureInfo.InvariantCulture),
+                    float.Parse(LampPos_Y.Text, CultureInfo.InvariantCulture),
+                    float.Parse(LampPos_Z.Text, CultureInfo.InvariantCulture)
                 );
-                lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InstalledUICulture);
+                lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
                 UpdateListBox();
             }
         }

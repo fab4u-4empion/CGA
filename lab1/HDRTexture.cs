@@ -15,6 +15,8 @@ namespace lab1
         public int Width;
         public int Height;
 
+        public static float Angle;
+
         private static string ReadLine(BinaryReader reader)
         {
             StringBuilder sb = new();
@@ -89,7 +91,7 @@ namespace lab1
         public Vector3 GetColor(Vector3 N)
         {
             float theta = float.Acos(float.Clamp(N.Y, -1, 1));
-            float phi = float.Atan2(N.X, -N.Z) + float.Pi;
+            float phi = float.Atan2(N.X, -N.Z) + float.Pi + Angle;
 
             float x = phi / (2 * float.Pi) * Source.Width - 0.5f;
             float y = theta / float.Pi * Source.Height - 0.5f;

@@ -42,7 +42,9 @@ namespace lab1
             for (int x = 0; x < bmp.PixelWidth; x++)
                 for (int y = 0; y < bmp.PixelHeight; y++)
                     bmpBuf[x, y] = bmp.GetPixel(x, y) * 10;
-            Buffer<Vector3> bloomBuf = Bloom.GetBoolmBuffer(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1);
+            Buffer<Vector3> bloomBuf = KernelImg == null ? 
+                Bloom.GetGaussianClassicBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1)
+                : Bloom.GetImageBasedBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight);
 
             preview.Source.Lock();
             for (int x = 0; x < bmp.PixelWidth; x++)
@@ -66,7 +68,7 @@ namespace lab1
             {
                 Kernel kernel = Kernels[KernelListBox.SelectedIndex];
                 KernelName.Text = kernel.Name;
-                KernelInt.Text = kernel.Intensity.ToString();
+                KernelInt.Text = kernel.Intensity.ToString(CultureInfo.InvariantCulture);
                 KernelR.Text = kernel.Radius.ToString();
             }
             else
@@ -82,7 +84,7 @@ namespace lab1
             Kernel kernel = Kernels[KernelListBox.SelectedIndex];
             kernel.Name = KernelName.Text;
             kernel.Radius = int.Parse(KernelR.Text);
-            kernel.Intensity = float.Parse(KernelInt.Text, CultureInfo.InstalledUICulture);
+            kernel.Intensity = float.Parse(KernelInt.Text, CultureInfo.InvariantCulture);
             UpdateListBox();
         }
 

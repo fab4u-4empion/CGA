@@ -39,6 +39,7 @@ namespace lab1
         public static Vector3 BackColor = new(0.1f, 0.1f, 0.1f);
 
         public Buffer<Vector3> BufferHDR;
+        public Buffer<float> AlphaBuffer;
         public Buffer<SpinLock> Spins;
         public Buffer<int> ViewBuffer;
         public Buffer<float> ZBuffer;
@@ -275,7 +276,7 @@ namespace lab1
             }
         }
 
-        private Vector3 GetResultColor(int start, int length, int x, int y, Model model)
+        private Color GetResultColor(int start, int length, int x, int y, Model model)
         {
             float key;
             Layer layer;
@@ -305,12 +306,10 @@ namespace lab1
                 alpha += (1 - alpha) * pixel.Alpha * pixel.Dissolve;
 
                 if (pixel.Alpha == 1 && pixel.Dissolve == 1)
-                    break;
+                    return (color, 1f, 1f);
             }
 
-            color += (1 - alpha) * BufferHDR[x, y];
-
-            return color;
+            return (color, alpha, 1f);
         }
 
         private void DrawViewBuffer(Model model)
@@ -323,6 +322,7 @@ namespace lab1
                     {
                         Color color = GetPixelColor(ViewBuffer[x, y], new(x, y), model);
                         BufferHDR[x, y] = color.Color;
+                        AlphaBuffer[x, y] = color.Alpha;
                     }
                 }
             });
@@ -334,14 +334,44 @@ namespace lab1
             {
                 for (int y = 0; y < height; y++)
                 {
+                    Color color = (Vector3.Zero, 0f, 0f);
+
                     if (CountBuffer[x, y] > 0)
-                        BufferHDR[x, y] = GetResultColor(OffsetBuffer[x, y], CountBuffer[x, y], x, y, model);
+                    {
+                        color = GetResultColor(OffsetBuffer[x, y], CountBuffer[x, y], x, y, model);
+                    }
+
+                    if (color.Alpha == 1f)
+                    {
+                        BufferHDR[x, y] = color.Color;
+                        AlphaBuffer[x, y] = 1f;
+                        continue;
+                    }
+
+                    int index = ViewBuffer[x, y];
+                    if (index != -1)
+                    {
+                        Color pixel = GetPixelColor(index, new(x, y), model);
+                        BufferHDR[x, y] = pixel.Color;
+                        AlphaBuffer[x, y] = pixel.Alpha;
+                    }
+
+                    if (AlphaBuffer[x, y] == 1f)
+                    {
+                        BufferHDR[x, y] = BufferHDR[x, y] * (1f - color.Alpha) + color.Color;
+                        continue;
+                    }
+
+                    BufferHDR[x, y] = color.Color;
+                    AlphaBuffer[x, y] = color.Alpha;
                 }
             });
         }
 
         private void DrawHDRBuffer()
         {
+            (Vector3 p0, Vector3 dpdx, Vector3 dpdy) = GetSkyBoxParams();
+
             if (UseBloom)
             {
                 Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(BufferHDR, width, height, Smoothing);
@@ -349,7 +379,14 @@ namespace lab1
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + bloomBuffer[x, y]));
+                        Vector3 backColor = BackColor;
+                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        {
+                            Vector3 p = p0 + dpdx * x + dpdy * y;
+                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                        }
+
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]));
                     }
                 });
             }
@@ -359,7 +396,14 @@ namespace lab1
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y]));
+                        Vector3 backColor = BackColor;
+                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        {
+                            Vector3 p = p0 + dpdx * x + dpdy * y;
+                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                        }
+
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])));
                     }
                 });
             }
@@ -387,6 +431,8 @@ namespace lab1
                         {
                             BufferHDR[x, y] = lamp.Color * (lamp.Intensity + 1f);
                             ZBuffer[x, y] = z;
+                            ViewBuffer[x, y] = -1;
+                            AlphaBuffer[x, y] = 1;
                         }
 
                         Spins[x, y].Exit(false);
@@ -400,8 +446,6 @@ namespace lab1
             TransformCoordinates(model);
 
             Rasterize(model.OpaqueFacesIndices, model, DrawPixelIntoViewBuffer, BlendModes.Opaque);
-
-            DrawViewBuffer(model);
 
             DrawLights();
 
@@ -422,11 +466,22 @@ namespace lab1
                     }
                 }
 
-                LayersBuffer = new Layer[prefixSum];
+                if (prefixSum > 0)
+                {
+                    LayersBuffer = new Layer[prefixSum];
 
-                Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendModes.AlphaBlending);
+                    Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendModes.AlphaBlending);
 
-                DrawLayers(model);
+                    DrawLayers(model);
+                }
+                else
+                {
+                    DrawViewBuffer(model);
+                }
+            }
+            else
+            {
+                DrawViewBuffer(model);
             }
         }
 
@@ -448,30 +503,12 @@ namespace lab1
 
         public void Draw(Model model)
         {
-            (Vector3 p0, Vector3 dpdx, Vector3 dpdy) = GetSkyBoxParams();
-
-            Parallel.ForEach(Partitioner.Create(0, width), range =>
-            {
-                for (int x = range.Item1; x <range.Item2; x++)
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        if (UseSkyBox && LightingConfig.SkyBox != null)
-                        {
-                            Vector3 ray = Vector3.Normalize(p0 + dpdx * x + dpdy * y);
-                            BufferHDR[x, y] = LightingConfig.SkyBox.GetColor(ray);
-                        }
-                        else
-                        {
-                            BufferHDR[x, y] = BackColor;
-                        }
-                        ZBuffer[x, y] = float.MaxValue;
-                        ViewBuffer[x, y] = -1;
-                        CountBuffer[x, y] = 0;
-                        OffsetBuffer[x, y] = 0;
-                    }
-                }
-            });
+            Array.Fill(ZBuffer.Array, float.MaxValue);
+            Array.Fill(ViewBuffer.Array, -1);
+            Array.Fill(CountBuffer.Array, (byte)0);
+            Array.Fill(OffsetBuffer.Array, 0);
+            Array.Fill(BufferHDR.Array, Vector3.Zero);
+            Array.Fill(AlphaBuffer.Array, 0);
 
             if (model != null)
                 DrawScene(model);
@@ -495,6 +532,7 @@ namespace lab1
             this.height = Bitmap.PixelHeight;
 
             BufferHDR = new(this.width, this.height);
+            AlphaBuffer = new(this.width, this.height);
             
             Spins = new(this.width, this.height);
             ViewBuffer = new(this.width, this.height);

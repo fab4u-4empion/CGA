@@ -11,35 +11,29 @@
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
         mc:Ignorable="d"
-        Title="IBL Settings" Height="320" Width="700"
+        Title="IBL Settings" SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         Loaded="Window_Loaded">
-    <Grid>
+    <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="230"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="10"/>
             <RowDefinition/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Label Content="Environment Preview" HorizontalAlignment="Center"/>
+        <Border Grid.Row="2" Background="#404040">
+            <Image x:Name="EnvironmentPreview" Grid.Row="2" RenderOptions.BitmapScalingMode="Fant" Width="800" Height="400"/>
+        </Border>
+        <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
-                <Label Content="Irradiance Preview" VerticalAlignment="Top" HorizontalAlignment="Center"/>
-                <Image x:Name="IrradiancePreview" RenderOptions.BitmapScalingMode="Fant" Width="320" Height="180" VerticalAlignment="Top" Margin="0,30,0,0"/>
-            </Grid>
-            <Grid Grid.Column="1">
-                <Label Content="Specular Preview" VerticalAlignment="Top" HorizontalAlignment="Center"/>
-                <Image x:Name="SpecularPreview" RenderOptions.BitmapScalingMode="Fant" Width="320" Height="180" VerticalAlignment="Top" Margin="0,30,0,0"/>
-            </Grid>
-        </Grid>
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Button HorizontalAlignment="Center" Width="200" Grid.Column="0" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
-            <Button HorizontalAlignment="Center" Width="200" Grid.Column="1" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
+            <Button HorizontalAlignment="Center" Width="200" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
+            <Button Grid.Column="2" HorizontalAlignment="Center" Width="200" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
         </Grid>
     </Grid>
 </Window>

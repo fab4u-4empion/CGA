@@ -35,8 +35,6 @@ namespace lab1
                         {
                             LightingConfig.IBLDiffuseMap = new();
                             LightingConfig.IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 10).Trim()));
-
-                            IrradiancePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
                         }
 
                         if (str.StartsWith("specular"))
@@ -55,19 +53,15 @@ namespace lab1
                     }
                 }
 
-                SpecularPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
+                EnvironmentPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
             }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            if (LightingConfig.IBLDiffuseMap != null)
-            {
-                IrradiancePreview.Source = LightingConfig.IBLDiffuseMap.ToLDR().Source;
-            }
             if (LightingConfig.IBLSpecularMap.Count > 0)
             {
-                SpecularPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
+                EnvironmentPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
             }
         }
 
@@ -75,8 +69,7 @@ namespace lab1
         {
             LightingConfig.IBLDiffuseMap = null;
             LightingConfig.SkyBox = null;
-            IrradiancePreview.Source = null;
-            SpecularPreview.Source = null;
+            EnvironmentPreview.Source = null;
             LightingConfig.IBLSpecularMap.Clear();
         }
     }
