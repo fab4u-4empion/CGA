@@ -16,14 +16,6 @@ namespace lab1.Shaders
             return F0 + (One - F0) * t5;
         }
 
-        private static Vector3 FresnelSchlick(float VdotH, Vector3 F0, float roughness)
-        {
-            float t = 1 - VdotH;
-            float t2 = t * t;
-            float t5 = t2 * t2 * t;
-            return F0 + (Max(new(1 - roughness), F0) - F0) * t5;
-        }
-
         private static float Distribution(float NdotH, float roughness)
         {
             float a2 = roughness * roughness;
@@ -141,7 +133,7 @@ namespace lab1.Shaders
             }
             else
             {
-                Vector3 ambientReflectance = FresnelSchlick(NdotV, F0, roughness);
+                Vector3 ambientReflectance = F0;
                 Vector3 ambientDiffuse = baseColor / Pi * opacity;
                 Vector3 ambientIrradiance = IBLDiffuseMap.GetColor(N);
 
@@ -157,7 +149,7 @@ namespace lab1.Shaders
 
                 Vector3 ambientSpecular = ambientSpecularLight * (ambientReflectance * brdf.X + new Vector3(brdf.Y));
 
-                Vector3 clearCoatReflectance = FresnelSchlick(CNdotV, new(0.04f), clearCoatRougness) * clearCoat;
+                Vector3 clearCoatReflectance = new Vector3(0.04f) * clearCoat;
                 lod = clearCoatRougness * (IBLSpecularMap.Count - 1);
                 lod0 = (int)lod;
                 lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);

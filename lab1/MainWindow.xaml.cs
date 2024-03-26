@@ -602,11 +602,14 @@ namespace lab1
                         Timer.Stop();
                         Model_time.Content = $"Model loaded in {double.Round(Timer.ElapsedMilliseconds)} ms";
 
-                        Timer.Restart();
-                        BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
-                        BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-                        Timer.Stop();
-
+                        if (MainModel.OpaqueFacesIndices.Count > 0)
+                        {
+                            Timer.Restart();
+                            BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
+                            BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
+                            Timer.Stop();
+                        }
+                        
                         Renderer.Camera.Target = MainModel.GetCenter();
                         Renderer.Camera.UpdatePosition(0, 0, 0);
 
