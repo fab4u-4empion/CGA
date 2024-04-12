@@ -85,41 +85,47 @@ namespace lab1
         {
             BVHNode node = nodes[nodeIndx];
             Vector3 extent = node.aabbMax - node.aabbMin;
-            int axis = 0;
-            if (extent.Y > extent.X) axis = 1;
-            if (extent.Z > extent[axis]) axis = 2;
-            float splitPos = node.aabbMin[axis] + extent[axis] * 0.5f;
+            int[] axes = [0, 1, 2];
+            if (extent.Y > extent.X)
+                (axes[0], axes[1]) = (axes[1], axes[0]);
+            if (extent.Z > extent[axes[0]])
+                (axes[0], axes[2]) = (axes[2], axes[0]);
 
-            int i = node.firstTri;
-            int j = i + node.triCount - 1;
-            while (i <= j)
+            for (int a = 0; a < axes.Length; a++)
             {
-                if (Tris[i].Centroid[axis] < splitPos)
-                    i++;
-                else
+                int axis = axes[a];
+                float splitPos = node.aabbMin[axis] + extent[axis] * 0.5f;
+                int i = node.firstTri;
+                int j = i + node.triCount - 1;
+                while (i <= j)
                 {
-                    (Tris[i], Tris[j]) = (Tris[j], Tris[i]);
-                    j--;
+                    if (Tris[i].Centroid[axis] < splitPos)
+                        i++;
+                    else
+                    {
+                        (Tris[i], Tris[j]) = (Tris[j], Tris[i]);
+                        j--;
+                    }
                 }
+
+                int leftCount = i - node.firstTri;
+                if (leftCount == 0 || leftCount == node.triCount) continue;
+
+                int leftChild = nodesUsed++;
+                int rightChild = nodesUsed++;
+                nodes[leftChild].firstTri = node.firstTri;
+                nodes[leftChild].triCount = leftCount;
+                nodes[rightChild].firstTri = i;
+                nodes[rightChild].triCount = node.triCount - leftCount;
+                node.leftNode = leftChild;
+                node.triCount = 0;
+
+                UpdateNodeBounds(leftChild);
+                UpdateNodeBounds(rightChild);
+
+                Subdivide(leftChild);
+                Subdivide(rightChild);
             }
-
-            int leftCount = i - node.firstTri;
-            if (leftCount == 0 || leftCount == node.triCount) return;
-
-            int leftChild = nodesUsed++;
-            int rightChild = nodesUsed++;
-            nodes[leftChild].firstTri = node.firstTri;
-            nodes[leftChild].triCount = leftCount;
-            nodes[rightChild].firstTri = i;
-            nodes[rightChild].triCount = node.triCount - leftCount;
-            node.leftNode = leftChild;
-            node.triCount = 0;
-
-            UpdateNodeBounds(leftChild);
-            UpdateNodeBounds(rightChild);
-            
-            Subdivide(leftChild);
-            Subdivide(rightChild);
         }
 
         public static bool IntersectBVH(Vector3 orig, Vector3 dir, float dist, int faceIndex, int nodeIndx)

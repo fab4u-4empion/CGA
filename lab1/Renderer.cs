@@ -11,6 +11,7 @@ using System.Timers;
 using lab1.Shadow;
 using System.Windows.Controls;
 using MaterialDesignThemes.Wpf;
+using System.Windows;
 
 namespace lab1
 {
@@ -36,7 +37,7 @@ namespace lab1
         public static ShaderTypes CurrentShader = ShaderTypes.MetallicPBR;
         public static bool UseSkyBox = true;
 
-        public static Vector3 BackColor = new(0.1f, 0.1f, 0.1f);
+        public static Vector3 BackColor = new(1f, 1f, 1f);
 
         public Buffer<Vector3> BufferHDR;
         public Buffer<float> AlphaBuffer;
