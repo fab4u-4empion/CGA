@@ -13,8 +13,7 @@ namespace lab1.Shaders
             Vector3 n, 
             Vector3 spec, 
             Vector3 camera, 
-            Vector3 p, 
-            int faceIndex,
+            Vector3 p,
             Vector3 emission,
             float opacity,
             float dissolve,
@@ -37,7 +36,7 @@ namespace lab1.Shaders
                 if (Dot(N, L) <= 0)
                     continue;
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.01f) : 1;
 
                 float distance = Distance(Lights[i].Position, p);
 

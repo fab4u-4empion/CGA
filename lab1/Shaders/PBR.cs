@@ -49,15 +49,14 @@ namespace lab1.Shaders
             float clearCoat,
             float clearCoatRougness,
             Vector3 camera,
-            Vector3 p,
-            int faceIndex
+            Vector3 p
         )
         {
             Vector3 F0 = Lerp(new(0.04f), baseColor, metallic);
 
             baseColor *= (1 - metallic);
 
-            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p, faceIndex);
+            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p);
         }
 
         public static Vector3 GetPixelColorSpecular(
@@ -73,8 +72,7 @@ namespace lab1.Shaders
             float clearCoat,
             float clearCoatRougness,
             Vector3 camera,
-            Vector3 p,
-            int faceIndex
+            Vector3 p
         )
         {
             float r2 = roughness * roughness;
@@ -104,7 +102,7 @@ namespace lab1.Shaders
 
                 float distance = Distance(Lights[i].Position, p);
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p, faceIndex) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.01f) : 1;
 
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);

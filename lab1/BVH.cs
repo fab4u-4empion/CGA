@@ -128,7 +128,7 @@ namespace lab1
             }
         }
 
-        public static bool IntersectBVH(Vector3 orig, Vector3 dir, float dist, int faceIndex, int nodeIndx)
+        public static bool IntersectBVH(Vector3 orig, Vector3 dir, float dist, int nodeIndx)
         {
             BVHNode node = nodes[nodeIndx];
             if (!IntersectAABB(orig, dir, node.aabbMin, node.aabbMax)) return false;
@@ -137,7 +137,6 @@ namespace lab1
                 for (int i = 0; i < node.triCount; i++)
                 {
                     Tri tri = Tris[node.firstTri + i];
-                    if (faceIndex == tri.Index) continue;
                     float d = IntersectTriangle(orig, dir, tri.v0, tri.v1, tri.v2);
                     if (d > -0 && d < dist) return true;
                 }
@@ -145,8 +144,8 @@ namespace lab1
             }
             else
             {
-                if (IntersectBVH(orig, dir, dist, faceIndex, node.leftNode)) return true;
-                return IntersectBVH(orig, dir, dist, faceIndex, node.leftNode + 1);
+                if (IntersectBVH(orig, dir, dist, node.leftNode)) return true;
+                return IntersectBVH(orig, dir, dist, node.leftNode + 1);
             }
         }
 

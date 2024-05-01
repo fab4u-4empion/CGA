@@ -23,7 +23,8 @@ namespace lab1
     {
         MetallicPBR,
         Phong,
-        SpecularPBR
+        SpecularPBR,
+        Toon
     }
 
     public class Renderer
@@ -37,7 +38,7 @@ namespace lab1
         public static ShaderTypes CurrentShader = ShaderTypes.MetallicPBR;
         public static bool UseSkyBox = true;
 
-        public static Vector3 BackColor = new(1f, 1f, 1f);
+        public static Vector3 BackColor = new(0.15f, 0.15f, 0.15f);
 
         public Buffer<Vector3> BufferHDR;
         public Buffer<float> AlphaBuffer;
@@ -228,15 +229,35 @@ namespace lab1
             switch (CurrentShader)
             {
                 case ShaderTypes.MetallicPBR:
-                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, faceIndex);
+                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
                     break;
 
                 case ShaderTypes.Phong:
-                    color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, faceIndex, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
+                    color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
                     break;
 
                 case ShaderTypes.SpecularPBR:
-                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, faceIndex);
+                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
+                    break;
+
+                case ShaderTypes.Toon:
+                    color = Toon.GetPixelColor(baseColor, n, pw, Camera.Position, emission);
+                    int x = (int)p.X;
+                    int y = (int)p.Y;
+                    int d = (int)float.Ceiling(2 * Smoothing);
+                    for (int i = -d; i <= d; i++)
+                        for (int j = -d; j <= d; j++)
+                            if (
+                                ViewBuffer[int.Clamp(x + i, 0, ViewBuffer.Width - 1), int.Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
+                                &&
+                                CountBuffer[int.Clamp(x + i, 0, ViewBuffer.Width - 1), int.Clamp(y + j, 0, ViewBuffer.Height - 1)] == 0
+                            )
+                            {
+                                color = Vector3.One;
+                                break;
+                            }
+                    opacity = 1;
+                    dissolve = 1;
                     break;
             }
 

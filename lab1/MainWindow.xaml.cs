@@ -578,6 +578,10 @@ namespace lab1
                             break;
 
                         case ShaderTypes.Phong:
+                            Renderer.CurrentShader = ShaderTypes.Toon;
+                            break;
+
+                        case ShaderTypes.Toon:
                             Renderer.CurrentShader = ShaderTypes.MetallicPBR;
                             break;
                     }
