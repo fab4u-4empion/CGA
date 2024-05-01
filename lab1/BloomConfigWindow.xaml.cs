@@ -25,7 +25,7 @@ namespace lab1
         static Pbgra32Bitmap bmp = new(new BitmapImage(new Uri("./BloomPreviewImg.png", UriKind.Relative)));
         Pbgra32Bitmap preview = new(bmp.PixelWidth, bmp.PixelHeight);
 
-        int NewKernelNumber = 0;
+        static int NewKernelNumber = 0;
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {

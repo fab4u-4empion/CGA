@@ -8,7 +8,7 @@ namespace lab1
 {
     public partial class LightingConfigWindow : Window
     {
-        int NewLampNumber = 0;
+        static int NewLampNumber = 0;
 
         public LightingConfigWindow()
         {

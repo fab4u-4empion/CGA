@@ -1,21 +1,14 @@
-﻿using Rasterization;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Numerics;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Threading;
-using lab1.Shaders;
 using System.Windows.Media.Imaging;
 using lab1.Shadow;
-using lab1.Effects;
 using Microsoft.Win32;
 using System.Diagnostics;
 
@@ -115,7 +108,7 @@ namespace lab1
                             .Split(' ')
                             .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
                             .ToArray();
-                        material.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
+                        material.Ks = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
                     }
 
                     if (mtlLine.StartsWith("Pr"))
