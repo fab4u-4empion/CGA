@@ -125,6 +125,8 @@ namespace lab1
 
                 Subdivide(leftChild);
                 Subdivide(rightChild);
+
+                break;
             }
         }
 
