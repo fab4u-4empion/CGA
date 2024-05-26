@@ -148,9 +148,7 @@ namespace lab1
 
                 if (N == 1)
                 {
-                    Vector2 p = (a + b) * 0.5f;
-
-                    return Vector3.Lerp(GetColor(src[mainLvl], p), GetColor(src[nextLvl], p), lvl - mainLvl);
+                    return Vector3.Lerp(GetColor(src[mainLvl], uv), GetColor(src[nextLvl], uv), lvl - mainLvl);
                 }
                 else
                 {

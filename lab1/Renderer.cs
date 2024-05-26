@@ -193,9 +193,9 @@ namespace lab1
             Vector3 bw = model.Positions[model.PositionIndices[index + 1]];
             Vector3 cw = model.Positions[model.PositionIndices[index + 2]];
 
-            Vector3 D1 = Vector3.Normalize(p0 + x * dpdx + y * dpdy);
-            Vector3 D2 = Vector3.Normalize(p0 + (x + 1) * dpdx + y * dpdy);
-            Vector3 D3 = Vector3.Normalize(p0 + x * dpdx + (y + 1) * dpdy);
+            Vector3 D1 = p0 + x * dpdx + y * dpdy;
+            Vector3 D2 = D1 + dpdx;
+            Vector3 D3 = D1 + dpdy; 
 
             Vector3 tvec = Camera.Position - cw;
 
@@ -236,12 +236,12 @@ namespace lab1
             Vector3 t2 = model.Tangents[model.TangentIndices[index + 1]];
             Vector3 t3 = model.Tangents[model.TangentIndices[index + 2]];
 
-            Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3);
-            Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3);
-            Vector2 uv2 = (u2 * uv_1 + v2 * uv_2 + w2 * uv_3);
+            Vector2 uv = u * uv_1 + v * uv_2 + w * uv_3;
+            Vector2 uv1 = u1 * uv_1 + v1 * uv_2 + w1 * uv_3;
+            Vector2 uv2 = u2 * uv_1 + v2 * uv_2 + w2 * uv_3;
 
-            Vector3 oN = (u * n1 + v * n2 + w * n3);
-            Vector3 pw = (u * aw + v * bw + w * cw);
+            Vector3 oN = u * n1 + v * n2 + w * n3;
+            Vector3 pw = u * aw + v * bw + w * cw;
 
             Vector3 T = (u * t1 + v * t2 + w * t3);
             Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
@@ -555,10 +555,10 @@ namespace lab1
             }
         }
 
-        private (Vector3, Vector3, Vector3) GetViewportToWorldParams()
+        private (Vector3, Vector3, Vector3) GetViewportToWorldParams(float tanParam)
         {
             float aspect = (float)width / height;
-            float tan = float.Tan(float.Pi / 4);
+            float tan = float.Tan(tanParam);
             Matrix4x4 cameraRotation = Matrix4x4.CreateRotationX(Camera.Pitch) * Matrix4x4.CreateRotationY(Camera.Yaw);
 
             Vector3 X = new Vector3(cameraRotation.M11, cameraRotation.M12, cameraRotation.M13) * tan * aspect;
@@ -580,12 +580,14 @@ namespace lab1
             Array.Fill(BufferHDR.Array, Vector3.Zero);
             Array.Fill(AlphaBuffer.Array, 0);
 
-            (p0, dpdx, dpdy) = GetViewportToWorldParams();
+            (p0, dpdx, dpdy) = GetViewportToWorldParams(Camera.FoV / 2);
 
             if (model != null)
                 DrawScene(model);
             else
                 DrawLights();
+
+            (p0, dpdx, dpdy) = GetViewportToWorldParams(float.Pi / 4);
 
             Bitmap.Source.Lock();
             Bitmap.Clear();
