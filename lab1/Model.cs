@@ -13,7 +13,7 @@ namespace lab1
         public List<Vector2> UV = [];
         public List<Material> Materials = [];
         public List<Vector3> Tangents = [];
-        public Vector4[] ViewVertices;
+        public Vector4[] ProjectionVertices;
 
         public Dictionary<string, int> MaterialNames = [];
 

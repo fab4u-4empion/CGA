@@ -12,6 +12,7 @@ using lab1.Shadow;
 using System.Windows.Controls;
 using MaterialDesignThemes.Wpf;
 using System.Windows;
+using System.Buffers;
 
 namespace lab1
 {
@@ -57,6 +58,10 @@ namespace lab1
         private int width;
         private int height;
 
+        private Matrix4x4 viewportMatrix;
+
+        Vector3 p0, dpdx, dpdy;
+
         private static float PerpDotProduct(Vector2 a, Vector2 b)
         {
             return a.X * b.Y - a.Y * b.X;
@@ -70,16 +75,13 @@ namespace lab1
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
             Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Camera.FoV, (float)width / (float)height, 0.1f, 500f);
-            Matrix4x4 viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, width, height, 0, 1);
 
-            Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix * viewportMatrix;
+            Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix;
 
-            model.ViewVertices = new Vector4[model.Positions.Count];
-            for (int i = 0; i < model.ViewVertices.Length; i++)
+            model.ProjectionVertices = new Vector4[model.Positions.Count];
+            for (int i = 0; i < model.ProjectionVertices.Length; i++)
             {
-                Vector4 vertex = Vector4.Transform(model.Positions[i], matrix);
-                vertex /= new Vector4(new(vertex.W), vertex.W * vertex.W);
-                model.ViewVertices[i] = vertex;
+                model.ProjectionVertices[i] = Vector4.Transform(model.Positions[i], matrix);
             }
         }
 
@@ -87,87 +89,140 @@ namespace lab1
         {
             Parallel.ForEach(Partitioner.Create(0, facesIndices.Count), (range) =>
             {
+                Vector4[] result = ArrayPool<Vector4>.Shared.Rent(4);
+
                 for (int i = range.Item1; i < range.Item2; i++)
                 {
                     int index = facesIndices[i] * 3;
-                    Vector4 a = model.ViewVertices[model.PositionIndices[index]];
-                    Vector4 b = model.ViewVertices[model.PositionIndices[index + 1]];
-                    Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
-                    if ((PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending) && 1 / a.W > 0 && 1 / b.W > 0 && 1 / c.W > 0)
+                    byte count = 0;
+
+                    Vector4 v1 = model.ProjectionVertices[model.PositionIndices[index]];
+                    Vector4 v2 = model.ProjectionVertices[model.PositionIndices[index + 1]];
+                    Vector4 v3 = model.ProjectionVertices[model.PositionIndices[index + 2]];
+
+                    if (v1.Z >= 0)
+                    result[count++] = v1;
+
+                    if (v1.Z < 0 != v2.Z < 0)
                     {
-                        if (b.X < a.X)
-                            (a, b) = (b, a);
+                        float t = -v1.Z / (v2.Z - v1.Z);
+                        result[count++] = Vector4.Lerp(v1, v2, t);
+                    }
 
-                        if (c.X < a.X)
-                            (a, c) = (c, a);
+                    if (v2.Z >= 0)
+                        result[count++] = v2;
 
-                        if (c.X < b.X)
-                            (b, c) = (c, b);
+                    if (v2.Z < 0 != v3.Z < 0)
+                    {
+                        float t = -v2.Z / (v3.Z - v2.Z);
+                        result[count++] = Vector4.Lerp(v2, v3, t);
+                    }
 
-                        Vector4 k1 = (c - a) / (c.X - a.X);
-                        Vector4 k2 = (b - a) / (b.X - a.X);
-                        Vector4 k3 = (c - b) / (c.X - b.X);
+                    if (v3.Z >= 0)
+                        result[count++] = v3;
+                    
+                    if (v1.Z < 0 != v3.Z < 0)
+                    {
+                        float t = -v1.Z / (v3.Z - v1.Z);
+                        result[count++] = Vector4.Lerp(v1, v3, t);
+                    }
 
-                        int left = int.Max((int)float.Ceiling(a.X), 0);
-                        int right = int.Min((int)float.Ceiling(c.X), width);
+                    for (int j = 1; j < count - 1; j++)
+                    {
+                        Vector4 a = result[0];
+                        Vector4 b = result[j];
+                        Vector4 c = result[j + 1];
 
-                        for (int x = left; x < right; x++)
+                        a = Vector4.Transform(a, viewportMatrix) / new Vector4(new(a.W), a.W * a.W);
+                        b = Vector4.Transform(b, viewportMatrix) / new Vector4(new(b.W), b.W * b.W);
+                        c = Vector4.Transform(c, viewportMatrix) / new Vector4(new(c.W), c.W * c.W);
+
+                        if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending)
                         {
-                            Vector4 p1 = a + (x - a.X) * k1;
-                            Vector4 p2 = x < b.X ? a + (x - a.X) * k2 : b + (x - b.X) * k3;
 
-                            if (p1.Y > p2.Y)
-                                (p1, p2) = (p2, p1);
+                            if (b.X < a.X)
+                                (a, b) = (b, a);
 
-                            Vector4 k = (p2 - p1) / (p2.Y - p1.Y);
+                            if (c.X < a.X)
+                                (a, c) = (c, a);
 
-                            int top = int.Max((int)float.Ceiling(p1.Y), 0);
-                            int bottom = int.Min((int)float.Ceiling(p2.Y), height);
+                            if (c.X < b.X)
+                                (b, c) = (c, b);
 
-                            for (int y = top; y < bottom; y++)
+                            Vector4 k1 = (c - a) / (c.X - a.X);
+                            Vector4 k2 = (b - a) / (b.X - a.X);
+                            Vector4 k3 = (c - b) / (c.X - b.X);
+
+                            int left = int.Max((int)float.Ceiling(a.X), 0);
+                            int right = int.Min((int)float.Ceiling(c.X), width);
+
+                            for (int x = left; x < right; x++)
                             {
-                                Vector4 p = p1 + (y - p1.Y) * k;
-                                if (p.Z >= 0 && p.Z <= 1)
-                                    action(x, y, p.Z, facesIndices[i]);
+                                Vector4 p1 = a + (x - a.X) * k1;
+                                Vector4 p2 = x < b.X ? a + (x - a.X) * k2 : b + (x - b.X) * k3;
+
+                                if (p1.Y > p2.Y)
+                                    (p1, p2) = (p2, p1);
+
+                                Vector4 k = (p2 - p1) / (p2.Y - p1.Y);
+
+                                int top = int.Max((int)float.Ceiling(p1.Y), 0);
+                                int bottom = int.Min((int)float.Ceiling(p2.Y), height);
+
+                                for (int y = top; y < bottom; y++)
+                                {
+                                    Vector4 p = p1 + (y - p1.Y) * k;
+                                    if (p.Z >= 0 && p.Z <= 1)
+                                        action(x, y, p.Z, facesIndices[i]);
+                                }
                             }
                         }
                     }
                 }
+
+                ArrayPool<Vector4>.Shared.Return(result);
             });
         }
 
-        private Color GetPixelColor(int faceIndex, Vector2 p, Model model)
+        private Color GetPixelColor(int faceIndex, int x, int y, Model model)
         {
             int materialIndex = model.MaterialIndices[faceIndex];
             int index = faceIndex * 3;
 
-            Vector4 a = model.ViewVertices[model.PositionIndices[index]];
-            Vector4 b = model.ViewVertices[model.PositionIndices[index + 1]];
-            Vector4 c = model.ViewVertices[model.PositionIndices[index + 2]];
+            Vector3 aw = model.Positions[model.PositionIndices[index]];
+            Vector3 bw = model.Positions[model.PositionIndices[index + 1]];
+            Vector3 cw = model.Positions[model.PositionIndices[index + 2]];
 
-            Vector2 pa = new Vector2(a.X, a.Y) - p;
-            Vector2 pb = new Vector2(b.X, b.Y) - p;
-            Vector2 pc = new Vector2(c.X, c.Y) - p;
+            Vector3 D1 = Vector3.Normalize(p0 + x * dpdx + y * dpdy);
+            Vector3 D2 = Vector3.Normalize(p0 + (x + 1) * dpdx + y * dpdy);
+            Vector3 D3 = Vector3.Normalize(p0 + x * dpdx + (y + 1) * dpdy);
 
-            bool isBackFace = PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) > 0;
+            Vector3 tvec = Camera.Position - cw;
 
-            float u = PerpDotProduct(pc, pb) * a.W;
-            float v = PerpDotProduct(pa, pc) * b.W;
-            float w = PerpDotProduct(pb, pa) * c.W;
-            float sum = u + v + w;
+            Vector3 e1 = aw - cw;
+            Vector3 e2 = bw - cw;
 
-            float dudx = (pc.Y - pb.Y) * a.W * 0.5f;
-            float dvdx = (pa.Y - pc.Y) * b.W * 0.5f;
-            float dwdx = (pb.Y - pa.Y) * c.W * 0.5f;
+            Vector3 cross1 = Vector3.Cross(e2, e1);
+            Vector3 cross2 = Vector3.Cross(e2, tvec);
+            Vector3 cross3 = Vector3.Cross(tvec, e1);
 
-            float dudy = (pb.X - pc.X) * a.W * 0.5f;
-            float dvdy = (pc.X - pa.X) * b.W * 0.5f;
-            float dwdy = (pa.X - pb.X) * c.W * 0.5f;
+            float det1 = Vector3.Dot(D1, cross1);
+            float det2 = Vector3.Dot(D2, cross1);
+            float det3 = Vector3.Dot(D3, cross1);
 
-            (float u1, float v1, float w1) = (u - dudx, v - dvdx, w - dwdx);
-            (float u2, float v2, float w2) = (u + dudy, v + dvdy, w + dwdy);
-            (float u3, float v3, float w3) = (u + dudx, v + dvdx, w + dwdx);
-            (float u4, float v4, float w4) = (u - dudy, v - dvdy, w - dwdy);
+            float u = Vector3.Dot(D1, cross2) / det1;
+            float u1 = Vector3.Dot(D2, cross2) / det2;
+            float u2 = Vector3.Dot(D3, cross2) / det3;
+
+            float v = Vector3.Dot(cross3, D1) / det1;
+            float v1 = Vector3.Dot(cross3, D2) / det2;
+            float v2 = Vector3.Dot(cross3, D3) / det3;
+
+            float w = 1f - u - v;
+            float w1 = 1f - u1 - v1;
+            float w2 = 1f - u2 - v2;
+
+            bool isBackFace = det1 <= 0;
 
             Vector3 n1 = model.Normals[model.NormalIndices[index]];
             Vector3 n2 = model.Normals[model.NormalIndices[index + 1]];
@@ -177,48 +232,42 @@ namespace lab1
             Vector2 uv_2 = model.UV[model.UVIndices[index + 1]];
             Vector2 uv_3 = model.UV[model.UVIndices[index + 2]];
 
-            Vector3 aw = model.Positions[model.PositionIndices[index]];
-            Vector3 bw = model.Positions[model.PositionIndices[index + 1]];
-            Vector3 cw = model.Positions[model.PositionIndices[index + 2]];
-
             Vector3 t1 = model.Tangents[model.TangentIndices[index]];
             Vector3 t2 = model.Tangents[model.TangentIndices[index + 1]];
             Vector3 t3 = model.Tangents[model.TangentIndices[index + 2]];
 
-            Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3) / sum;
-            Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3) / (u1 + v1 + w1);
-            Vector2 uv2 = (u2 * uv_1 + v2 * uv_2 + w2 * uv_3) / (u2 + v2 + w2);
-            Vector2 uv3 = (u3 * uv_1 + v3 * uv_2 + w3 * uv_3) / (u3 + v3 + w3);
-            Vector2 uv4 = (u4 * uv_1 + v4 * uv_2 + w4 * uv_3) / (u4 + v4 + w4);
+            Vector2 uv = (u * uv_1 + v * uv_2 + w * uv_3);
+            Vector2 uv1 = (u1 * uv_1 + v1 * uv_2 + w1 * uv_3);
+            Vector2 uv2 = (u2 * uv_1 + v2 * uv_2 + w2 * uv_3);
 
-            Vector3 oN = (u * n1 + v * n2 + w * n3) / sum;
-            Vector3 pw = (u * aw + v * bw + w * cw) / sum;
+            Vector3 oN = (u * n1 + v * n2 + w * n3);
+            Vector3 pw = (u * aw + v * bw + w * cw);
 
-            Vector3 T = (u * t1 + v * t2 + w * t3) / sum;
+            Vector3 T = (u * t1 + v * t2 + w * t3);
             Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
 
-            Vector3 baseColor = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2, uv3, uv4);
-            Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2, uv3, uv4);
-            float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2, uv3, uv4);
-            float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2, uv3, uv4);
-            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2, uv3, uv4);
-            Vector3 specular = model.Materials[materialIndex].GetSpecular(uv, uv1, uv2, uv3, uv4);
+            Vector3 baseColor = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2);
+            Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2);
+            float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2);
+            float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2);
+            Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2);
+            Vector3 specular = model.Materials[materialIndex].GetSpecular(uv, uv1, uv2);
 
             Vector3 n, nc;
             float clearCoatRougness, clearCoat;
 
             if (UseTangentNormals)
             {
-                n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+                n = model.Materials[materialIndex].GetNormal(uv, Vector3.UnitZ, uv1, uv2);
                 n = T * n.X + B * n.Y + oN * n.Z;
 
-                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2, uv3, uv4);
+                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, Vector3.UnitZ, uv1, uv2);
                 nc = T * nc.X + B * nc.Y + oN * nc.Z;
             }
             else
             {
-                n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2, uv3, uv4);
-                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2, uv3, uv4);
+                n = model.Materials[materialIndex].GetNormal(uv, oN, uv1, uv2);
+                (clearCoatRougness, clearCoat, nc) = model.Materials[materialIndex].GetClearCoat(uv, oN, uv1, uv2);
             }
 
             if (isBackFace)
@@ -242,8 +291,6 @@ namespace lab1
 
                 case ShaderTypes.Toon:
                     color = Toon.GetPixelColor(baseColor, n, pw, Camera.Position, emission);
-                    int x = (int)p.X;
-                    int y = (int)p.Y;
                     int d = (int)float.Ceiling(2 * Smoothing);
                     for (int i = -d; i <= d; i++)
                         for (int j = -d; j <= d; j++)
@@ -322,7 +369,7 @@ namespace lab1
 
             for (int i = start; i < length + start; i++)
             {
-                Color pixel = GetPixelColor(LayersBuffer[i].Index, new(x, y), model);
+                Color pixel = GetPixelColor(LayersBuffer[i].Index, x, y, model);
 
                 color += (1 - alpha) * pixel.Color;
                 alpha += (1 - alpha) * pixel.Alpha * pixel.Dissolve;
@@ -342,7 +389,7 @@ namespace lab1
                 {
                     if (ViewBuffer[x, y] != -1)
                     {
-                        Color color = GetPixelColor(ViewBuffer[x, y], new(x, y), model);
+                        Color color = GetPixelColor(ViewBuffer[x, y], x, y, model);
                         BufferHDR[x, y] = color.Color;
                         AlphaBuffer[x, y] = color.Alpha;
                     }
@@ -373,7 +420,7 @@ namespace lab1
                     int index = ViewBuffer[x, y];
                     if (index != -1)
                     {
-                        Color pixel = GetPixelColor(index, new(x, y), model);
+                        Color pixel = GetPixelColor(index, x, y, model);
                         BufferHDR[x, y] = pixel.Color;
                         AlphaBuffer[x, y] = pixel.Alpha;
                     }
@@ -392,8 +439,6 @@ namespace lab1
 
         private void DrawHDRBuffer()
         {
-            (Vector3 p0, Vector3 dpdx, Vector3 dpdy) = GetSkyBoxParams();
-
             if (UseBloom)
             {
                 Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(BufferHDR, width, height, Smoothing);
@@ -510,18 +555,18 @@ namespace lab1
             }
         }
 
-        private (Vector3, Vector3, Vector3) GetSkyBoxParams()
+        private (Vector3, Vector3, Vector3) GetViewportToWorldParams()
         {
             float aspect = (float)width / height;
             float tan = float.Tan(float.Pi / 4);
             Matrix4x4 cameraRotation = Matrix4x4.CreateRotationX(Camera.Pitch) * Matrix4x4.CreateRotationY(Camera.Yaw);
 
-            Vector3 X = new(cameraRotation.M11, cameraRotation.M12, cameraRotation.M13);
-            Vector3 Y = new(cameraRotation.M21, cameraRotation.M22, cameraRotation.M23);
+            Vector3 X = new Vector3(cameraRotation.M11, cameraRotation.M12, cameraRotation.M13) * tan * aspect;
+            Vector3 Y = new Vector3(cameraRotation.M21, cameraRotation.M22, cameraRotation.M23) * tan;
             Vector3 Z = new(cameraRotation.M31, cameraRotation.M32, cameraRotation.M33);
-            Vector3 p0 = (1f / width - 1) * aspect * tan * X + (-1f / height + 1) * tan * Y - Z;
-            Vector3 dpdx = aspect * tan * X * 2 / width;
-            Vector3 dpdy = tan * Y * -2 / height;
+            Vector3 p0 = (1f / width - 1) * X + (-1f / height + 1) * Y - Z;
+            Vector3 dpdx = X * 2 / width;
+            Vector3 dpdy = Y * -2 / height;
 
             return (p0, dpdx, dpdy);
         }
@@ -534,6 +579,8 @@ namespace lab1
             Array.Fill(OffsetBuffer.Array, 0);
             Array.Fill(BufferHDR.Array, Vector3.Zero);
             Array.Fill(AlphaBuffer.Array, 0);
+
+            (p0, dpdx, dpdy) = GetViewportToWorldParams();
 
             if (model != null)
                 DrawScene(model);
@@ -555,6 +602,8 @@ namespace lab1
 
             this.width = Bitmap.PixelWidth;
             this.height = Bitmap.PixelHeight;
+
+            viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, this.width, this.height, 0, 1);
 
             BufferHDR = new(this.width, this.height);
             AlphaBuffer = new(this.width, this.height);

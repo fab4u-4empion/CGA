@@ -46,34 +46,6 @@ namespace lab1.Shaders
             }
 
             return color * dissolve;
-
-            //Vector3 color = baseColor * AmbientIntensity;
-
-            //Vector3 V = Normalize(camera - p);
-            //Vector3 N = Normalize(n);
-
-            //float a2 = glossiness * glossiness;
-            //float a4 = a2 * a2;
-
-            //for (int i = 0; i < Lights.Count; i++)
-            //{
-            //    Vector3 L = Normalize(Lights[i].Position - p);
-            //    Vector3 H = Normalize(V + L);
-
-            //    if (Dot(N, L) <= 0)
-            //        continue;
-
-            //    Vector3 diffuse = baseColor * Lights[i].Color * Max(Dot(N, L), 0);
-
-            //    Vector3 specular = spec * Lights[i].Color * Pow(
-            //        Max(Dot(H, N), 0),
-            //        glossiness * 1024f
-            //    );
-
-            //    color += (diffuse + specular) * Lights[i].Intensity;
-            //}
-
-            //return color;
         }
     }
 }
