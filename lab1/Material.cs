@@ -123,15 +123,15 @@ namespace lab1
             );
         }
 
-        private Vector3 GetColorFromTexture(List<Buffer<Vector3>> src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        private Vector3 GetColorFromTexture(List<Buffer<Vector3>> src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2)
         {
             if (src.Count == 0)
                 return def;
 
             if (UsingMIPMapping)
             {
-                float length1 = ((uv3 - uv1) * src[0].Size).Length();
-                float length2 = ((uv4 - uv2) * src[0].Size).Length();
+                float length1 = ((uv - uv1) * src[0].Size).Length();
+                float length2 = ((uv - uv2) * src[0].Size).Length();
 
                 float max = float.Max(length1, length2);
                 float min = float.Min(length1, length2);
@@ -144,18 +144,16 @@ namespace lab1
                 int mainLvl = (int)lvl;
                 int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
 
-                (Vector2 a, Vector2 b) = length1 > length2 ? (uv1, uv3) : (uv2, uv4);
+                (Vector2 a, Vector2 b) = length1 > length2 ? (uv, uv1) : (uv, uv2);
 
                 if (N == 1)
                 {
-                    Vector2 p = (a + b) * 0.5f;
-
-                    return Vector3.Lerp(GetColor(src[mainLvl], p), GetColor(src[nextLvl], p), lvl - mainLvl);
+                    return Vector3.Lerp(GetColor(src[mainLvl], uv), GetColor(src[nextLvl], uv), lvl - mainLvl);
                 }
                 else
                 {
                     Vector2 k = (b - a) / N;
-                    a += 0.5f * k;
+                    a += 0.5f * (k + a - b);
 
                     Vector3 mainColor = Vector3.Zero;
                     Vector3 nextColor = Vector3.Zero;
@@ -175,48 +173,48 @@ namespace lab1
             }
         }
 
-        public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public Vector3 GetDiffuse(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Diffuse, uv, Kd, uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Diffuse, uv, Kd, uv1, uv2);
         }
 
-        public Vector3 GetSpecular(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public Vector3 GetSpecular(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Specular, uv, Ks, uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Specular, uv, Ks, uv1, uv2);
         }
 
-        public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2);
         }
 
-        public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2, uv3, uv4).X;
+            return GetColorFromTexture(Transmission, uv, new(Tr), uv1, uv2).X;
         }
 
-        public float GetDissolve(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public float GetDissolve(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Dissolve, uv, new(D), uv1, uv2, uv3, uv4).X;
+            return GetColorFromTexture(Dissolve, uv, new(D), uv1, uv2).X;
         }
 
-        public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public (float, float, Vector3) GetClearCoat(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2)
         {
-            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, new(Pcr), uv1, uv2, uv3, uv4).X;
-            float clearCoat = GetColorFromTexture(ClearCoat, uv, new(Pc), uv1, uv2, uv3, uv4).X;
-            Vector3 normal = GetColorFromTexture(ClearCoatNormals, uv, defaultNormal, uv1, uv2, uv3, uv4);
+            float roughness = GetColorFromTexture(ClearCoatRoughness, uv, new(Pcr), uv1, uv2).X;
+            float clearCoat = GetColorFromTexture(ClearCoat, uv, new(Pc), uv1, uv2).X;
+            Vector3 normal = GetColorFromTexture(ClearCoatNormals, uv, defaultNormal, uv1, uv2);
 
             return (roughness, clearCoat, normal);
         }
 
-        public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public Vector3 GetNormal(Vector2 uv, Vector3 defaultNormal, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Normals, uv, defaultNormal, uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(Normals, uv, defaultNormal, uv1, uv2);
         }
 
-        public Vector3 GetMRAO(Vector2 uv, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        public Vector3 GetMRAO(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(MRAO, uv, new(Pm, Pr, 1), uv1, uv2, uv3, uv4);
+            return GetColorFromTexture(MRAO, uv, new(Pm, Pr, 1), uv1, uv2);
         }
     }
 }
