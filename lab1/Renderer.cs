@@ -78,7 +78,6 @@ namespace lab1
 
             Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix;
 
-            model.ProjectionVertices = new Vector4[model.Positions.Count];
             for (int i = 0; i < model.ProjectionVertices.Length; i++)
             {
                 model.ProjectionVertices[i] = Vector4.Transform(model.Positions[i], matrix);
@@ -127,15 +126,14 @@ namespace lab1
                         result[count++] = Vector4.Lerp(v1, v3, t);
                     }
 
+                    for (int j = 0; j < count; j++)
+                        result[j] = Vector4.Transform(result[j] / result[j].W, viewportMatrix);
+
                     for (int j = 1; j < count - 1; j++)
                     {
                         Vector4 a = result[0];
                         Vector4 b = result[j];
                         Vector4 c = result[j + 1];
-
-                        a = Vector4.Transform(a, viewportMatrix) / new Vector4(new(a.W), a.W * a.W);
-                        b = Vector4.Transform(b, viewportMatrix) / new Vector4(new(b.W), b.W * b.W);
-                        c = Vector4.Transform(c, viewportMatrix) / new Vector4(new(c.W), c.W * c.W);
 
                         if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending)
                         {

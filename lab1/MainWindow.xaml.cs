@@ -11,6 +11,7 @@ using System.Windows.Media.Imaging;
 using lab1.Shadow;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace lab1
 {
@@ -257,6 +258,8 @@ namespace lab1
                     }
                 }
             }
+
+            model.ProjectionVertices = new Vector4[model.Positions.Count];
         }
 
         private void UpdateInfo()

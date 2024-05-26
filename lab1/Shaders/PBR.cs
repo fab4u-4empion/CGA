@@ -127,7 +127,7 @@ namespace lab1.Shaders
 
             if (IBLDiffuseMap == null && IBLSpecularMap.Count == 0)
             {
-                color += baseColor * ao * AmbientIntensity * opacity;
+                color += diffuse * ao * AmbientIntensity;
             }
             else
             {
@@ -161,6 +161,7 @@ namespace lab1.Shaders
 
                 color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectance) + clearCoatSpecular) * ao * AmbientIntensity * 5;
             }
+
             color += emission * EmissionIntensity;
 
             return color * dissolve;
