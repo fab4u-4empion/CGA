@@ -206,17 +206,17 @@ namespace lab1
             Vector3 cross2 = Vector3.Cross(e2, tvec);
             Vector3 cross3 = Vector3.Cross(tvec, e1);
 
-            float det1 = Vector3.Dot(D1, cross1);
-            float det2 = Vector3.Dot(D2, cross1);
-            float det3 = Vector3.Dot(D3, cross1);
+            float det1 = 1 / Vector3.Dot(D1, cross1);
+            float det2 = 1 / Vector3.Dot(D2, cross1);
+            float det3 = 1 / Vector3.Dot(D3, cross1);
 
-            float u = Vector3.Dot(D1, cross2) / det1;
-            float u1 = Vector3.Dot(D2, cross2) / det2;
-            float u2 = Vector3.Dot(D3, cross2) / det3;
+            float u = Vector3.Dot(D1, cross2) * det1;
+            float u1 = Vector3.Dot(D2, cross2) * det2;
+            float u2 = Vector3.Dot(D3, cross2) * det3;
 
-            float v = Vector3.Dot(cross3, D1) / det1;
-            float v1 = Vector3.Dot(cross3, D2) / det2;
-            float v2 = Vector3.Dot(cross3, D3) / det3;
+            float v = Vector3.Dot(cross3, D1) * det1;
+            float v1 = Vector3.Dot(cross3, D2) * det2;
+            float v2 = Vector3.Dot(cross3, D3) * det3;
 
             float w = 1f - u - v;
             float w1 = 1f - u1 - v1;
