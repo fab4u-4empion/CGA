@@ -492,10 +492,13 @@ namespace lab1
                     break;
 
                 case Key.T:
-                    if (ToneMapping.Mode == ToneMappingMode.ACES) 
+                    if (ToneMapping.Mode == ToneMappingMode.ACES)
                         ToneMapping.Mode = ToneMappingMode.AgX;
-                    else 
-                    if (ToneMapping.Mode == ToneMappingMode.AgX) 
+                    else
+                    if (ToneMapping.Mode == ToneMappingMode.AgX)
+                        ToneMapping.Mode = ToneMappingMode.PBRNeutral;
+                    else
+                    if (ToneMapping.Mode == ToneMappingMode.PBRNeutral)
                         ToneMapping.Mode = ToneMappingMode.ACES;
                     Draw();
                     break;

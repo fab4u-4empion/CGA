@@ -159,7 +159,7 @@ namespace lab1.Shaders
                 brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
                 Vector3 clearCoatSpecular = coatSpecularLight * (clearCoatReflectance * brdf.X + new Vector3(brdf.Y) * clearCoat);
 
-                color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectance) + clearCoatSpecular) * ao * AmbientIntensity * 5;
+                color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectance) + clearCoatSpecular) * ao * AmbientIntensity;
             }
 
             color += emission * EmissionIntensity;

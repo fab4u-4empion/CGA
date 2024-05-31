@@ -449,7 +449,7 @@ namespace lab1
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
                             backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
-                            backColor *= LightingConfig.AmbientIntensity * 5;
+                            backColor *= LightingConfig.AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]));
@@ -467,7 +467,7 @@ namespace lab1
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
                             backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
-                            backColor *= LightingConfig.AmbientIntensity * 5;
+                            backColor *= LightingConfig.AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])));

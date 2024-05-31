@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading.Tasks.Dataflow;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -8,7 +9,8 @@ namespace lab1
     public enum ToneMappingMode
     {
         ACES,
-        AgX
+        AgX,
+        PBRNeutral
     }
 
     public enum AgXLookMode
@@ -22,6 +24,27 @@ namespace lab1
     {
         public static ToneMappingMode Mode = ToneMappingMode.ACES;
         public static AgXLookMode LookMode = AgXLookMode.DEFAULT;
+
+        public static Vector3 PBRNeutral(Vector3 color)
+        {
+            float startCompression = 0.76f;
+            float desaturation = 0.15f;
+            float d = 0.24f;
+
+            float x = Min(color.X, Min(color.Y, color.Z));
+            float offset = x < 0.08f ? x - 6.25f * x * x : 0.04f;
+            color -= new Vector3(offset);
+
+            float peak = Max(color.X, Max(color.Y, color.Z));
+            if (peak < startCompression) return Clamp(color, Zero, One);
+
+            float newPeak = 1f - d * d / (peak + 0.52f);
+            color *= newPeak / peak;
+
+            float g = 1f - 1f / (desaturation * (peak - newPeak) + 1f);
+
+            return Clamp(Lerp(color, new Vector3(newPeak), g), Zero, One);
+        }
 
         public static Vector3 AcesFilmic(Vector3 color)
         {
@@ -46,30 +69,28 @@ namespace lab1
         public static Vector3 AgX(Vector3 color)
         {
             color = new(
-                Dot(new(0.856627153315983f, 0.0951212405381588f, 0.0482516061458583f), color),
-                Dot(new(0.137318972929847f, 0.761241990602591f, 0.101439036467562f), color),
-                Dot(new(0.11189821299995f, 0.0767994186031903f, 0.811302368396859f), color)
+                Dot(new(0.842479062253094f, 0.0784335999999992f, 0.0792237451477643f), color),
+                Dot(new(0.0423282422610123f, 0.878468636469772f, 0.0791661274605434f), color),
+                Dot(new(0.0423756549057051f, 0.0784336f, 0.879142973793104f), color)
             );
 
             float min_ev = -12.47393f;
             float max_ev = 4.026069f;
 
-            color = Clamp(new Vector3(Log2(color.X), Log2(color.Y), Log2(color.Z)), new(min_ev), new(max_ev));
+            color = Clamp(new(Log2(color.X), Log2(color.Y), Log2(color.Z)), min_ev * One, max_ev * One);
             color = (color - min_ev * One) / (max_ev - min_ev);
 
             Vector3 x2 = color * color;
             Vector3 x4 = x2 * x2;
-            Vector3 x6 = x4 * x2;
 
-            color = 
-                - 17.86f * x6 * color
-                + 78.01f * x6
-                - 126.7f * x4 * color
-                + 92.06f * x4
-                - 28.72f * x2 * color
-                + 4.361f * x2
-                - 0.1718f * color
-                + 0.002857f * One;
+            color =
+                +15.5f * x4 * x2
+                - 40.14f * x4 * color
+                + 31.96f * x4
+                - 6.868f * x2 * color
+                + 0.4298f * x2
+                + 0.1191f * color
+                - 0.00232f * One;
 
             return color;
         }
@@ -77,9 +98,9 @@ namespace lab1
         public static Vector3 AgXEotf(Vector3 color)
         {
             color = new(
-                Dot(new(1.1271005818144366432f, -0.1106066430966032116f, -0.016493938717834568156f), color),
-                Dot(new(-0.14132976349843826566f, 1.1578237022162717623f, -0.016493938717834252651f), color),
-                Dot(new(-0.14132976349843824773f, -0.11060664309660291788f, 1.2519364065950402828f), color)
+                Dot(new(1.19687900512017f, -0.0980208811401368f, -0.0990297440797205f), color),
+                Dot(new(-0.0528968517574562f, 1.15190312990417f, -0.0989611768448433f), color),
+                Dot(new(-0.0529716355144438f, -0.0980434501171241f, 1.15107367264116f), color)
             );
 
             color = new(Pow(color.X, 2.2f), Pow(color.Y, 2.2f), Pow(color.Z, 2.2f));
@@ -132,6 +153,7 @@ namespace lab1
         {
             if (Mode == ToneMappingMode.ACES) return LinearToSrgb(AcesFilmic(color));
             if (Mode == ToneMappingMode.AgX) return LinearToSrgb(AgXEotf(AgXLook(AgX(color))));
+            if (Mode == ToneMappingMode.PBRNeutral) return LinearToSrgb(PBRNeutral(color));
             return color;
         }
     }
