@@ -36,14 +36,14 @@ namespace lab1
             color -= new Vector3(offset);
 
             float peak = Max(color.X, Max(color.Y, color.Z));
-            if (peak < startCompression) return Clamp(color, Zero, One);
+            if (peak < startCompression) return color;
 
-            float newPeak = 1f - d * d / (peak + 0.52f);
+            float newPeak = 1f - d * d / (peak - 0.52f);
             color *= newPeak / peak;
 
             float g = 1f - 1f / (desaturation * (peak - newPeak) + 1f);
 
-            return Clamp(Lerp(color, new Vector3(newPeak), g), Zero, One);
+            return Lerp(color, new Vector3(newPeak), g);
         }
 
         public static Vector3 AcesFilmic(Vector3 color)
