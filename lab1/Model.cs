@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Windows.Media.Imaging;
@@ -72,21 +73,31 @@ namespace lab1
 
         public List<Buffer<Vector3>> AddTexture(string uri, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
-            if (!Textures.TryGetValue(uri, out List<Buffer<Vector3>> texture))
+            if (File.Exists(uri))
             {
-                texture = Material.CalculateMIP(new(new BitmapImage(new Uri(uri, UriKind.Relative))), useSrgbToLinearTransform, isNormal);
-                Textures.Add(uri, texture);
-            }
+                if (!Textures.TryGetValue(uri, out List<Buffer<Vector3>> texture))
+                {
+                    texture = Material.CalculateMIP(new(new BitmapImage(new Uri(uri, UriKind.Relative))), useSrgbToLinearTransform, isNormal);
+                    Textures.Add(uri, texture);
+                }
 
-            return texture;
+                return texture;
+            }
+            
+            return null;
         }
 
-        public void AddFace((int, int, int) v1, (int, int, int) v2, (int, int, int) v3, int materialIndex, int faceIndex)
+        public void AddFace(String v1, String v2, String v3, int materialIndex, int faceIndex)
         {
             MaterialIndices.Add(materialIndex);
-            PositionIndices.AddRange([v1.Item1 - 1, v2.Item1 - 1, v3.Item1 - 1]);
-            UVIndices.AddRange([v1.Item2 - 1, v2.Item2 - 1, v3.Item2 - 1]);
-            NormalIndices.AddRange([v1.Item3 - 1, v2.Item3 - 1, v3.Item3 - 1]);
+
+            int[] p1 = v1.Split("/").Select(x => int.Parse(x)).ToArray();
+            int[] p2 = v2.Split("/").Select(x => int.Parse(x)).ToArray();
+            int[] p3 = v3.Split("/").Select(x => int.Parse(x)).ToArray();
+
+            PositionIndices.AddRange([p1[0] - 1, p2[0] - 1, p3[0] - 1]);
+            UVIndices.AddRange([p1[1] - 1, p2[1] - 1, p3[1] - 1]);
+            NormalIndices.AddRange([p1[2] - 1, p2[2] - 1, p3[2] - 1]);
 
             if (Materials.Count > 0)
             {

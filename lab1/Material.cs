@@ -15,17 +15,17 @@ namespace lab1
 
     public class Material
     {
-        public List<Buffer<Vector3>> Diffuse = new(15);
-        public List<Buffer<Vector3>> Normals = new(15);
-        public List<Buffer<Vector3>> MRAO = new(15);
-        public List<Buffer<Vector3>> Emission = new(15);
-        public List<Buffer<Vector3>> Transmission = new(15);
-        public List<Buffer<Vector3>> Dissolve = new(15);
-        public List<Buffer<Vector3>> Specular = new(15);
+        public List<Buffer<Vector3>> Diffuse = null;
+        public List<Buffer<Vector3>> Normals = null;
+        public List<Buffer<Vector3>> MRAO = null;
+        public List<Buffer<Vector3>> Emission = null;
+        public List<Buffer<Vector3>> Transmission = null;
+        public List<Buffer<Vector3>> Dissolve = null;
+        public List<Buffer<Vector3>> Specular = null;
 
-        public List<Buffer<Vector3>> ClearCoat = new(15);
-        public List<Buffer<Vector3>> ClearCoatRoughness = new(15);
-        public List<Buffer<Vector3>> ClearCoatNormals = new(15);
+        public List<Buffer<Vector3>> ClearCoat = null;
+        public List<Buffer<Vector3>> ClearCoatRoughness = null;
+        public List<Buffer<Vector3>> ClearCoatNormals = null;
 
         public float Pm = 0;
         public float Pr = 1;
@@ -125,7 +125,7 @@ namespace lab1
 
         private Vector3 GetColorFromTexture(List<Buffer<Vector3>> src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2)
         {
-            if (src.Count == 0)
+            if (src == null)
                 return def;
 
             if (UsingMIPMapping)

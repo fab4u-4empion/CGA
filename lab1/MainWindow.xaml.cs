@@ -182,79 +182,45 @@ namespace lab1
             {
                 while (!reader.EndOfStream)
                 {
-                    String line = reader.ReadLine().Trim();
+                    String[] line = reader.ReadLine().Trim().Split(" ");
 
-                    if (line.StartsWith("mtllib "))
+                    switch(line[0])
                     {
-                        String mtl = line.Remove(0, 7).Trim();
-                        LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), mtl), model);
-                    }
+                        case "mtllib":
+                            LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), line[1]), model);
+                            break;
 
-                    if (line.StartsWith("usemtl"))
-                    {
-                        model.MaterialNames.TryGetValue(line.Remove(0, 6).Trim(), out materialIndex);
-                    }
+                        case "usemtl":
+                            model.MaterialNames.TryGetValue(line[1], out materialIndex);
+                            break;
 
-                    if (line.StartsWith("v "))
-                    {
-                        List<float> coordinates = line
-                            .Remove(0, 2)
-                            .Trim()
-                            .Split(" ")
-                            .Select(c =>
-                                float.Parse(c, CultureInfo.InvariantCulture)
-                             )
-                            .ToList();
-                        model.AddVertex(coordinates[0], coordinates[1], coordinates[2]);
-                    }
+                        case "v":
+                            model.AddVertex(
+                                float.Parse(line[1], CultureInfo.InvariantCulture),
+                                float.Parse(line[2], CultureInfo.InvariantCulture),
+                                float.Parse(line[3], CultureInfo.InvariantCulture)
+                            );
+                            break;
 
-                    if (line.StartsWith("f "))
-                    {
-                        List<(int, int, int)> vertices = line
-                                .Remove(0, 2)
-                                .Trim()
-                                .Split(" ")
-                                .Select(v =>
-                                {
-                                    List<int> indexes = v
-                                        .Split("/")
-                                        .Select(i => int.Parse(i, CultureInfo.InvariantCulture))
-                                        .ToList();
-                                    return (indexes[0], indexes[1], indexes[2]);
-                                }
-                                )
-                                .ToList();
-                        for (int i = 0; i < vertices.Count - 2;  i++)
-                        {
-                            model.AddFace(vertices[0], vertices[i + 1], vertices[i + 2], materialIndex, faceIndex);
-                            faceIndex++;
-                        }
-                    }
+                        case "f":
+                            for (int i = 1; i < line.Length - 2; i++)
+                            {
+                                model.AddFace(line[1], line[i + 1], line[i + 2], materialIndex, faceIndex);
+                                faceIndex++;
+                            }
+                            break;
 
-                    if (line.StartsWith("vn "))
-                    {
-                        List<float> coordinates = line
-                            .Remove(0, 3)
-                            .Trim()
-                            .Split(" ")
-                            .Select(c =>
-                                float.Parse(c, CultureInfo.InvariantCulture)
-                             )
-                            .ToList();
-                        model.AddNormal(coordinates[0], coordinates[1], coordinates[2]);
-                    }
+                        case "vn":
+                            model.AddNormal(
+                                float.Parse(line[1], CultureInfo.InvariantCulture),
+                                float.Parse(line[2], CultureInfo.InvariantCulture),
+                                float.Parse(line[3], CultureInfo.InvariantCulture)
+                            );
+                            break;
 
-                    if (line.StartsWith("vt "))
-                    {
-                        List<float> coordinates = line
-                            .Remove(0, 3)
-                            .Trim()
-                            .Split(" ")
-                            .Select(c =>  
-                                float.Parse(c, CultureInfo.InvariantCulture)
-                            )
-                            .ToList();
-                        model.AddUV(coordinates[0], 1 - coordinates[1]);
+                        case "vt":
+                            model.AddUV(float.Parse(line[1], CultureInfo.InvariantCulture), 1 - float.Parse(line[2], CultureInfo.InvariantCulture));
+                            break;
                     }
                 }
             }
