@@ -12,6 +12,7 @@ using lab1.Shadow;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Numerics;
+using System.Reflection.PortableExecutable;
 
 namespace lab1
 {
@@ -178,50 +179,48 @@ namespace lab1
         {
             int materialIndex = 0;
             int faceIndex = 0;
-            using (StreamReader reader = new(fileName))
+
+            foreach (string l in File.ReadLines(fileName))
             {
-                while (!reader.EndOfStream)
+                string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                switch (line[0])
                 {
-                    String[] line = reader.ReadLine().Trim().Split(" ");
+                    case "mtllib":
+                        LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), line[1]), model);
+                        break;
 
-                    switch(line[0])
-                    {
-                        case "mtllib":
-                            LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), line[1]), model);
-                            break;
+                    case "usemtl":
+                        model.MaterialNames.TryGetValue(line[1], out materialIndex);
+                        break;
 
-                        case "usemtl":
-                            model.MaterialNames.TryGetValue(line[1], out materialIndex);
-                            break;
+                    case "v":
+                        model.AddVertex(
+                            float.Parse(line[1], CultureInfo.InvariantCulture),
+                            float.Parse(line[2], CultureInfo.InvariantCulture),
+                            float.Parse(line[3], CultureInfo.InvariantCulture)
+                        );
+                        break;
 
-                        case "v":
-                            model.AddVertex(
-                                float.Parse(line[1], CultureInfo.InvariantCulture),
-                                float.Parse(line[2], CultureInfo.InvariantCulture),
-                                float.Parse(line[3], CultureInfo.InvariantCulture)
-                            );
-                            break;
+                    case "f":
+                        for (int i = 1; i < line.Length - 2; i++)
+                        {
+                            model.AddFace(line[1], line[i + 1], line[i + 2], materialIndex, faceIndex);
+                            faceIndex++;
+                        }
+                        break;
 
-                        case "f":
-                            for (int i = 1; i < line.Length - 2; i++)
-                            {
-                                model.AddFace(line[1], line[i + 1], line[i + 2], materialIndex, faceIndex);
-                                faceIndex++;
-                            }
-                            break;
+                    case "vn":
+                        model.AddNormal(
+                            float.Parse(line[1], CultureInfo.InvariantCulture),
+                            float.Parse(line[2], CultureInfo.InvariantCulture),
+                            float.Parse(line[3], CultureInfo.InvariantCulture)
+                        );
+                        break;
 
-                        case "vn":
-                            model.AddNormal(
-                                float.Parse(line[1], CultureInfo.InvariantCulture),
-                                float.Parse(line[2], CultureInfo.InvariantCulture),
-                                float.Parse(line[3], CultureInfo.InvariantCulture)
-                            );
-                            break;
-
-                        case "vt":
-                            model.AddUV(float.Parse(line[1], CultureInfo.InvariantCulture), 1 - float.Parse(line[2], CultureInfo.InvariantCulture));
-                            break;
-                    }
+                    case "vt":
+                        model.AddUV(float.Parse(line[1], CultureInfo.InvariantCulture), 1 - float.Parse(line[2], CultureInfo.InvariantCulture));
+                        break;
                 }
             }
 
@@ -571,14 +570,14 @@ namespace lab1
                         Timer.Stop();
                         Model_time.Content = $"Model loaded in {double.Round(Timer.ElapsedMilliseconds)} ms";
 
+                        Timer.Restart();
+
                         if (MainModel.OpaqueFacesIndices.Count > 0)
-                        {
-                            Timer.Restart();
                             BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
-                            BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-                            Timer.Stop();
-                        }
-                        
+
+                        BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
+                        Timer.Stop();
+
                         Renderer.Camera.Target = MainModel.GetCenter();
                         Renderer.Camera.UpdatePosition(0, 0, 0);
 

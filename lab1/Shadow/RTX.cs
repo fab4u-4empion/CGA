@@ -13,14 +13,25 @@ namespace lab1.Shadow
         public static int RayCount = 1;
         public static float LightSize = 0.005f;
 
-        public static float TriangleIntersections(Vector3 orig, Vector3 dir, Vector3 a, Vector3 b, Vector3 c) {
+        public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
+        {
+            Vector3 t1 = (bmin - O) / D;
+            Vector3 t2 = (bmax - O) / D;
+            float tmin = Max(Max(Min(t1.X, t2.X), Min(t1.Y, t2.Y)), Min(t1.Z, t2.Z));
+            float tmax = Min(Min(Max(t1.X, t2.X), Max(t1.Y, t2.Y)), Max(t1.Z, t2.Z));
+            return tmax >= tmin && tmax > 0;
+        }
+
+        public static float IntersectTriangle(Vector3 orig, Vector3 dir, Vector3 a, Vector3 b, Vector3 c)
+        {
             Vector3 e1 = b - a;
             Vector3 e2 = c - a;
 
             Vector3 pvec = Cross(dir, e2);
             float det = Dot(e1, pvec);
 
-            if (det < 1e-8f && det > -1e-8f) {
+            if (det < 1e-8f && det > -1e-8f)
+            {
                 return 0;
             }
 
@@ -28,7 +39,8 @@ namespace lab1.Shadow
             Vector3 tvec = orig - a;
             float u = Dot(tvec, pvec) * inv_det;
 
-            if (u < 0 || u > 1) {
+            if (u < 0 || u > 1)
+            {
                 return 0;
             }
 
@@ -41,21 +53,6 @@ namespace lab1.Shadow
             }
 
             return Dot(e2, qvec) * inv_det;
-        }
-
-        public static bool CheckIntersection(Vector3 light, Vector3 orig)
-        {
-            Vector3 dir = Normalize(light - orig);
-            float dist = (light - orig).Length();
-            for (int i = 0; i < BVH.Tris.Length; i++)
-            {
-                float d = RTX.TriangleIntersections(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
-                if (d > -0 && d < dist)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         public static float GetLightIntensityBVH(Vector3 light, Vector3 orig) {
@@ -85,6 +82,8 @@ namespace lab1.Shadow
 
         public static float GetLightIntensity(Vector3 light, Vector3 orig)
         {
+            if (BVH.Tris == null) return 1f;
+
             float result = 0;
 
             float baseIntensity = 1f / RayCount;
@@ -107,7 +106,7 @@ namespace lab1.Shadow
 
                 for (int i = 0; i < BVH.Tris.Length; i++)
                 {
-                    float d = RTX.TriangleIntersections(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
+                    float d = RTX.IntersectTriangle(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
                     if (d > -0 && d < dist)
                     {
                         intersected = true;
@@ -123,6 +122,8 @@ namespace lab1.Shadow
 
         public static float GetLightIntensitySquare(Vector3 light, Vector3 orig)
         {
+            if (BVH.Tris == null) return 1f;
+
             float result = 0;
 
             float baseIntensity = 1f / RayCount;
@@ -150,7 +151,7 @@ namespace lab1.Shadow
 
                 for (int i = 0; i < BVH.Tris.Length; i++)
                 {
-                    float d = RTX.TriangleIntersections(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
+                    float d = RTX.IntersectTriangle(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
                     if (d > -0 && d < dist)
                     {
                         intersected = true;
