@@ -244,10 +244,14 @@ namespace lab1
             Vector3 T = (u * t1 + v * t2 + w * t3);
             Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
 
+            float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2);
+
+            if (dissolve == 0)
+                return (Vector3.Zero, 0, 0);
+
             Vector3 baseColor = model.Materials[materialIndex].GetDiffuse(uv, uv1, uv2);
             Vector3 emission = model.Materials[materialIndex].GetEmission(uv, uv1, uv2);
             float opacity = 1 - model.Materials[materialIndex].GetTransmission(uv, uv1, uv2);
-            float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2);
             Vector3 MRAO = model.Materials[materialIndex].GetMRAO(uv, uv1, uv2);
             Vector3 specular = model.Materials[materialIndex].GetSpecular(uv, uv1, uv2);
 
@@ -271,7 +275,7 @@ namespace lab1
             if (isBackFace)
                 (n, nc) = (-n, -nc);
 
-            Vector3 color = new(0.5f);
+            Vector3 color = Vector3.One;
 
             switch (CurrentShader)
             {
@@ -368,6 +372,8 @@ namespace lab1
             for (int i = start; i < length + start; i++)
             {
                 Color pixel = GetPixelColor(LayersBuffer[i].Index, x, y, model);
+
+                if (pixel.Dissolve == 0) continue;
 
                 color += (1 - alpha) * pixel.Color;
                 alpha += (1 - alpha) * pixel.Alpha * pixel.Dissolve;
