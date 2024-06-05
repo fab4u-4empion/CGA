@@ -330,50 +330,32 @@ namespace lab1
             switch (e.Key)
             {
                 case Key.NumPad1:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(-0.2f, 0, 0));
-                    else
-                        LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
+                    LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad2:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(0.2f, 0, 0));
-                    else
-                        LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
+                    LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
                     Draw();
                     break;
 
                 case Key.NumPad4:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(0, -0.2f, 0));
-                    else
-                        LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
+                    LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad5:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(0, 0.2f, 0));
-                    else
-                        LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
+                    LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
                     Draw();
                     break;
 
                 case Key.NumPad7:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(0, 0, -0.2f));
-                    else
-                        LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
+                    LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
                     Draw();
                     break;
 
                 case Key.NumPad8:
-                    if (CameraControl)
-                        Renderer.Camera.Move(new(0, 0, 0.2f));
-                    else
-                        LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
+                    LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
                     Draw();
                     break;
 
@@ -446,7 +428,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.W:
+                case Key.NumPad0:
                     Renderer.UseBloom = !Renderer.UseBloom;
                     Draw();
                     break;
@@ -482,7 +464,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.Q:
+                case Key.F12:
                     PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(Renderer.Bitmap.Source));
                     DirectoryInfo info = Directory.CreateDirectory("img");
@@ -509,24 +491,13 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.L:
-                    CameraControl = !CameraControl;
-                    Draw();
-                    break;
-
-                case Key.A:
+                case Key.NumPad3:
                     HDRTexture.Angle += 0.1f;
                     Draw();
                     break;
 
-                case Key.D:
+                case Key.NumPad6:
                     HDRTexture.Angle -= 0.1f;
-                    Draw();
-                    break;
-
-                case Key.NumPad9:
-                    Renderer.Camera.Target = MainModel.GetCenter();
-                    Renderer.Camera.UpdatePosition(0, 0, 0);
                     Draw();
                     break;
 
@@ -552,7 +523,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.S:
+                case Key.L:
                     Renderer.UseSkyBox = !Renderer.UseSkyBox;
                     Draw();
                     break;
@@ -583,6 +554,36 @@ namespace lab1
 
                         Draw();
                     }
+                    break;
+
+                case Key.W:
+                    Renderer.Camera.Move(new(0, 0, -0.2f), true);
+                    Draw(); 
+                    break;
+
+                case Key.S:
+                    Renderer.Camera.Move(new(0, 0, 0.2f), true);
+                    Draw();
+                    break;
+
+                case Key.A:
+                    Renderer.Camera.Move(new(-0.2f, 0, 0), true);
+                    Draw();
+                    break;
+
+                case Key.D:
+                    Renderer.Camera.Move(new(0.2f, 0, 0), true);
+                    Draw();
+                    break;
+
+                case Key.Q:
+                    Renderer.Camera.Move(new(0, -0.2f, 0), false);
+                    Draw();
+                    break;
+
+                case Key.E:
+                    Renderer.Camera.Move(new(0, 0.2f, 0), false);
+                    Draw();
                     break;
             }
 

@@ -53,8 +53,14 @@ namespace lab1
             LookVector = GetLookVector();
         }
 
-        public void Move(Vector3 delta)
+        public void Move(Vector3 delta, bool rotate)
         {
+            if (rotate)
+            {
+                Matrix4x4 rotation = Matrix4x4.CreateFromYawPitchRoll(this.Yaw, this.Pitch, 0);
+                delta = Vector3.Transform(delta, rotation);
+            }
+
             Target += delta;
             Position = GetPosition() + Target;
         }

@@ -102,7 +102,7 @@ namespace lab1.Shaders
 
                 float distance = Distance(Lights[i].Position, p);
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.001f) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.01f) : 1;
 
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
