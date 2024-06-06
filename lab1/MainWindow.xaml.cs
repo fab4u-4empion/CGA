@@ -428,7 +428,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.NumPad0:
+                case Key.F6:
                     Renderer.UseBloom = !Renderer.UseBloom;
                     Draw();
                     break;
@@ -491,12 +491,12 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.NumPad3:
+                case Key.J:
                     HDRTexture.Angle += 0.1f;
                     Draw();
                     break;
 
-                case Key.NumPad6:
+                case Key.K:
                     HDRTexture.Angle -= 0.1f;
                     Draw();
                     break;
@@ -523,7 +523,7 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.L:
+                case Key.F5:
                     Renderer.UseSkyBox = !Renderer.UseSkyBox;
                     Draw();
                     break;
