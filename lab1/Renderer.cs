@@ -23,8 +23,8 @@ namespace lab1
     public enum ShaderTypes
     {
         MetallicPBR,
-        Phong,
         SpecularPBR,
+        Phong,
         Toon
     }
 

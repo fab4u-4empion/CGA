@@ -2,29 +2,26 @@
 
 namespace lab1
 {
+    public enum CameraMode { Arcball, Free }
+
     public class Camera
     {
-        public Vector3 Target { get; set; }
+        public Vector3 Target { get; set; } = Vector3.Zero;
         public Vector3 Position { get; set; }
-        public Vector3 Up { get; set; }
-        public float FoV { get; set; }
+        public Vector3 Up { get; set; } = Vector3.UnitY;
+        public float FoV { get; set; } = float.Pi / 4;
         public Vector3 LookVector { get; set; }
+        public CameraMode Mode { get; set; } = CameraMode.Arcball;
 
         public float Yaw { get => DegToRad(f); }
         public float Pitch { get => DegToRad(o - 90); }
 
-        private float r;
-        private float o;
-        private float f;
+        private float r = 25;
+        private float o = 90;
+        private float f = 0;
 
         public Camera() { 
-            Target = Vector3.Zero;
-            r = 25;
-            o = 90;
-            f = 0;
             Position = GetPosition();
-            FoV = float.Pi / 4;
-            Up = new Vector3(0, 1, 0);
             LookVector = GetLookVector();
         }
 
@@ -49,8 +46,17 @@ namespace lab1
             r = float.Max(r + dR, 0.1f);
             o = float.Min(179, float.Max(1, o + dO)); 
             f += dF;
-            Position = GetPosition() + Target;
-            LookVector = GetLookVector();
+
+            if (Mode == CameraMode.Arcball)
+            {
+                Position = GetPosition() + Target;
+                LookVector = GetLookVector();
+            }
+            else
+            {
+                Target = -GetPosition() + Position;
+                LookVector = -GetLookVector();
+            }
         }
 
         public void Move(Vector3 delta, bool rotate)
@@ -61,8 +67,25 @@ namespace lab1
                 delta = Vector3.Transform(delta, rotation);
             }
 
-            Target += delta;
-            Position = GetPosition() + Target;
+            if (Mode == CameraMode.Arcball)
+            {
+                Target += delta;
+                Position = GetPosition() + Target;
+            }
+            else
+            {
+                Position += delta;
+                Target = -GetPosition() + Position;
+            }
+        }
+
+        public void Reset()
+        {
+            r = 25;
+            o = 90;
+            f = 0;
+            Mode = CameraMode.Arcball;
+            UpdatePosition(0, 0, 0);
         }
     }
 }

@@ -281,8 +281,9 @@ namespace lab1
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 Point current_position = e.GetPosition(this);
-                Renderer.Camera.UpdatePosition(0, 0, (float)(current_position.X - MousePosition.X) * -0.5f);
-                Renderer.Camera.UpdatePosition(0, (float)(current_position.Y - MousePosition.Y) * -0.5f, 0);
+                float sensitivity = Renderer.Camera.Mode == CameraMode.Arcball ? -0.5f : -0.2f;
+                Renderer.Camera.UpdatePosition(0, 0, (float)(current_position.X - MousePosition.X) * sensitivity);
+                Renderer.Camera.UpdatePosition(0, (float)(current_position.Y - MousePosition.Y) * sensitivity, 0);
                 Draw();
             }
             MousePosition = e.GetPosition(this);
@@ -439,27 +440,13 @@ namespace lab1
                     break;
 
                 case Key.T:
-                    if (ToneMapping.Mode == ToneMappingMode.ACES)
-                        ToneMapping.Mode = ToneMappingMode.AgX;
-                    else
-                    if (ToneMapping.Mode == ToneMappingMode.AgX)
-                        ToneMapping.Mode = ToneMappingMode.PBRNeutral;
-                    else
-                    if (ToneMapping.Mode == ToneMappingMode.PBRNeutral)
-                        ToneMapping.Mode = ToneMappingMode.ACES;
+                    ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
                     Draw();
                     break;
 
                 case Key.Y:
                     if (ToneMapping.Mode == ToneMappingMode.AgX) {
-                        if (ToneMapping.LookMode == AgXLookMode.DEFAULT)
-                            ToneMapping.LookMode = AgXLookMode.PUNCHY;
-                        else
-                        if (ToneMapping.LookMode == AgXLookMode.PUNCHY)
-                            ToneMapping.LookMode = AgXLookMode.GOLDEN;
-                        else
-                        if (ToneMapping.LookMode == AgXLookMode.GOLDEN)
-                            ToneMapping.LookMode = AgXLookMode.DEFAULT;
+                        ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
                     }
                     Draw();
                     break;
@@ -502,24 +489,7 @@ namespace lab1
                     break;
 
                 case Key.P:
-                    switch (Renderer.CurrentShader)
-                    {
-                        case ShaderTypes.MetallicPBR:
-                            Renderer.CurrentShader = ShaderTypes.SpecularPBR;
-                            break;
-
-                        case ShaderTypes.SpecularPBR:
-                            Renderer.CurrentShader = ShaderTypes.Phong; 
-                            break;
-
-                        case ShaderTypes.Phong:
-                            Renderer.CurrentShader = ShaderTypes.Toon;
-                            break;
-
-                        case ShaderTypes.Toon:
-                            Renderer.CurrentShader = ShaderTypes.MetallicPBR;
-                            break;
-                    }
+                    Renderer.CurrentShader = (ShaderTypes)(((int)Renderer.CurrentShader + 1) % 4);
                     Draw();
                     break;
 
@@ -550,7 +520,7 @@ namespace lab1
                         Timer.Stop();
 
                         Renderer.Camera.Target = MainModel.GetCenter();
-                        Renderer.Camera.UpdatePosition(0, 0, 0);
+                        Renderer.Camera.Reset();
 
                         Draw();
                     }
@@ -583,6 +553,17 @@ namespace lab1
 
                 case Key.E:
                     Renderer.Camera.Move(new(0, 0.2f, 0), false);
+                    Draw();
+                    break;
+
+                case Key.F7:
+                    Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
+                    Draw();
+                    break;
+
+                case Key.NumPad0:
+                    Renderer.Camera.Target = MainModel.GetCenter();
+                    Renderer.Camera.Reset();
                     Draw();
                     break;
             }
