@@ -26,7 +26,7 @@
         <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top"/>
         <Label x:Name="Ray_Count" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Top"/>
         <Label x:Name="Light_size" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Top"/>
-        <Label x:Name="CurrLamp" Content="Label" HorizontalAlignment="Left" Margin="20 120" VerticalAlignment="Top"/>
+        <Label x:Name="CurrLamp" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Bottom"/>
         <Label x:Name="Contrl" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Bottom"/>
         <Label x:Name="Model_time" Content="Label" HorizontalAlignment="Left" Margin="20 40" VerticalAlignment="Bottom"/>
         <Label x:Name="BVH_time" Content="Label" HorizontalAlignment="Left" Margin="20 20" VerticalAlignment="Bottom"/>

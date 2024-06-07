@@ -12,7 +12,6 @@ using lab1.Shadow;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Numerics;
-using System.Reflection.PortableExecutable;
 
 namespace lab1
 {
@@ -242,9 +241,9 @@ namespace lab1
             if (Material.UsingMIPMapping)
                 MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
 
-            CurrLamp.Content = $"Current lamp: {(LightingConfig.CurrentLamp > -1 ? LightingConfig.CurrentLamp + 1 : "*")}";
+            CurrLamp.Content = $"Current lamp: {(LightingConfig.CurrentLamp > -1 ? LightingConfig.Lights[LightingConfig.CurrentLamp].Name : "*")}";
 
-            Contrl.Content = $"NumPad control mode: {(CameraControl ? "camera" : "light")}";
+            Contrl.Content = $"Camera control mode: {Renderer.Camera.Mode}";
             Shader.Content = $"Shader: {Renderer.CurrentShader}";
         }
 
@@ -370,16 +369,6 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.Up:
-                    LightingConfig.ChangeLamp(1);
-                    Draw(); 
-                    break;
-
-                case Key.Down:
-                    LightingConfig.ChangeLamp(-1);
-                    Draw();
-                    break;
-
                 case Key.Add:
                     LightingConfig.AmbientIntensity += 0.01f;
                     Draw();
@@ -399,11 +388,6 @@ namespace lab1
 
                 case Key.Multiply:
                     LightingConfig.EmissionIntensity += 0.2f;
-                    Draw();
-                    break;
-
-                case Key.R:
-                    LightingConfig.UseShadow = !LightingConfig.UseShadow;
                     Draw();
                     break;
 
@@ -429,55 +413,6 @@ namespace lab1
                     Draw();
                     break;
 
-                case Key.F6:
-                    Renderer.UseBloom = !Renderer.UseBloom;
-                    Draw();
-                    break;
-
-                case Key.I:
-                    Renderer.UseTangentNormals = !Renderer.UseTangentNormals;
-                    Draw();
-                    break;
-
-                case Key.T:
-                    ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
-                    Draw();
-                    break;
-
-                case Key.Y:
-                    if (ToneMapping.Mode == ToneMappingMode.AgX) {
-                        ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
-                    }
-                    Draw();
-                    break;
-
-                case Key.F12:
-                    PngBitmapEncoder encoder = new();
-                    encoder.Frames.Add(BitmapFrame.Create(Renderer.Bitmap.Source));
-                    DirectoryInfo info = Directory.CreateDirectory("img");
-                    using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
-                    {
-                        encoder.Save(st);
-                    }
-                    break;
-
-                case Key.M:
-                    Material.UsingMIPMapping = !Material.UsingMIPMapping;
-                    Draw();
-                    break;
-
-                case Key.N:
-                    Material.MaxAnisotropy *= 2;
-                    if (Material.MaxAnisotropy > 16) 
-                        Material.MaxAnisotropy = 1;
-                    Draw();
-                    break;
-
-                case Key.B:
-                    LightingConfig.DrawLights = !LightingConfig.DrawLights;
-                    Draw();
-                    break;
-
                 case Key.J:
                     HDRTexture.Angle += 0.1f;
                     Draw();
@@ -486,44 +421,6 @@ namespace lab1
                 case Key.K:
                     HDRTexture.Angle -= 0.1f;
                     Draw();
-                    break;
-
-                case Key.P:
-                    Renderer.CurrentShader = (ShaderTypes)(((int)Renderer.CurrentShader + 1) % 4);
-                    Draw();
-                    break;
-
-                case Key.F5:
-                    Renderer.UseSkyBox = !Renderer.UseSkyBox;
-                    Draw();
-                    break;
-
-                case Key.O:
-                    OpenFileDialog dlg = new();
-                    dlg.Filter = "Wavefront (*.obj)|*.obj";
-                    if (dlg.ShowDialog() == true)
-                    {
-                        MainModel = new();
-
-                        Timer.Restart();
-                        LoadModel(dlg.FileName, MainModel);
-                        MainModel.CalculateTangents();
-                        Timer.Stop();
-                        Model_time.Content = $"Model loaded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-
-                        Timer.Restart();
-
-                        if (MainModel.OpaqueFacesIndices.Count > 0)
-                            BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
-
-                        BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-                        Timer.Stop();
-
-                        Renderer.Camera.Target = MainModel.GetCenter();
-                        Renderer.Camera.Reset();
-
-                        Draw();
-                    }
                     break;
 
                 case Key.W:
@@ -555,23 +452,126 @@ namespace lab1
                     Renderer.Camera.Move(new(0, 0.2f, 0), false);
                     Draw();
                     break;
-
-                case Key.F7:
-                    Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
-                    Draw();
-                    break;
-
-                case Key.NumPad0:
-                    Renderer.Camera.Target = MainModel.GetCenter();
-                    Renderer.Camera.Reset();
-                    Draw();
-                    break;
             }
 
             if (!e.IsRepeat)
             {
                 switch (e.Key)
                 {
+                    case Key.O:
+                        OpenFileDialog dlg = new();
+                        dlg.Filter = "Wavefront (*.obj)|*.obj";
+                        if (dlg.ShowDialog() == true)
+                        {
+                            MainModel = new();
+
+                            Timer.Restart();
+                            LoadModel(dlg.FileName, MainModel);
+                            MainModel.CalculateTangents();
+                            Timer.Stop();
+                            Model_time.Content = $"Model loaded in {double.Round(Timer.ElapsedMilliseconds)} ms";
+
+                            Timer.Restart();
+
+                            if (MainModel.OpaqueFacesIndices.Count > 0)
+                                BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
+
+                            BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
+                            Timer.Stop();
+
+                            Renderer.Camera.Target = MainModel.GetCenter();
+                            Renderer.Camera.Reset();
+
+                            Draw();
+                        }
+                        break;
+
+                    case Key.R:
+                        LightingConfig.UseShadow = !LightingConfig.UseShadow;
+                        Draw();
+                        break;
+
+                    case Key.Up:
+                        LightingConfig.ChangeLamp(1);
+                        Draw();
+                        break;
+
+                    case Key.Down:
+                        LightingConfig.ChangeLamp(-1);
+                        Draw();
+                        break;
+
+                    case Key.F6:
+                        Renderer.UseBloom = !Renderer.UseBloom;
+                        Draw();
+                        break;
+
+                    case Key.I:
+                        Renderer.UseTangentNormals = !Renderer.UseTangentNormals;
+                        Draw();
+                        break;
+
+                    case Key.T:
+                        ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
+                        Draw();
+                        break;
+
+                    case Key.Y:
+                        if (ToneMapping.Mode == ToneMappingMode.AgX)
+                        {
+                            ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
+                        }
+                        Draw();
+                        break;
+
+                    case Key.F12:
+                        PngBitmapEncoder encoder = new();
+                        encoder.Frames.Add(BitmapFrame.Create(Renderer.Bitmap.Source));
+                        DirectoryInfo info = Directory.CreateDirectory("img");
+                        using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
+                        {
+                            encoder.Save(st);
+                        }
+                        break;
+
+                    case Key.M:
+                        Material.UsingMIPMapping = !Material.UsingMIPMapping;
+                        Draw();
+                        break;
+
+                    case Key.N:
+                        Material.MaxAnisotropy *= 2;
+                        if (Material.MaxAnisotropy > 16)
+                            Material.MaxAnisotropy = 1;
+                        Draw();
+                        break;
+
+                    case Key.B:
+                        LightingConfig.DrawLights = !LightingConfig.DrawLights;
+                        Draw();
+                        break;
+
+                    case Key.P:
+                        Renderer.CurrentShader = (ShaderTypes)(((int)Renderer.CurrentShader + 1) % 4);
+                        Draw();
+                        break;
+
+                    case Key.F5:
+                        Renderer.UseSkyBox = !Renderer.UseSkyBox;
+                        Draw();
+                        break;
+
+                    case Key.F7:
+                        Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
+                        Draw();
+                        break;
+
+                    case Key.NumPad0:
+                        Renderer.Camera.Target = MainModel.GetCenter();
+                        Renderer.Camera.Reset();
+                        Draw();
+                        break;
+
                     case Key.D1:
                         Renderer.Smoothing = 0.25f;
                         ResizeHandler();
