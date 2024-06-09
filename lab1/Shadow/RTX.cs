@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Windows.Documents;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -55,10 +56,15 @@ namespace lab1.Shadow
             return Dot(e2, qvec) * inv_det;
         }
 
-        public static float GetLightIntensityBVH(Vector3 light, Vector3 orig) {
+        public static float GetLightIntensityBVH(Lamp lamp, Vector3 orig) {
             float result = 0;
 
             float baseIntensity = 1f / RayCount;
+
+            if (lamp.Type == LampTypes.Directional)
+                return BVH.IntersectBVH(orig, Normalize(lamp.Position), PositiveInfinity, 0) ? 0 : 1;
+
+            Vector3 position = lamp.Position;
 
             for (int j = 0; j < RayCount; j++)
             {
@@ -66,9 +72,9 @@ namespace lab1.Shadow
                 float theta = Acos(random.NextSingle() * 2 - 1);
 
                 Vector3 LP = new(
-                    light.X + LightSize * Sin(theta) * Cos(phi),
-                    light.Y + LightSize * Sin(theta) * Sin(phi),
-                    light.Z + LightSize * Cos(theta)
+                    position.X + LightSize * Sin(theta) * Cos(phi),
+                    position.Y + LightSize * Sin(theta) * Sin(phi),
+                    position.Z + LightSize * Cos(theta)
                 );
 
                 Vector3 dir = Normalize(LP - orig);

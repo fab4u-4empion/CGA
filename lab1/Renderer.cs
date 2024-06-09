@@ -490,6 +490,8 @@ namespace lab1
                 {
                     Lamp lamp = LightingConfig.Lights[i];
 
+                    if (lamp.Type != LampTypes.Point) continue;
+
                     Sphere.Translation = lamp.Position;
                     Sphere.Scale = float.Max(0.05f, RTX.LightSize);
 

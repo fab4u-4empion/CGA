@@ -36,7 +36,7 @@ namespace lab1.Shaders
                 if (Dot(N, L) <= 0)
                     continue;
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.01f) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f) : 1;
 
                 float distance = Distance(Lights[i].Position, p);
 

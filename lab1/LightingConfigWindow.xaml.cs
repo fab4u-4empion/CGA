@@ -34,6 +34,7 @@ namespace lab1
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
                 (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InvariantCulture), lamp.Color.Y.ToString(CultureInfo.InvariantCulture), lamp.Color.Z.ToString(CultureInfo.InvariantCulture));
                 LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
+                LampType.SelectedIndex = (int)lamp.Type;
             }
             else
             {
@@ -41,6 +42,7 @@ namespace lab1
                 (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = ("", "", "");
                 LampInt.Text = "";
                 LampName.Text = "";
+                LampType.SelectedIndex = -1;
             }
         }
 
@@ -79,6 +81,7 @@ namespace lab1
                     float.Parse(LampPos_Z.Text, CultureInfo.InvariantCulture)
                 );
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
+                lamp.Type = (LampTypes)LampType.SelectedIndex;
                 UpdateListBox();
             }
         }

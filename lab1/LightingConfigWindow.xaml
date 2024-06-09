@@ -36,7 +36,7 @@
             <Label Content="Name"/>
             <TextBox x:Name="LampName"/>
 
-            <Label Content="Position (XYZ)" Margin="0,10,0,0"/>
+            <Label Content="Position / Direction (XYZ)" Margin="0,10,0,0"/>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
@@ -67,6 +67,12 @@
 
             <Label Content="Intensity" Margin="0,10,0,0"/>
             <TextBox x:Name="LampInt"/>
+
+            <Label Content="Type" Margin="0,10,0,0"/>
+            <ComboBox x:Name="LampType">
+                <ComboBoxItem Content="Point" />
+                <ComboBoxItem Content="Directional" Tag="Directional"/>
+            </ComboBox>
 
             <Button Content="Save" Margin="0,10,0,0" BorderThickness="3" Background="#198754" BorderBrush="#13653f" Click="Button_Click_2"/>
             <Button Content="Delete" Margin="0,10,0,0" BorderThickness="3" Background="#dc3545" BorderBrush="#a52834" Click="Button_Click_1"/>
