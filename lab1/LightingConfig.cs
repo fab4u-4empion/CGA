@@ -16,8 +16,8 @@ namespace lab1
         public Vector3 Color = Vector3.One;
         public float Intensity = 100;
         public string Name = "";
-        public float Theta = 90;
-        public float Phi = 0;
+        public float Theta = 45;
+        public float Phi = 45;
         public LampTypes Type = LampTypes.Point;
 
         public Vector3 GetIrradiance(Vector3 point)
@@ -66,10 +66,10 @@ namespace lab1
         public static HDRTexture BRDFLLUT = new();
 
         public static List<Lamp> Lights = [
-            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 5, Name = "Default 0", Type = LampTypes.Directional},
-            /*new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
+            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 500, Name = "Default 0"},
+            new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
             new() { Position = new(10, 10, -10), Color = new(0.5f, 0.5f, 1), Intensity = 500, Name = "Default 2" },
-            new() { Position = new(-10, 10, -10), Color = new(0.5f, 1, 1), Intensity = 500, Name = "Default 3" },*/
+            new() { Position = new(-10, 10, -10), Color = new(0.5f, 1, 1), Intensity = 500, Name = "Default 3" },
         ];
 
         public static void ChangeLamp(int delta)
@@ -84,7 +84,10 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                Lights[CurrentLamp].Intensity = float.Max(Lights[CurrentLamp].Intensity + delta, 0);
+                if (Lights[CurrentLamp].Type == LampTypes.Directional)
+                    Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta / 10, 0);
+                else
+                    Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta, 0);
             }
         }
 
@@ -95,8 +98,9 @@ namespace lab1
                 Lamp lamp = Lights[CurrentLamp];
                 if (lamp.Type == LampTypes.Directional)
                 {
-                    lamp.Theta = float.Clamp(lamp.Theta + delta.X * 10, 0, 180);
-                    lamp.Phi = lamp.Phi + delta.Y * 10;
+                    lamp.Theta = Clamp(lamp.Theta + delta.X * 10, 0, 180);
+                    lamp.Phi += delta.Y * 10;
+                    lamp.Phi = (lamp.Phi % 360 + 360) % 360;
                 }
                 else
                 {
