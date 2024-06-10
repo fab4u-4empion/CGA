@@ -33,12 +33,14 @@ namespace lab1
                 LampName.Text = lamp.Name;
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
                 (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InvariantCulture), lamp.Color.Y.ToString(CultureInfo.InvariantCulture), lamp.Color.Z.ToString(CultureInfo.InvariantCulture));
+                (LampDir_T.Text, LampDir_Ph.Text) = (lamp.Theta.ToString(CultureInfo.InvariantCulture), lamp.Phi.ToString(CultureInfo.InvariantCulture));
                 LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
                 LampType.SelectedIndex = (int)lamp.Type;
             }
             else
             {
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = ("", "", "");
+                (LampDir_T.Text, LampDir_Ph.Text) = ("", "");
                 (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = ("", "", "");
                 LampInt.Text = "";
                 LampName.Text = "";
@@ -56,12 +58,15 @@ namespace lab1
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            Lights.RemoveAt(LightsListBox.SelectedIndex);
-            if (Lights.Count == 0)
-                CurrentLamp = -1;
-            else
-                CurrentLamp = 0;
-            UpdateListBox();
+            if (LightsListBox.SelectedIndex > -1)
+            {
+                Lights.RemoveAt(LightsListBox.SelectedIndex);
+                if (Lights.Count == 0)
+                    CurrentLamp = -1;
+                else
+                    CurrentLamp = 0;
+                UpdateListBox();
+            }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -81,8 +86,25 @@ namespace lab1
                     float.Parse(LampPos_Z.Text, CultureInfo.InvariantCulture)
                 );
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
+                lamp.Theta = float.Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
+                lamp.Phi = float.Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
                 lamp.Type = (LampTypes)LampType.SelectedIndex;
                 UpdateListBox();
+            }
+        }
+
+        private void LampType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LampType.SelectedIndex ==  0)
+            {
+                PositionGrid.Visibility = Visibility.Visible;
+                DirectionGrid.Visibility = Visibility.Collapsed;
+            }
+
+            if (LampType.SelectedIndex == 1)
+            {
+                PositionGrid.Visibility = Visibility.Collapsed;
+                DirectionGrid.Visibility = Visibility.Visible;
             }
         }
     }

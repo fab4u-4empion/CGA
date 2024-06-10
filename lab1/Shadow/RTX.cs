@@ -62,7 +62,7 @@ namespace lab1.Shadow
             float baseIntensity = 1f / RayCount;
 
             if (lamp.Type == LampTypes.Directional)
-                return BVH.IntersectBVH(orig, Normalize(lamp.Position), PositiveInfinity, 0) ? 0 : 1;
+                return BVH.IntersectBVH(orig, lamp.GetDirection(), PositiveInfinity, 0) ? 0 : 1;
 
             Vector3 position = lamp.Position;
 

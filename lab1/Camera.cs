@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using static System.Single;
 
 namespace lab1
 {
@@ -13,8 +14,8 @@ namespace lab1
         public Vector3 LookVector { get; set; }
         public CameraMode Mode { get; set; } = CameraMode.Arcball;
 
-        public float Yaw { get => DegToRad(f); }
-        public float Pitch { get => DegToRad(o - 90); }
+        public float Yaw { get => DegreesToRadians(f); }
+        public float Pitch { get => DegreesToRadians(o - 90); }
 
         private float r = 25;
         private float o = 90;
@@ -25,16 +26,11 @@ namespace lab1
             LookVector = GetLookVector();
         }
 
-        private float DegToRad(float deg)
-        {
-            return deg / 180f * float.Pi;
-        }
-
         private Vector3 GetPosition() {
-            return new Vector3(
-                r * (float)float.Sin(DegToRad(o)) * float.Sin(DegToRad(f)),
-                r * (float)float.Cos(DegToRad(o)),
-                r * (float)float.Sin(DegToRad(o)) * float.Cos(DegToRad(f))
+            return new(
+                r * Sin(DegreesToRadians(o)) * Sin(DegreesToRadians(f)),
+                r * Cos(DegreesToRadians(o)),
+                r * Sin(DegreesToRadians(o)) * Cos(DegreesToRadians(f))
             );
         }
 
@@ -43,8 +39,8 @@ namespace lab1
         }
 
         public void UpdatePosition(float dR, float dO, float dF) {
-            r = float.Max(r + dR, 0.1f);
-            o = float.Min(179, float.Max(1, o + dO)); 
+            r = Max(r + dR, 0.1f);
+            o = Min(179, Max(1, o + dO)); 
             f += dF;
 
             if (Mode == CameraMode.Arcball)

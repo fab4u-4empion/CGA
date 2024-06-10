@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using System.Windows.Documents;
-using System.Windows.Media.Media3D;
+using static System.Single;
 
 namespace lab1
 {
@@ -13,10 +12,12 @@ namespace lab1
 
     public class Lamp
     {
-        public Vector3 Position;
-        public Vector3 Color;
-        public float Intensity;
+        public Vector3 Position = Vector3.Zero;
+        public Vector3 Color = Vector3.One;
+        public float Intensity = 100;
         public string Name = "";
+        public float Theta = 90;
+        public float Phi = 0;
         public LampTypes Type = LampTypes.Point;
 
         public Vector3 GetIrradiance(Vector3 point)
@@ -32,9 +33,18 @@ namespace lab1
         public Vector3 GetL(Vector3 point)
         {
             if (Type == LampTypes.Directional)
-                return Vector3.Normalize(Position);
+                return GetDirection();
 
             return Vector3.Normalize(Position - point);
+        }
+
+        public Vector3 GetDirection()
+        {
+            return Vector3.Normalize(new(
+                Sin(DegreesToRadians(Theta)) * Sin(DegreesToRadians(Phi)),
+                Cos(DegreesToRadians(Theta)),
+                Sin(DegreesToRadians(Theta)) * Cos(DegreesToRadians(Phi))
+            ));
         }
     }
 
@@ -56,7 +66,7 @@ namespace lab1
         public static HDRTexture BRDFLLUT = new();
 
         public static List<Lamp> Lights = [
-            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 500, Name = "Default 0", Type = LampTypes.Directional},
+            new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 5, Name = "Default 0", Type = LampTypes.Directional},
             /*new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
             new() { Position = new(10, 10, -10), Color = new(0.5f, 0.5f, 1), Intensity = 500, Name = "Default 2" },
             new() { Position = new(-10, 10, -10), Color = new(0.5f, 1, 1), Intensity = 500, Name = "Default 3" },*/
@@ -82,7 +92,16 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                Lights[CurrentLamp].Position += delta;
+                Lamp lamp = Lights[CurrentLamp];
+                if (lamp.Type == LampTypes.Directional)
+                {
+                    lamp.Theta = float.Clamp(lamp.Theta + delta.X * 10, 0, 180);
+                    lamp.Phi = lamp.Phi + delta.Y * 10;
+                }
+                else
+                {
+                    Lights[CurrentLamp].Position += delta;
+                }
             }
         }
     }

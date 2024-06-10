@@ -30,7 +30,7 @@ namespace lab1.Shaders
 
             for (int i = 0; i < Lights.Count; i++)
             {
-                Vector3 L = Normalize(Lights[i].Position - p);
+                Vector3 L = Lights[i].GetL(p);
                 Vector3 H = Normalize(V + L);
 
                 if (Dot(N, L) <= 0)
@@ -38,11 +38,9 @@ namespace lab1.Shaders
 
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f) : 1;
 
-                float distance = Distance(Lights[i].Position, p);
-
                 Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 5f;
 
-                color += (baseColor * opacity / Pi + specular) * Lights[i].Intensity * Lights[i].Color / (distance * distance) * intensity * Max(Dot(N, L), 0);
+                color += (baseColor * opacity / Pi + specular) * Lights[i].GetIrradiance(p) * intensity * Max(Dot(N, L), 0);
             }
 
             return color * dissolve;

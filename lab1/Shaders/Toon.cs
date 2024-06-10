@@ -42,12 +42,11 @@ namespace lab1.Shaders
             {
                 Lamp lamp = Lights[i];
 
-                Vector3 L = Normalize(lamp.Position - p);
-                float distance = Distance(lamp.Position, p);
+                Vector3 L = lamp.GetL(p);
 
                 float dot = Floor(Max(Dot(N, L), 0) * (lvl + 1)) * step;
 
-                color += baseColor * lamp.Color * lamp.Intensity * dot / (distance * distance * Pi);
+                color += baseColor * lamp.GetIrradiance(p) * dot / Pi;
             }
 
             color += baseColor * AmbientIntensity + emission * EmissionIntensity;

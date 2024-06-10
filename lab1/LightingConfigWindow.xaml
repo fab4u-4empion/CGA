@@ -36,20 +36,42 @@
             <Label Content="Name"/>
             <TextBox x:Name="LampName"/>
 
-            <Label Content="Position / Direction (XYZ)" Margin="0,10,0,0"/>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="LampPos_X"/>
-                <TextBox x:Name="LampPos_Y" Grid.Column="2"/>
-                <TextBox x:Name="LampPos_Z" Grid.Column="4"/>
+            <Grid Margin="0,10,0,0" x:Name="PositionGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Label Content="Position (X Y Z)" Grid.Row="0"/>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="LampPos_X"/>
+                    <TextBox x:Name="LampPos_Y" Grid.Column="2"/>
+                    <TextBox x:Name="LampPos_Z" Grid.Column="4"/>
+                </Grid>
             </Grid>
 
+            <Grid Margin="0,10,0,0" x:Name="DirectionGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Label Content="Direction (Theta Phi)" Grid.Row="0"/>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="LampDir_T"/>
+                    <TextBox x:Name="LampDir_Ph" Grid.Column="2"/>
+                </Grid>
+            </Grid>
 
             <Label Content="Color (RGB)" Margin="0,10,0,0"/>
             <Grid>
@@ -69,7 +91,7 @@
             <TextBox x:Name="LampInt"/>
 
             <Label Content="Type" Margin="0,10,0,0"/>
-            <ComboBox x:Name="LampType">
+            <ComboBox x:Name="LampType" SelectionChanged="LampType_SelectionChanged">
                 <ComboBoxItem Content="Point" />
                 <ComboBoxItem Content="Directional" Tag="Directional"/>
             </ComboBox>

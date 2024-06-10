@@ -81,17 +81,23 @@ namespace lab1
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            Kernel kernel = Kernels[KernelListBox.SelectedIndex];
-            kernel.Name = KernelName.Text;
-            kernel.Radius = int.Parse(KernelR.Text);
-            kernel.Intensity = float.Parse(KernelInt.Text, CultureInfo.InvariantCulture);
-            UpdateListBox();
+            if (KernelListBox.SelectedIndex > -1)
+            {
+                Kernel kernel = Kernels[KernelListBox.SelectedIndex];
+                kernel.Name = KernelName.Text;
+                kernel.Radius = int.Parse(KernelR.Text);
+                kernel.Intensity = float.Parse(KernelInt.Text, CultureInfo.InvariantCulture);
+                UpdateListBox();
+            }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            Kernels.RemoveAt(KernelListBox.SelectedIndex);
-            UpdateListBox();
+            if (KernelListBox.SelectedIndex > -1)
+            {
+                Kernels.RemoveAt(KernelListBox.SelectedIndex);
+                UpdateListBox();
+            }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
