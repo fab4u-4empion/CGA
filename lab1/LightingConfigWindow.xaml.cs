@@ -3,6 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Globalization;
 using static lab1.LightingConfig;
+using Microsoft.Win32;
+using System.IO;
+using System;
 
 namespace lab1
 {
@@ -105,6 +108,72 @@ namespace lab1
             {
                 PositionGrid.Visibility = Visibility.Collapsed;
                 DirectionGrid.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new()
+            {
+                Filter = "Light Configs (*.lght)|*.lght"
+            };
+
+            if (ofd.ShowDialog() == true )
+            {
+                Lamp? lamp = null;
+
+                foreach (string l in File.ReadLines(ofd.FileName))
+                {
+                    if (l == "") continue;
+
+                    string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                    switch (line[0])
+                    {
+                        case "newlmp":
+                            if (lamp != null)
+                                Lights.Add(lamp);
+                            lamp = new() { Name = line[1] };
+                            break;
+
+                        case "color":
+                            lamp.Color = new(
+                                float.Parse(line[1], CultureInfo.InvariantCulture),
+                                float.Parse(line[2], CultureInfo.InvariantCulture),
+                                float.Parse(line[3], CultureInfo.InvariantCulture)
+                            );
+                            break;
+
+                        case "position":
+                            lamp.Position = new(
+                                float.Parse(line[1], CultureInfo.InvariantCulture),
+                                float.Parse(line[2], CultureInfo.InvariantCulture),
+                                float.Parse(line[3], CultureInfo.InvariantCulture)
+                            );
+                            break;
+
+                        case "theta":
+                            lamp.Theta = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+
+                        case "phi":
+                            lamp.Phi = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+
+                        case "intencity":
+                            lamp.Intensity = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+
+                        case "type":
+                            lamp.Type = (LampTypes)int.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+                    }
+                }
+
+                if (lamp != null)
+                    Lights.Add(lamp);
+
+                UpdateListBox();
             }
         }
     }
