@@ -44,12 +44,6 @@ namespace lab1
 
                             LightingConfig.IBLSpecularMap.Add(texture);
                         }
-
-                        if (str.StartsWith("skybox"))
-                        {
-                            LightingConfig.SkyBox = new();
-                            LightingConfig.SkyBox.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 6).Trim()));
-                        }
                     }
                 }
 
@@ -68,7 +62,6 @@ namespace lab1
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             LightingConfig.IBLDiffuseMap = null;
-            LightingConfig.SkyBox = null;
             EnvironmentPreview.Source = null;
             LightingConfig.IBLSpecularMap.Clear();
         }

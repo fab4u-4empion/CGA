@@ -125,7 +125,7 @@ namespace lab1.Shaders
 
             if (IBLDiffuseMap == null && IBLSpecularMap.Count == 0)
             {
-                color += diffuse * ao * AmbientIntensity;
+                color += (diffuse + F0) * ao * AmbientIntensity * 0.1f;
             }
             else
             {

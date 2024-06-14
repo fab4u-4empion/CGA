@@ -451,10 +451,10 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
                             backColor *= LightingConfig.AmbientIntensity;
                         }
 
@@ -469,10 +469,10 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
                             backColor *= LightingConfig.AmbientIntensity;
                         }
 

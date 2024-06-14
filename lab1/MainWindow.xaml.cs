@@ -181,6 +181,8 @@ namespace lab1
 
             foreach (string l in File.ReadLines(fileName))
             {
+                if (l == "") continue;
+
                 string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
                 switch (line[0])
@@ -370,12 +372,12 @@ namespace lab1
                     break;
 
                 case Key.Add:
-                    LightingConfig.AmbientIntensity += 0.01f;
+                    LightingConfig.AmbientIntensity += 0.1f;
                     Draw();
                     break;
 
                 case Key.Subtract:
-                    LightingConfig.AmbientIntensity -= 0.01f;
+                    LightingConfig.AmbientIntensity -= 0.1f;
                     LightingConfig.AmbientIntensity = float.Max(LightingConfig.AmbientIntensity, 0);
                     Draw();
                     break;

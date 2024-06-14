@@ -49,7 +49,7 @@ namespace lab1.Shaders
                 color += baseColor * lamp.GetIrradiance(p) * dot / Pi;
             }
 
-            color += baseColor * AmbientIntensity + emission * EmissionIntensity;
+            color += baseColor * AmbientIntensity * 0.1f + emission * EmissionIntensity;
 
             return color;
         }
