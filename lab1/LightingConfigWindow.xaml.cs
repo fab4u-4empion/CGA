@@ -124,9 +124,9 @@ namespace lab1
 
                 foreach (string l in File.ReadLines(ofd.FileName))
                 {
-                    if (l == "") continue;
-
                     string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                    if (line.Length == 0) continue;
 
                     switch (line[0])
                     {
@@ -160,12 +160,22 @@ namespace lab1
                             lamp.Phi = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
-                        case "intencity":
+                        case "intensity":
                             lamp.Intensity = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
                         case "type":
-                            lamp.Type = (LampTypes)int.Parse(line[1], CultureInfo.InvariantCulture);
+                            switch (line[1])
+                            {
+                                case "point":
+                                    lamp.Type = LampTypes.Point;
+                                    break;
+
+                                case "directional":
+                                    lamp.Type = LampTypes.Directional;
+                                    break;
+                            }
+                            
                             break;
                     }
                 }
