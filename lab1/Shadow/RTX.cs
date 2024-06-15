@@ -11,6 +11,13 @@ namespace lab1.Shadow
         public static float LightSize = 0f;
         public static float Angle = 10f;
 
+        private static Vector3 SphericalToCartesian(float phi, float theta, float radius)
+        {
+            float projection = Sin(theta);
+
+            return new Vector3(Sin(phi) * projection, Cos(theta), Cos(phi) * projection) * radius;
+        }
+
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {
             Vector3 t1 = (bmin - O) / D;
@@ -62,21 +69,20 @@ namespace lab1.Shadow
 
             Vector3 baseDirection = lamp.GetDirection();
 
+            float cos = 1 - Cos(DegreesToRadians(Angle * 0.5f));
+            float Pi2 = 2 * Pi;
+
             for (int j = 0; j < RayCount; j++)
             {
-                Vector3 dir = Vector3.Zero;
+                Vector3 dir = Zero;
                 float dist = 0;
 
                 if (lamp.Type == LampTypes.Point)
                 {
-                    float phi = Random.Shared.NextSingle() * 2 * Pi;
+                    float phi = Pi2 * Random.Shared.NextSingle();
                     float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
-                    Vector3 LP = new(
-                        position.X + LightSize * Sin(theta) * Cos(phi),
-                        position.Y + LightSize * Sin(theta) * Sin(phi),
-                        position.Z + LightSize * Cos(theta)
-                    );
+                    Vector3 LP = position + SphericalToCartesian(phi, theta, LightSize);
 
                     dir = Normalize(LP - orig);
                     dist = Distance(LP, orig);
@@ -84,16 +90,10 @@ namespace lab1.Shadow
 
                 if (lamp.Type == LampTypes.Directional)
                 {
-                    float phi = Random.Shared.NextSingle() * 2 * Pi;
-                    float theta = Acos(1 - (1 - Cos(DegreesToRadians(Angle * 0.5f))) * Random.Shared.NextSingle());
-                    //float phi = 2 * Pi * ((0.5f + j / 1.32471795724474602596f) % 1);
-                    //float theta = Acos(1 - (1 - Cos(DegreesToRadians(Angle * 0.5f))) * ((0.5f + j / 1.75487766624669276005f) % 1));
+                    float phi = Pi2 * Random.Shared.NextSingle();
+                    float theta = Acos(1 - cos * Random.Shared.NextSingle());
 
-                    float x = Sin(phi) * Sin(theta);
-                    float y = Cos(theta);
-                    float z = Cos(phi) * Sin(theta);
-
-                    dir = new(x, y, z);
+                    dir = SphericalToCartesian(phi, theta, 1);
 
                     Vector3 xAxis = Cross(baseDirection, UnitZ);
                     xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
