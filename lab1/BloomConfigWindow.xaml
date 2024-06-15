@@ -28,7 +28,7 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
             <ListBox x:Name="KernelListBox" Background="#404040" SelectionChanged="KernelListBox_SelectionChanged"/>
-            <Button Grid.Row="2" Content="Add new kernel" Click="Button_Click" BorderThickness="3"/>
+            <Button Grid.Row="2" BorderBrush="#FF4B1C9E" Content="Add new kernel" Click="Button_Click" BorderThickness="3"/>
         </Grid>
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>

@@ -1,16 +1,51 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using System.Windows.Documents;
-using System.Windows.Media.Media3D;
+using static System.Single;
 
 namespace lab1
 {
+    public enum LampTypes
+    {
+        Point,
+        Directional
+    }
+
     public class Lamp
     {
-        public Vector3 Position;
-        public Vector3 Color;
-        public float Intensity;
+        public Vector3 Position = Vector3.Zero;
+        public Vector3 Color = Vector3.One;
+        public float Intensity = 100;
         public string Name = "";
+        public float Theta = 45;
+        public float Phi = 45;
+        public LampTypes Type = LampTypes.Point;
+
+        public Vector3 GetIrradiance(Vector3 point)
+        {
+            if (Type == LampTypes.Directional)
+                return Intensity * Color;
+
+            float distance = Vector3.Distance(Position, point);
+
+            return Intensity * Color / (distance * distance);
+        }
+
+        public Vector3 GetL(Vector3 point)
+        {
+            if (Type == LampTypes.Directional)
+                return GetDirection();
+
+            return Vector3.Normalize(Position - point);
+        }
+
+        public Vector3 GetDirection()
+        {
+            return Vector3.Normalize(new(
+                Sin(DegreesToRadians(Theta)) * Sin(DegreesToRadians(Phi)),
+                Cos(DegreesToRadians(Theta)),
+                Sin(DegreesToRadians(Theta)) * Cos(DegreesToRadians(Phi))
+            ));
+        }
     }
 
     public class LightingConfig
@@ -26,7 +61,6 @@ namespace lab1
         public static bool UseShadow = false;
 
         public static HDRTexture? IBLDiffuseMap = null;
-        public static HDRTexture? SkyBox = null;
         public static List<HDRTexture> IBLSpecularMap = [];
         public static HDRTexture BRDFLLUT = new();
 
@@ -49,7 +83,10 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                Lights[CurrentLamp].Intensity = float.Max(Lights[CurrentLamp].Intensity + delta, 0);
+                if (Lights[CurrentLamp].Type == LampTypes.Directional)
+                    Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta / 10, 0);
+                else
+                    Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta, 0);
             }
         }
 
@@ -57,7 +94,17 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                Lights[CurrentLamp].Position += delta;
+                Lamp lamp = Lights[CurrentLamp];
+                if (lamp.Type == LampTypes.Directional)
+                {
+                    lamp.Theta = Clamp(lamp.Theta + delta.X * 10, 0, 180);
+                    lamp.Phi += delta.Y * 10;
+                    lamp.Phi = (lamp.Phi % 360 + 360) % 360;
+                }
+                else
+                {
+                    Lights[CurrentLamp].Position += delta;
+                }
             }
         }
     }

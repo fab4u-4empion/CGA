@@ -183,6 +183,8 @@ namespace lab1
             {
                 string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
+                if (line.Length == 0) continue;
+
                 switch (line[0])
                 {
                     case "mtllib":
@@ -370,12 +372,12 @@ namespace lab1
                     break;
 
                 case Key.Add:
-                    LightingConfig.AmbientIntensity += 0.01f;
+                    LightingConfig.AmbientIntensity += 0.1f;
                     Draw();
                     break;
 
                 case Key.Subtract:
-                    LightingConfig.AmbientIntensity -= 0.01f;
+                    LightingConfig.AmbientIntensity -= 0.1f;
                     LightingConfig.AmbientIntensity = float.Max(LightingConfig.AmbientIntensity, 0);
                     Draw();
                     break;

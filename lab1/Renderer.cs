@@ -292,7 +292,7 @@ namespace lab1
                     break;
 
                 case ShaderTypes.Toon:
-                    color = Toon.GetPixelColor(baseColor, n, pw, Camera.Position, emission);
+                    color = Toon.GetPixelColor(baseColor, n, pw, emission);
                     int d = (int)float.Ceiling(2 * Smoothing);
                     for (int i = -d; i <= d; i++)
                         for (int j = -d; j <= d; j++)
@@ -451,10 +451,10 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
                             backColor *= LightingConfig.AmbientIntensity;
                         }
 
@@ -469,10 +469,10 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.SkyBox != null)
+                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.SkyBox.GetColor(Vector3.Normalize(p));
+                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
                             backColor *= LightingConfig.AmbientIntensity;
                         }
 
@@ -489,6 +489,8 @@ namespace lab1
                 for (int i = 0; i < LightingConfig.Lights.Count; i++)
                 {
                     Lamp lamp = LightingConfig.Lights[i];
+
+                    if (lamp.Type != LampTypes.Point) continue;
 
                     Sphere.Translation = lamp.Position;
                     Sphere.Scale = float.Max(0.05f, RTX.LightSize);

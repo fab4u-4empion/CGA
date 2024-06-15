@@ -91,7 +91,7 @@ namespace lab1.Shaders
 
             for (int i = 0; i < Lights.Count; i++)
             {
-                Vector3 L = Normalize(Lights[i].Position - p);
+                Vector3 L = Lights[i].GetL(p);
                 
                 float NdotL = Dot(N, L);
 
@@ -100,9 +100,7 @@ namespace lab1.Shaders
 
                 Vector3 H = Normalize(V + L);
 
-                float distance = Distance(Lights[i].Position, p);
-
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i].Position, p + N * 0.01f) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f) : 1;
 
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
@@ -114,7 +112,7 @@ namespace lab1.Shaders
                 Vector3 reflectance = FresnelSchlick(VdotH, F0);
 
                 Vector3 specular = reflectance * visibility * distribution;
-                Vector3 irradiance = Lights[i].Color * Lights[i].Intensity / (distance * distance);
+                Vector3 irradiance = Lights[i].GetIrradiance(p);
 
                 float clearCoatDistribution = Distribution(CNdotH, cr2);
                 float clearCoatVisibility = Visibility(CNdotV, CNdotL, cr2);
@@ -127,7 +125,7 @@ namespace lab1.Shaders
 
             if (IBLDiffuseMap == null && IBLSpecularMap.Count == 0)
             {
-                color += diffuse * ao * AmbientIntensity;
+                color += (diffuse + F0) * ao * AmbientIntensity * 0.1f;
             }
             else
             {

@@ -29,7 +29,7 @@ namespace lab1.Shaders
             return colors[index];
         }
 
-        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, Vector3 p, Vector3 camera, Vector3 emission)
+        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, Vector3 p, Vector3 emission)
         {
             Vector3 color = Zero;
             baseColor = TransformColor(baseColor);
@@ -42,15 +42,14 @@ namespace lab1.Shaders
             {
                 Lamp lamp = Lights[i];
 
-                Vector3 L = Normalize(lamp.Position - p);
-                float distance = Distance(lamp.Position, p);
+                Vector3 L = lamp.GetL(p);
 
                 float dot = Floor(Max(Dot(N, L), 0) * (lvl + 1)) * step;
 
-                color += baseColor * lamp.Color * lamp.Intensity * dot / (distance * distance * Pi);
+                color += baseColor * lamp.GetIrradiance(p) * dot / Pi;
             }
 
-            color += baseColor * AmbientIntensity + emission * EmissionIntensity;
+            color += baseColor * AmbientIntensity * 0.1f + emission * EmissionIntensity;
 
             return color;
         }
