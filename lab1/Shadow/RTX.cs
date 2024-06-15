@@ -70,7 +70,6 @@ namespace lab1.Shadow
             Vector3 baseDirection = lamp.GetDirection();
 
             float cos = 1 - Cos(DegreesToRadians(Angle * 0.5f));
-            float Pi2 = 2 * Pi;
 
             for (int j = 0; j < RayCount; j++)
             {
@@ -79,7 +78,7 @@ namespace lab1.Shadow
 
                 if (lamp.Type == LampTypes.Point)
                 {
-                    float phi = Pi2 * Random.Shared.NextSingle();
+                    float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
                     Vector3 LP = position + SphericalToCartesian(phi, theta, LightSize);
@@ -90,7 +89,7 @@ namespace lab1.Shadow
 
                 if (lamp.Type == LampTypes.Directional)
                 {
-                    float phi = Pi2 * Random.Shared.NextSingle();
+                    float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(1 - cos * Random.Shared.NextSingle());
 
                     dir = SphericalToCartesian(phi, theta, 1);
