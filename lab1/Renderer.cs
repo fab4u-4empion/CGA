@@ -292,7 +292,7 @@ namespace lab1
                     break;
 
                 case ShaderTypes.Toon:
-                    color = Toon.GetPixelColor(baseColor, n, pw, Camera.Position, emission);
+                    color = Toon.GetPixelColor(baseColor, n, pw, emission);
                     int d = (int)float.Ceiling(2 * Smoothing);
                     for (int i = -d; i <= d; i++)
                         for (int j = -d; j <= d; j++)

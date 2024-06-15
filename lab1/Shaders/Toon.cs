@@ -29,7 +29,7 @@ namespace lab1.Shaders
             return colors[index];
         }
 
-        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, Vector3 p, Vector3 camera, Vector3 emission)
+        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, Vector3 p, Vector3 emission)
         {
             Vector3 color = Zero;
             baseColor = TransformColor(baseColor);

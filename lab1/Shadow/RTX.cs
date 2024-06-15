@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Windows.Documents;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -9,10 +7,9 @@ namespace lab1.Shadow
 {
     public class RTX
     {
-        private static Random random = new Random();
-
         public static int RayCount = 1;
-        public static float LightSize = 0.005f;
+        public static float LightSize = 0f;
+        public static float Angle = 10f;
 
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {
@@ -61,111 +58,52 @@ namespace lab1.Shadow
 
             float baseIntensity = 1f / RayCount;
 
-            if (lamp.Type == LampTypes.Directional)
-                return BVH.IntersectBVH(orig, lamp.GetDirection(), PositiveInfinity, 0) ? 0 : 1;
-
             Vector3 position = lamp.Position;
 
+            Vector3 baseDirection = lamp.GetDirection();
+
             for (int j = 0; j < RayCount; j++)
             {
-                float phi = random.NextSingle() * 2 * Pi;
-                float theta = Acos(random.NextSingle() * 2 - 1);
+                Vector3 dir = Vector3.Zero;
+                float dist = 0;
 
-                Vector3 LP = new(
-                    position.X + LightSize * Sin(theta) * Cos(phi),
-                    position.Y + LightSize * Sin(theta) * Sin(phi),
-                    position.Z + LightSize * Cos(theta)
-                );
+                if (lamp.Type == LampTypes.Point)
+                {
+                    float phi = Random.Shared.NextSingle() * 2 * Pi;
+                    float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
-                Vector3 dir = Normalize(LP - orig);
-                float dist = Distance(LP, orig);
+                    Vector3 LP = new(
+                        position.X + LightSize * Sin(theta) * Cos(phi),
+                        position.Y + LightSize * Sin(theta) * Sin(phi),
+                        position.Z + LightSize * Cos(theta)
+                    );
+
+                    dir = Normalize(LP - orig);
+                    dist = Distance(LP, orig);
+                }
+
+                if (lamp.Type == LampTypes.Directional)
+                {
+                    float phi = Random.Shared.NextSingle() * 2 * Pi;
+                    float theta = Acos(1 - (1 - Cos(DegreesToRadians(Angle * 0.5f))) * Random.Shared.NextSingle());
+                    //float phi = 2 * Pi * ((0.5f + j / 1.32471795724474602596f) % 1);
+                    //float theta = Acos(1 - (1 - Cos(DegreesToRadians(Angle * 0.5f))) * ((0.5f + j / 1.75487766624669276005f) % 1));
+
+                    float x = Sin(phi) * Sin(theta);
+                    float y = Cos(theta);
+                    float z = Cos(phi) * Sin(theta);
+
+                    dir = new(x, y, z);
+
+                    Vector3 xAxis = Cross(baseDirection, UnitZ);
+                    xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
+                    Vector3 zAxis = Cross(xAxis, baseDirection);
+
+                    dir = xAxis * dir.X + baseDirection * dir.Y + zAxis * dir.Z;
+                    dist = PositiveInfinity;
+                }
 
                 result += BVH.IntersectBVH(orig, dir, dist, 0) ? 0 : baseIntensity;
-            }
-
-            return result;
-        }
-
-        public static float GetLightIntensity(Vector3 light, Vector3 orig)
-        {
-            if (BVH.Tris == null) return 1f;
-
-            float result = 0;
-
-            float baseIntensity = 1f / RayCount;
-
-            for (int j = 0; j < RayCount; j++)
-            {
-                bool intersected = false;
-
-                float phi = random.NextSingle() * 2 * Pi;
-                float theta = Acos(random.NextSingle() * 2 - 1);
-
-                Vector3 LP = new(
-                    light.X + LightSize * Sin(theta) * Cos(phi),
-                    light.Y + LightSize * Sin(theta) * Sin(phi),
-                    light.Z + LightSize * Cos(theta)
-                );
-
-                Vector3 dir = Normalize(LP - orig);
-                float dist = Distance(LP, orig);
-
-                for (int i = 0; i < BVH.Tris.Length; i++)
-                {
-                    float d = RTX.IntersectTriangle(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
-                    if (d > -0 && d < dist)
-                    {
-                        intersected = true;
-                        break;
-                    }
-                }
-
-                result += intersected ? 0 : baseIntensity;
-            }
-
-            return result;
-        }
-
-        public static float GetLightIntensitySquare(Vector3 light, Vector3 orig)
-        {
-            if (BVH.Tris == null) return 1f;
-
-            float result = 0;
-
-            float baseIntensity = 1f / RayCount;
-
-            Vector3 v1 = new(light.X - LightSize / 2, light.Y, light.Z + LightSize / 2);
-            Vector3 v2 = new(light.X - LightSize / 2, light.Y, light.Z - LightSize / 2);
-            Vector3 v3 = new(light.X + LightSize / 2, light.Y, light.Z - LightSize / 2);
-            Vector3 v4 = new(light.X - LightSize / 2, light.Y, light.Z + LightSize / 2);
-
-            for (int j = 0; j < RayCount; j++)
-            {
-                bool intersected = false;
-
-                float t1 = random.NextSingle();
-                float t2 = random.NextSingle();
-
-                Vector3 a = (1 - t1) * v1 + t1 * v2;
-                Vector3 b = (1 - t1) * v4 + t1 * v3;
-
-                Vector3 LP = (1 - t2) * a + t2 * b;
-
-                Vector3 dir = Normalize(LP - orig);
-                Vector3 N = Normalize(LP - new Vector3(LP.X, LP.Y - 1, LP.Z));
-                float dist = Distance(LP, orig);
-
-                for (int i = 0; i < BVH.Tris.Length; i++)
-                {
-                    float d = RTX.IntersectTriangle(orig, dir, BVH.Tris[i].v0, BVH.Tris[i].v1, BVH.Tris[i].v2);
-                    if (d > -0 && d < dist)
-                    {
-                        intersected = true;
-                        break;
-                    }
-                }
-
-                result += intersected ? 0 : baseIntensity * Max(Dot(N, dir), 0);
             }
 
             return result;
