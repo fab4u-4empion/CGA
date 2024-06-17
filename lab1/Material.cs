@@ -4,6 +4,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using static System.Int32;
+using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1
 {
@@ -15,31 +18,31 @@ namespace lab1
 
     public class Material
     {
-        public List<Buffer<Vector3>> Diffuse = null;
-        public List<Buffer<Vector3>> Normals = null;
-        public List<Buffer<Vector3>> MRAO = null;
-        public List<Buffer<Vector3>> Emission = null;
-        public List<Buffer<Vector3>> Transmission = null;
-        public List<Buffer<Vector3>> Dissolve = null;
-        public List<Buffer<Vector3>> Specular = null;
+        public List<Buffer<Vector3>>? Diffuse = null;
+        public List<Buffer<Vector3>>? Normals = null;
+        public List<Buffer<Vector3>>? MRAO = null;
+        public List<Buffer<Vector3>>? Emission = null;
+        public List<Buffer<Vector3>>? Transmission = null;
+        public List<Buffer<Vector3>>? Dissolve = null;
+        public List<Buffer<Vector3>>? Specular = null;
 
-        public List<Buffer<Vector3>> ClearCoat = null;
-        public List<Buffer<Vector3>> ClearCoatRoughness = null;
-        public List<Buffer<Vector3>> ClearCoatNormals = null;
+        public List<Buffer<Vector3>>? ClearCoat = null;
+        public List<Buffer<Vector3>>? ClearCoatRoughness = null;
+        public List<Buffer<Vector3>>? ClearCoatNormals = null;
 
         public float Pm = 0;
         public float Pr = 1;
         public float Tr = 0;
-        public Vector3 Kd = Vector3.Zero;
-        public Vector3 Ks = Vector3.One;
+        public Vector3 Kd = Zero;
+        public Vector3 Ks = One;
         public float Pc = 0;
         public float Pcr = 0;
         public float D = 1;
 
         public BlendModes BlendMode = BlendModes.Opaque;
 
-        public static bool UsingMIPMapping = false;
-        public static int MaxAnisotropy = 1;
+        public static bool UsingMIPMapping { get; set; } = false;
+        public static int MaxAnisotropy { get; set; } = 1;
 
         public static List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
@@ -55,7 +58,7 @@ namespace lab1
                     {
                         mainLvl[x, y] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(x, y)) : src.GetPixel(x, y);
                         if (isNormal)
-                            mainLvl[x, y] = 2 * mainLvl[x, y] - Vector3.One;
+                            mainLvl[x, y] = 2 * mainLvl[x, y] - One;
                     }
                 }
             });
@@ -70,7 +73,9 @@ namespace lab1
             {
                 sizeW /= 2;
                 sizeH /= 2;
+
                 Buffer<Vector3> nextLvl = new(sizeW, sizeH);
+
                 Parallel.ForEach(Partitioner.Create(0, nextLvl.Width), (range) =>
                 {
                     for (int x = range.Item1; x < range.Item2; x++)
@@ -89,8 +94,11 @@ namespace lab1
                         }
                     }
                 });
+
                 lvls.Add(nextLvl);
+
                 currentLvl++;
+
             } while (sizeW > 1 && sizeH > 1);
 
             return lvls;
@@ -116,14 +124,14 @@ namespace lab1
             y0 &= (src.Height - 1);
             y1 &= (src.Height - 1);
 
-            return Vector3.Lerp(
-                Vector3.Lerp(src[x0, y0], src[x1, y0], u_ratio),
-                Vector3.Lerp(src[x0, y1], src[x1, y1], u_ratio),
+            return Lerp(
+                Lerp(src[x0, y0], src[x1, y0], u_ratio),
+                Lerp(src[x0, y1], src[x1, y1], u_ratio),
                 v_ratio
             );
         }
 
-        private Vector3 GetColorFromTexture(List<Buffer<Vector3>> src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2)
+        private static Vector3 GetColorFromTexture(List<Buffer<Vector3>>? src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2)
         {
             if (src == null)
                 return def;
@@ -133,30 +141,30 @@ namespace lab1
                 float length1 = ((uv - uv1) * src[0].Size).Length();
                 float length2 = ((uv - uv2) * src[0].Size).Length();
 
-                float max = float.Max(length1, length2);
-                float min = float.Min(length1, length2);
+                float max = Max(length1, length2);
+                float min = Min(length1, length2);
 
-                float aniso = float.MaxMagnitudeNumber(float.Min(max / min, MaxAnisotropy), 1);
+                float aniso = MaxMagnitudeNumber(Min(max / min, MaxAnisotropy), 1);
 
-                int N = (int)float.Round(aniso, MidpointRounding.AwayFromZero);
-                float lvl = float.Clamp(float.Log2(max / aniso), 0, src.Count - 1);
+                int N = (int)Round(aniso, MidpointRounding.AwayFromZero);
+                float lvl = Clamp(Log2(max / aniso), 0, src.Count - 1);
 
                 int mainLvl = (int)lvl;
-                int nextLvl = int.Min(mainLvl + 1, src.Count - 1);
+                int nextLvl = Min(mainLvl + 1, src.Count - 1);
 
                 (Vector2 a, Vector2 b) = length1 > length2 ? (uv, uv1) : (uv, uv2);
 
                 if (N == 1)
                 {
-                    return Vector3.Lerp(GetColor(src[mainLvl], uv), GetColor(src[nextLvl], uv), lvl - mainLvl);
+                    return Lerp(GetColor(src[mainLvl], uv), GetColor(src[nextLvl], uv), lvl - mainLvl);
                 }
                 else
                 {
                     Vector2 k = (b - a) / N;
                     a += 0.5f * (k + a - b);
 
-                    Vector3 mainColor = Vector3.Zero;
-                    Vector3 nextColor = Vector3.Zero;
+                    Vector3 mainColor = Zero;
+                    Vector3 nextColor = Zero;
 
                     for (int i = 0; i < N; i++, a += k)
                     {
@@ -164,7 +172,7 @@ namespace lab1
                         nextColor += GetColor(src[nextLvl], a);
                     }
 
-                    return Vector3.Lerp(mainColor, nextColor, lvl - mainLvl) / N;
+                    return Lerp(mainColor, nextColor, lvl - mainLvl) / N;
                 }
             }
             else
@@ -185,7 +193,7 @@ namespace lab1
 
         public Vector3 GetEmission(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(Emission, uv, Vector3.Zero, uv1, uv2);
+            return GetColorFromTexture(Emission, uv, Zero, uv1, uv2);
         }
 
         public float GetTransmission(Vector2 uv, Vector2 uv1, Vector2 uv2)

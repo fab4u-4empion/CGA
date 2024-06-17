@@ -29,18 +29,18 @@ namespace lab1
                 {
                     while (!reader.EndOfStream)
                     {
-                        string str = reader.ReadLine();
+                        string? str = reader.ReadLine();
 
-                        if (str.StartsWith("irradiance"))
+                        if (str!.StartsWith("irradiance"))
                         {
                             LightingConfig.IBLDiffuseMap = new();
-                            LightingConfig.IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 10).Trim()));
+                            LightingConfig.IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 10).Trim()));
                         }
 
                         if (str.StartsWith("specular"))
                         {
                             HDRTexture texture = new();
-                            texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName), str.Remove(0, 8).Trim()));
+                            texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 8).Trim()));
 
                             LightingConfig.IBLSpecularMap.Add(texture);
                         }

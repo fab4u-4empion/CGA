@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 using static System.Single;
+using static System.Numerics.Matrix4x4;
+using static System.Numerics.Vector3;
 
 namespace lab1
 {
@@ -7,10 +9,10 @@ namespace lab1
 
     public class Camera
     {
-        public Vector3 Target { get; set; } = Vector3.Zero;
+        public Vector3 Target { get; set; } = Zero;
         public Vector3 Position { get; set; }
-        public Vector3 Up { get; set; } = Vector3.UnitY;
-        public float FoV { get; set; } = float.Pi / 4;
+        public Vector3 Up { get; set; } = UnitY;
+        public float FoV { get; set; } = Pi / 4;
         public Vector3 LookVector { get; set; }
         public CameraMode Mode { get; set; } = CameraMode.Arcball;
 
@@ -27,15 +29,11 @@ namespace lab1
         }
 
         private Vector3 GetPosition() {
-            return new(
-                r * Sin(DegreesToRadians(o)) * Sin(DegreesToRadians(f)),
-                r * Cos(DegreesToRadians(o)),
-                r * Sin(DegreesToRadians(o)) * Cos(DegreesToRadians(f))
-            );
+            return Utils.SphericalToCartesian(DegreesToRadians(f), DegreesToRadians(o), r);
         }
 
         private Vector3 GetLookVector() { 
-            return Vector3.Normalize(Target - Position);
+            return Normalize(Target - Position);
         }
 
         public void UpdatePosition(float dR, float dO, float dF) {
@@ -59,8 +57,8 @@ namespace lab1
         {
             if (rotate)
             {
-                Matrix4x4 rotation = Matrix4x4.CreateFromYawPitchRoll(this.Yaw, this.Pitch, 0);
-                delta = Vector3.Transform(delta, rotation);
+                Matrix4x4 rotation = CreateFromYawPitchRoll(Yaw, Pitch, 0);
+                delta = Transform(delta, rotation);
             }
 
             if (Mode == CameraMode.Arcball)

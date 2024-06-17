@@ -1,6 +1,4 @@
-﻿using System;
-using System.Numerics;
-using System.Threading.Tasks.Dataflow;
+﻿using System.Numerics;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -22,8 +20,8 @@ namespace lab1
 
     public class ToneMapping
     {
-        public static ToneMappingMode Mode = ToneMappingMode.ACES;
-        public static AgXLookMode LookMode = AgXLookMode.DEFAULT;
+        public static ToneMappingMode Mode { get; set; } = ToneMappingMode.ACES;
+        public static AgXLookMode LookMode { get; set; } = AgXLookMode.DEFAULT;
 
         public static Vector3 PBRNeutral(Vector3 color)
         {

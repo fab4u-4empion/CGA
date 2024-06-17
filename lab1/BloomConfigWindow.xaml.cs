@@ -7,7 +7,6 @@ using System.Linq;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 using static lab1.BloomConfig;
 
 namespace lab1
@@ -22,8 +21,8 @@ namespace lab1
             InitializeComponent();
         }
 
-        static Pbgra32Bitmap bmp = new(new BitmapImage(new Uri("./BloomPreviewImg.png", UriKind.Relative)));
-        Pbgra32Bitmap preview = new(bmp.PixelWidth, bmp.PixelHeight);
+        private static readonly Pbgra32Bitmap bmp = new(new BitmapImage(new Uri("./BloomPreviewImg.png", UriKind.Relative)));
+        private readonly Pbgra32Bitmap preview = new(bmp.PixelWidth, bmp.PixelHeight);
 
         static int NewKernelNumber = 0;
 
@@ -38,11 +37,11 @@ namespace lab1
         {
             KernelListBox.ItemsSource = Kernels.Select(x => x.Name);
             Buffer<Vector3> bmpBuf = new(bmp.PixelWidth, bmp.PixelHeight);
-            
+
             for (int x = 0; x < bmp.PixelWidth; x++)
                 for (int y = 0; y < bmp.PixelHeight; y++)
                     bmpBuf[x, y] = bmp.GetPixel(x, y) * 10;
-            Buffer<Vector3> bloomBuf = KernelImg == null ? 
+            Buffer<Vector3> bloomBuf = KernelImg == null ?
                 Bloom.GetGaussianClassicBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1)
                 : Bloom.GetImageBasedBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight);
 
@@ -109,8 +108,10 @@ namespace lab1
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Pictures (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
+            OpenFileDialog ofd = new()
+            {
+                Filter = "Pictures (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+            };
             if (ofd.ShowDialog() == true)
             {
                 KernelImg = new(new BitmapImage(new Uri(ofd.FileName)));

@@ -1,8 +1,6 @@
 ﻿using lab1.Shadow;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Reflection.Emit;
-using System.Security.Permissions;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -13,7 +11,7 @@ namespace lab1
         public Vector3 aabbMin, aabbMax;
         public int leftNode, firstTri, triCount;
 
-        public bool IsLeaf() {  return triCount > 0; }
+        public bool IsLeaf() { return triCount > 0; }
     }
 
     public class Tri
@@ -25,8 +23,8 @@ namespace lab1
 
     public class BVH
     {
-        private static BVHNode[] nodes;
-        public static Tri[] Tris;
+        private static BVHNode[]? nodes;
+        public static Tri[]? Tris { get; set; }
 
         private static int rootNodeIndx = 0, nodesUsed = 1;
 
@@ -56,7 +54,8 @@ namespace lab1
                 Vector3 v0 = vertices[verticesIndices[index]];
                 Vector3 v1 = vertices[verticesIndices[index + 1]];
                 Vector3 v2 = vertices[verticesIndices[index + 2]];
-                Tri tri = new() {
+                Tri tri = new()
+                {
                     Index = opaqueFacesIndexes[i],
                     v0 = v0,
                     v1 = v1,
@@ -75,12 +74,12 @@ namespace lab1
 
         private static void UpdateNodeBounds(int nodeIndx)
         {
-            BVHNode node = nodes[nodeIndx];
+            BVHNode node = nodes![nodeIndx];
             node.aabbMin = new(1e30f);
             node.aabbMax = new(-1e30f);
-            for(int first = node.firstTri, i = 0; i < node.triCount; i++)
+            for (int first = node.firstTri, i = 0; i < node.triCount; i++)
             {
-                Tri leaf = Tris[first + i];
+                Tri leaf = Tris![first + i];
                 node.aabbMin = Min(node.aabbMin, leaf.v0);
                 node.aabbMin = Min(node.aabbMin, leaf.v1);
                 node.aabbMin = Min(node.aabbMin, leaf.v2);
@@ -92,7 +91,7 @@ namespace lab1
 
         private static void Subdivide(int nodeIndx)
         {
-            BVHNode node = nodes[nodeIndx];
+            BVHNode node = nodes![nodeIndx];
             Vector3 extent = node.aabbMax - node.aabbMin;
             int[] axes = [0, 1, 2];
             if (extent.Y > extent.X)
@@ -108,7 +107,7 @@ namespace lab1
                 int j = i + node.triCount - 1;
                 while (i <= j)
                 {
-                    if (Tris[i].Centroid[axis] < splitPos)
+                    if (Tris![i].Centroid[axis] < splitPos)
                         i++;
                     else
                     {
@@ -149,7 +148,7 @@ namespace lab1
             {
                 for (int i = 0; i < node.triCount; i++)
                 {
-                    Tri tri = Tris[node.firstTri + i];
+                    Tri tri = Tris![node.firstTri + i];
                     float d = RTX.IntersectTriangle(orig, dir, tri.v0, tri.v1, tri.v2);
                     if (d > -0 && d < dist) return true;
                 }

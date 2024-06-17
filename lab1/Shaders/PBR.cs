@@ -1,8 +1,8 @@
-﻿using System.Numerics;
+﻿using lab1.Shadow;
+using System.Numerics;
+using static lab1.LightingConfig;
 using static System.Numerics.Vector3;
 using static System.Single;
-using lab1.Shadow;
-using static lab1.LightingConfig;
 
 namespace lab1.Shaders
 {
@@ -92,7 +92,7 @@ namespace lab1.Shaders
             for (int i = 0; i < Lights.Count; i++)
             {
                 Vector3 L = Lights[i].GetL(p);
-                
+
                 float NdotL = Dot(N, L);
 
                 if (NdotL <= 0)
@@ -131,7 +131,7 @@ namespace lab1.Shaders
             {
                 Vector3 ambientReflectance = F0;
                 Vector3 ambientDiffuse = baseColor / Pi * opacity;
-                Vector3 ambientIrradiance = IBLDiffuseMap.GetColor(N);
+                Vector3 ambientIrradiance = IBLDiffuseMap!.GetColor(N);
 
                 float lod = roughness * (IBLSpecularMap.Count - 1);
                 int lod0 = (int)lod, lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);

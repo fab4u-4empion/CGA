@@ -1,24 +1,26 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System;
-using System.Numerics;
-using System.Threading.Tasks;
+﻿using lab1.Effects;
 using lab1.Shaders;
-using System.Threading;
-using lab1.Effects;
-using Rasterization;
-using System.Timers;
 using lab1.Shadow;
-using System.Windows.Controls;
-using MaterialDesignThemes.Wpf;
-using System.Windows;
+using Rasterization;
+using System;
 using System.Buffers;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
+using static lab1.LightingConfig;
+using static System.Int32;
+using static System.Numerics.Matrix4x4;
+using static System.Numerics.Vector3;
+using static System.Numerics.Vector4;
+using static System.Single;
 
 namespace lab1
 {
     using Color = (Vector3 Color, float Alpha, float Dissolve);
-    using Layer = (int Index, float Z);
     using DPIScale = (double X, double Y);
+    using Layer = (int Index, float Z);
 
     public enum ShaderTypes
     {
@@ -30,30 +32,30 @@ namespace lab1
 
     public class Renderer
     {
-        public static bool UseTangentNormals = true;
-        public static bool UseBloom = false;
-        public static float Smoothing = 1f;
+        public static bool UseTangentNormals { get; set; } = true;
+        public static bool UseBloom { get; set; } = false;
+        public static float Smoothing { get; set; } = 1f;
 
-        public static Model Sphere;
+        public static Model? Sphere { get; set; }
 
-        public static ShaderTypes CurrentShader = ShaderTypes.MetallicPBR;
-        public static bool UseSkyBox = true;
+        public static ShaderTypes CurrentShader { get; set; } = ShaderTypes.MetallicPBR;
+        public static bool UseSkyBox { get; set; } = true;
 
-        public static Vector3 BackColor = new(0.15f, 0.15f, 0.15f);
+        public static Vector3 BackColor { get; set; } = new(0.15f, 0.15f, 0.15f);
 
-        public Buffer<Vector3> BufferHDR;
-        public Buffer<float> AlphaBuffer;
-        public Buffer<SpinLock> Spins;
-        public Buffer<int> ViewBuffer;
-        public Buffer<float> ZBuffer;
+        public Buffer<Vector3> BufferHDR = new(0, 0);
+        public Buffer<float> AlphaBuffer = new(0, 0);
+        public Buffer<SpinLock> Spins = new(0, 0);
+        public Buffer<int> ViewBuffer = new(0, 0);
+        public Buffer<float> ZBuffer = new(0, 0);
 
-        public Buffer<int> OffsetBuffer;
-        public Buffer<byte> CountBuffer;
-        public Layer[] LayersBuffer;
+        public Buffer<int> OffsetBuffer = new(0, 0);
+        public Buffer<byte> CountBuffer = new(0, 0);
+        public Layer[] LayersBuffer = [];
 
         public Camera Camera = new();
 
-        public Pbgra32Bitmap Bitmap;
+        public Pbgra32Bitmap Bitmap = new(1, 1);
 
         private int width;
         private int height;
@@ -62,23 +64,18 @@ namespace lab1
 
         Vector3 p0, dpdx, dpdy;
 
-        private static float PerpDotProduct(Vector2 a, Vector2 b)
-        {
-            return a.X * b.Y - a.Y * b.X;
-        }
-
         private void TransformCoordinates(Model model)
         {
-            Matrix4x4 scaleMatrix = Matrix4x4.CreateScale(model.Scale);
-            Matrix4x4 rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
-            Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(model.Translation);
+            Matrix4x4 scaleMatrix = CreateScale(model.Scale);
+            Matrix4x4 rotationMatrix = CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
+            Matrix4x4 translationMatrix = CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = Matrix4x4.CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
-            Matrix4x4 projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Camera.FoV, (float)width / (float)height, 0.1f, 500f);
+            Matrix4x4 viewMatrix = CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
+            Matrix4x4 projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / (float)height, 0.1f, 500f);
 
             Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix;
 
-            for (int i = 0; i < model.ProjectionVertices.Length; i++)
+            for (int i = 0; i < model.ProjectionVertices!.Length; i++)
             {
                 model.ProjectionVertices[i] = Vector4.Transform(model.Positions[i], matrix);
             }
@@ -95,17 +92,17 @@ namespace lab1
                     int index = facesIndices[i] * 3;
                     byte count = 0;
 
-                    Vector4 v1 = model.ProjectionVertices[model.PositionIndices[index]];
-                    Vector4 v2 = model.ProjectionVertices[model.PositionIndices[index + 1]];
-                    Vector4 v3 = model.ProjectionVertices[model.PositionIndices[index + 2]];
+                    Vector4 v1 = model.ProjectionVertices![model.PositionIndices[index]];
+                    Vector4 v2 = model.ProjectionVertices![model.PositionIndices[index + 1]];
+                    Vector4 v3 = model.ProjectionVertices![model.PositionIndices[index + 2]];
 
                     if (v1.Z >= 0)
-                    result[count++] = v1;
+                        result[count++] = v1;
 
                     if (v1.Z < 0 != v2.Z < 0)
                     {
                         float t = -v1.Z / (v2.Z - v1.Z);
-                        result[count++] = Vector4.Lerp(v1, v2, t);
+                        result[count++] = Lerp(v1, v2, t);
                     }
 
                     if (v2.Z >= 0)
@@ -114,20 +111,20 @@ namespace lab1
                     if (v2.Z < 0 != v3.Z < 0)
                     {
                         float t = -v2.Z / (v3.Z - v2.Z);
-                        result[count++] = Vector4.Lerp(v2, v3, t);
+                        result[count++] = Lerp(v2, v3, t);
                     }
 
                     if (v3.Z >= 0)
                         result[count++] = v3;
-                    
+
                     if (v1.Z < 0 != v3.Z < 0)
                     {
                         float t = -v1.Z / (v3.Z - v1.Z);
-                        result[count++] = Vector4.Lerp(v1, v3, t);
+                        result[count++] = Lerp(v1, v3, t);
                     }
 
                     for (int j = 0; j < count; j++)
-                        result[j] = Vector4.Transform(result[j] / result[j].W, viewportMatrix);
+                        result[j] = Transform(result[j] / result[j].W, viewportMatrix);
 
                     for (int j = 1; j < count - 1; j++)
                     {
@@ -135,7 +132,7 @@ namespace lab1
                         Vector4 b = result[j];
                         Vector4 c = result[j + 1];
 
-                        if (PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending)
+                        if (Utils.PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending)
                         {
 
                             if (b.X < a.X)
@@ -151,8 +148,8 @@ namespace lab1
                             Vector4 k2 = (b - a) / (b.X - a.X);
                             Vector4 k3 = (c - b) / (c.X - b.X);
 
-                            int left = int.Max((int)float.Ceiling(a.X), 0);
-                            int right = int.Min((int)float.Ceiling(c.X), width);
+                            int left = Max((int)Ceiling(a.X), 0);
+                            int right = Min((int)Ceiling(c.X), width);
 
                             for (int x = left; x < right; x++)
                             {
@@ -164,8 +161,8 @@ namespace lab1
 
                                 Vector4 k = (p2 - p1) / (p2.Y - p1.Y);
 
-                                int top = int.Max((int)float.Ceiling(p1.Y), 0);
-                                int bottom = int.Min((int)float.Ceiling(p2.Y), height);
+                                int top = Max((int)Ceiling(p1.Y), 0);
+                                int bottom = Min((int)Ceiling(p2.Y), height);
 
                                 for (int y = top; y < bottom; y++)
                                 {
@@ -193,28 +190,28 @@ namespace lab1
 
             Vector3 D1 = p0 + x * dpdx + y * dpdy;
             Vector3 D2 = D1 + dpdx;
-            Vector3 D3 = D1 + dpdy; 
+            Vector3 D3 = D1 + dpdy;
 
             Vector3 tvec = Camera.Position - cw;
 
             Vector3 e1 = aw - cw;
             Vector3 e2 = bw - cw;
 
-            Vector3 cross1 = Vector3.Cross(e2, e1);
-            Vector3 cross2 = Vector3.Cross(e2, tvec);
-            Vector3 cross3 = Vector3.Cross(tvec, e1);
+            Vector3 cross1 = Cross(e2, e1);
+            Vector3 cross2 = Cross(e2, tvec);
+            Vector3 cross3 = Cross(tvec, e1);
 
-            float det1 = 1 / Vector3.Dot(D1, cross1);
-            float det2 = 1 / Vector3.Dot(D2, cross1);
-            float det3 = 1 / Vector3.Dot(D3, cross1);
+            float det1 = 1 / Dot(D1, cross1);
+            float det2 = 1 / Dot(D2, cross1);
+            float det3 = 1 / Dot(D3, cross1);
 
-            float u = Vector3.Dot(D1, cross2) * det1;
-            float u1 = Vector3.Dot(D2, cross2) * det2;
-            float u2 = Vector3.Dot(D3, cross2) * det3;
+            float u = Dot(D1, cross2) * det1;
+            float u1 = Dot(D2, cross2) * det2;
+            float u2 = Dot(D3, cross2) * det3;
 
-            float v = Vector3.Dot(cross3, D1) * det1;
-            float v1 = Vector3.Dot(cross3, D2) * det2;
-            float v2 = Vector3.Dot(cross3, D3) * det3;
+            float v = Dot(cross3, D1) * det1;
+            float v1 = Dot(cross3, D2) * det2;
+            float v2 = Dot(cross3, D3) * det3;
 
             float w = 1f - u - v;
             float w1 = 1f - u1 - v1;
@@ -242,7 +239,7 @@ namespace lab1
             Vector3 pw = u * aw + v * bw + w * cw;
 
             Vector3 T = (u * t1 + v * t2 + w * t3);
-            Vector3 B = Vector3.Cross(oN, T) * model.Signs[faceIndex];
+            Vector3 B = Cross(oN, T) * model.Signs[faceIndex];
 
             float dissolve = model.Materials[materialIndex].GetDissolve(uv, uv1, uv2);
 
@@ -293,13 +290,13 @@ namespace lab1
 
                 case ShaderTypes.Toon:
                     color = Toon.GetPixelColor(baseColor, n, pw, emission);
-                    int d = (int)float.Ceiling(2 * Smoothing);
+                    int d = (int)Ceiling(2 * Smoothing);
                     for (int i = -d; i <= d; i++)
                         for (int j = -d; j <= d; j++)
                             if (
-                                ViewBuffer[int.Clamp(x + i, 0, ViewBuffer.Width - 1), int.Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
+                                ViewBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
                                 &&
-                                CountBuffer[int.Clamp(x + i, 0, ViewBuffer.Width - 1), int.Clamp(y + j, 0, ViewBuffer.Height - 1)] == 0
+                                CountBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == 0
                             )
                             {
                                 color = Vector3.One;
@@ -451,11 +448,11 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
+                        if (UseSkyBox && IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
-                            backColor *= LightingConfig.AmbientIntensity;
+                            backColor = IBLSpecularMap[0].GetColor(Normalize(p));
+                            backColor *= AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]));
@@ -469,11 +466,11 @@ namespace lab1
                     for (int y = 0; y < height; y++)
                     {
                         Vector3 backColor = BackColor;
-                        if (UseSkyBox && LightingConfig.IBLSpecularMap.Count > 0)
+                        if (UseSkyBox && IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
-                            backColor = LightingConfig.IBLSpecularMap[0].GetColor(Vector3.Normalize(p));
-                            backColor *= LightingConfig.AmbientIntensity;
+                            backColor = IBLSpecularMap[0].GetColor(Normalize(p));
+                            backColor *= AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])));
@@ -484,16 +481,19 @@ namespace lab1
 
         private void DrawLights()
         {
+            if (Sphere == null)
+                return;
+
             if (LightingConfig.DrawLights)
             {
-                for (int i = 0; i < LightingConfig.Lights.Count; i++)
+                for (int i = 0; i < Lights.Count; i++)
                 {
-                    Lamp lamp = LightingConfig.Lights[i];
+                    Lamp lamp = Lights[i];
 
                     if (lamp.Type != LampTypes.Point) continue;
 
                     Sphere.Translation = lamp.Position;
-                    Sphere.Scale = float.Max(0.05f, RTX.LightSize);
+                    Sphere.Scale = Max(0.05f, RTX.LightSize);
 
                     TransformCoordinates(Sphere);
 
@@ -565,7 +565,7 @@ namespace lab1
         {
             float aspect = (float)width / height;
             float tan = float.Tan(tanParam);
-            Matrix4x4 cameraRotation = Matrix4x4.CreateRotationX(Camera.Pitch) * Matrix4x4.CreateRotationY(Camera.Yaw);
+            Matrix4x4 cameraRotation = CreateRotationX(Camera.Pitch) * CreateRotationY(Camera.Yaw);
 
             Vector3 X = new Vector3(cameraRotation.M11, cameraRotation.M12, cameraRotation.M13) * tan * aspect;
             Vector3 Y = new Vector3(cameraRotation.M21, cameraRotation.M22, cameraRotation.M23) * tan;
@@ -577,7 +577,7 @@ namespace lab1
             return (p0, dpdx, dpdy);
         }
 
-        public void Draw(Model model)
+        public void Draw(Model? model)
         {
             Array.Fill(ZBuffer.Array, float.MaxValue);
             Array.Fill(ViewBuffer.Array, -1);
@@ -596,7 +596,6 @@ namespace lab1
             (p0, dpdx, dpdy) = GetViewportToWorldParams(float.Pi / 4);
 
             Bitmap.Source.Lock();
-            Bitmap.Clear();
 
             DrawHDRBuffer();
 
@@ -611,11 +610,11 @@ namespace lab1
             this.width = Bitmap.PixelWidth;
             this.height = Bitmap.PixelHeight;
 
-            viewportMatrix = Matrix4x4.CreateViewportLeftHanded(-0.5f, -0.5f, this.width, this.height, 0, 1);
+            viewportMatrix = CreateViewportLeftHanded(-0.5f, -0.5f, this.width, this.height, 0, 1);
 
             BufferHDR = new(this.width, this.height);
             AlphaBuffer = new(this.width, this.height);
-            
+
             Spins = new(this.width, this.height);
             ViewBuffer = new(this.width, this.height);
             CountBuffer = new(this.width, this.height);

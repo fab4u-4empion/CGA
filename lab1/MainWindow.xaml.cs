@@ -1,180 +1,178 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using lab1.Shadow;
+using Microsoft.Win32;
+using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using lab1.Shadow;
-using Microsoft.Win32;
-using System.Diagnostics;
-using System.Numerics;
 
 namespace lab1
 {
-    using DPIScale = (double X, double Y);    
+    using DPIScale = (double X, double Y);
 
     public partial class MainWindow : Window
     {
-        Model MainModel;
+        Model? MainModel;
 
-        Renderer Renderer;
+        readonly Renderer Renderer;
 
         DPIScale Scale = (1, 1);
 
-        Stopwatch Timer = new();
+        readonly Stopwatch Timer = new();
 
         Point MousePosition;
 
         WindowState LastState;
 
-        bool CameraControl = false;
-
         public MainWindow()
         {
+            Renderer = new();
             InitializeComponent();
         }
 
-        private void LoadMaterials(string fileName, Model model)
+        private static void LoadMaterials(string fileName, Model model)
         {
-            string fold = Path.GetDirectoryName(fileName);
-            using (StreamReader mtlReader = new(fileName))
+            string? fold = Path.GetDirectoryName(fileName);
+
+            using StreamReader mtlReader = new(fileName);
+
+            Material? material = null;
+            int mtlIndex = 0;
+
+            while (!mtlReader.EndOfStream)
             {
-                Material? material = null;
-                int mtlIndex = 0;
+                string mtlLine = mtlReader.ReadLine()!.Trim();
 
-                while (!mtlReader.EndOfStream)
+                if (mtlLine.StartsWith("newmtl"))
                 {
-                    String mtlLine = mtlReader.ReadLine().Trim();
-
-                    if (mtlLine.StartsWith("newmtl"))
+                    if (material != null)
                     {
-                        if (material != null)
-                        {
-                            model.Materials.Add(material);
-                            mtlIndex++;
-                        }
-                        material = new();
-                        model.MaterialNames.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
+                        model.Materials.Add(material);
+                        mtlIndex++;
                     }
-
-                    if (mtlLine.StartsWith("Pm"))
-                    {
-                        material.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                    }
-
-                    if (mtlLine.StartsWith("map_Tr"))
-                    {
-                        material.Transmission = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()));
-                        material.BlendMode = BlendModes.AlphaBlending;
-                    }
-
-                    if (mtlLine.StartsWith("Tr"))
-                    {
-                        material.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                        material.BlendMode = BlendModes.AlphaBlending;
-                    }
-
-                    if (mtlLine.StartsWith('d'))
-                    {
-                        material.D = float.Parse(mtlLine.Remove(0, 1).Trim(), CultureInfo.InvariantCulture);
-                        material.BlendMode = BlendModes.AlphaBlending;
-                    }
-
-                    if (mtlLine.StartsWith("map_d"))
-                    {
-                        material.Dissolve = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 5).Trim()));
-                        material.BlendMode = BlendModes.AlphaBlending;
-                    }
-
-                    if (mtlLine.StartsWith("Kd"))
-                    {
-                        float[] Kd = mtlLine
-                            .Remove(0, 2)
-                            .Trim()
-                            .Split(' ')
-                            .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
-                            .ToArray();
-                        material.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
-                    }
-
-                    if (mtlLine.StartsWith("Ks"))
-                    {
-                        float[] Kd = mtlLine
-                            .Remove(0, 2)
-                            .Trim()
-                            .Split(' ')
-                            .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
-                            .ToArray();
-                        material.Ks = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
-                    }
-
-                    if (mtlLine.StartsWith("Pr"))
-                    {
-                        material.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                    }
-
-                    if (mtlLine.StartsWith("map_Kd"))
-                    {                        
-                        material.Diffuse = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
-                    }
-
-                    if (mtlLine.StartsWith("map_Ks"))
-                    {
-                        material.Specular = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
-                    }
-
-                    if (mtlLine.StartsWith("map_Ke"))
-                    {
-                        material.Emission = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()), true);
-                    }
-
-                    if (mtlLine.StartsWith("map_MRAO"))
-                    {
-                        material.MRAO = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 8).Trim()));
-                    }
-
-                    if (mtlLine.StartsWith("map_Pcr"))
-                    {
-                        material.ClearCoatRoughness = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 7).Trim()));
-                        continue;
-                    }
-
-                    if (mtlLine.StartsWith("Pcr"))
-                    {
-                        material.Pcr = float.Parse(mtlLine.Remove(0, 3).Trim(), CultureInfo.InvariantCulture);
-                        continue;
-                    }
-
-                    if (mtlLine.StartsWith("map_Pc"))
-                    {
-                        material.ClearCoat = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 6).Trim()));
-                    }
-
-                    if (mtlLine.StartsWith("Pc"))
-                    {
-                        material.Pc = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                    }
-
-                    if (mtlLine.StartsWith("norm_pc"))
-                    {
-                        material.ClearCoatNormals = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 7).Trim()), false, true);
-                        continue;
-                    }
-
-                    if (mtlLine.StartsWith("norm"))
-                    {
-                        material.Normals = model.AddTexture(Path.Combine(fold, mtlLine.Remove(0, 4).Trim()), false, true);
-                    }
+                    material = new();
+                    model.MaterialNames.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
                 }
-                model.Materials.Add(material);
+
+                if (mtlLine.StartsWith("Pm"))
+                {
+                    material!.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                }
+
+                if (mtlLine.StartsWith("map_Tr"))
+                {
+                    material!.Transmission = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()));
+                    material!.BlendMode = BlendModes.AlphaBlending;
+                }
+
+                if (mtlLine.StartsWith("Tr"))
+                {
+                    material!.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                    material!.BlendMode = BlendModes.AlphaBlending;
+                }
+
+                if (mtlLine.StartsWith('d'))
+                {
+                    material!.D = float.Parse(mtlLine.Remove(0, 1).Trim(), CultureInfo.InvariantCulture);
+                    material!.BlendMode = BlendModes.AlphaBlending;
+                }
+
+                if (mtlLine.StartsWith("map_d"))
+                {
+                    material!.Dissolve = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 5).Trim()));
+                    material!.BlendMode = BlendModes.AlphaBlending;
+                }
+
+                if (mtlLine.StartsWith("Kd"))
+                {
+                    float[] Kd = mtlLine
+                        .Remove(0, 2)
+                        .Trim()
+                        .Split(' ')
+                        .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
+                        .ToArray();
+                    material!.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
+                }
+
+                if (mtlLine.StartsWith("Ks"))
+                {
+                    float[] Kd = mtlLine
+                        .Remove(0, 2)
+                        .Trim()
+                        .Split(' ')
+                        .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
+                        .ToArray();
+                    material!.Ks = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
+                }
+
+                if (mtlLine.StartsWith("Pr"))
+                {
+                    material!.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                }
+
+                if (mtlLine.StartsWith("map_Kd"))
+                {
+                    material!.Diffuse = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
+                }
+
+                if (mtlLine.StartsWith("map_Ks"))
+                {
+                    material!.Specular = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
+                }
+
+                if (mtlLine.StartsWith("map_Ke"))
+                {
+                    material!.Emission = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
+                }
+
+                if (mtlLine.StartsWith("map_MRAO"))
+                {
+                    material!.MRAO = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 8).Trim()));
+                }
+
+                if (mtlLine.StartsWith("map_Pcr"))
+                {
+                    material!.ClearCoatRoughness = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 7).Trim()));
+                    continue;
+                }
+
+                if (mtlLine.StartsWith("Pcr"))
+                {
+                    material!.Pcr = float.Parse(mtlLine.Remove(0, 3).Trim(), CultureInfo.InvariantCulture);
+                    continue;
+                }
+
+                if (mtlLine.StartsWith("map_Pc"))
+                {
+                    material!.ClearCoat = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()));
+                }
+
+                if (mtlLine.StartsWith("Pc"))
+                {
+                    material!.Pc = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
+                }
+
+                if (mtlLine.StartsWith("norm_pc"))
+                {
+                    material!.ClearCoatNormals = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 7).Trim()), false, true);
+                    continue;
+                }
+
+                if (mtlLine.StartsWith("norm"))
+                {
+                    material!.Normals = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 4).Trim()), false, true);
+                }
             }
+            model.Materials.Add(material!);
         }
 
-        private void LoadModel(string fileName, Model model)
+        private static void LoadModel(string fileName, Model model)
         {
             int materialIndex = 0;
             int faceIndex = 0;
@@ -188,7 +186,7 @@ namespace lab1
                 switch (line[0])
                 {
                     case "mtllib":
-                        LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName), line[1]), model);
+                        LoadMaterials(Path.Combine(Path.GetDirectoryName(fileName)!, line[1]), model);
                         break;
 
                     case "usemtl":
@@ -264,7 +262,6 @@ namespace lab1
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            Renderer = new();
             Renderer.CreateBuffers(Grid.ActualWidth, Grid.ActualHeight, Scale);
 
             Canvas.Source = Renderer.Bitmap.Source;
@@ -300,7 +297,8 @@ namespace lab1
             if (e.Delta > 0)
             {
                 Renderer.Camera.UpdatePosition(-0.3f, 0, 0);
-            } else
+            }
+            else
             {
                 Renderer.Camera.UpdatePosition(0.3f, 0, 0);
             }
@@ -427,7 +425,7 @@ namespace lab1
 
                 case Key.W:
                     Renderer.Camera.Move(new(0, 0, -0.2f), true);
-                    Draw(); 
+                    Draw();
                     break;
 
                 case Key.S:
@@ -461,8 +459,11 @@ namespace lab1
                 switch (e.Key)
                 {
                     case Key.O:
-                        OpenFileDialog dlg = new();
-                        dlg.Filter = "Wavefront (*.obj)|*.obj";
+                        OpenFileDialog dlg = new()
+                        {
+                            Filter = "Wavefront (*.obj)|*.obj"
+                        };
+
                         if (dlg.ShowDialog() == true)
                         {
                             MainModel = new();
@@ -569,9 +570,12 @@ namespace lab1
                         break;
 
                     case Key.NumPad0:
-                        Renderer.Camera.Target = MainModel.GetCenter();
-                        Renderer.Camera.Reset();
-                        Draw();
+                        if (MainModel != null)
+                        {
+                            Renderer.Camera.Target = MainModel.GetCenter();
+                            Renderer.Camera.Reset();
+                            Draw();
+                        }
                         break;
 
                     case Key.D1:

@@ -1,18 +1,18 @@
-﻿using System.Numerics;
-using static System.Single;
-using static System.Numerics.Vector3;
+﻿using lab1.Shadow;
+using System.Numerics;
 using static lab1.LightingConfig;
-using lab1.Shadow;
+using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1.Shaders
 {
     public class Phong
     {
         public static Vector3 GetPixelColor(
-            Vector3 baseColor, 
-            Vector3 n, 
-            Vector3 spec, 
-            Vector3 camera, 
+            Vector3 baseColor,
+            Vector3 n,
+            Vector3 spec,
+            Vector3 camera,
             Vector3 p,
             Vector3 emission,
             float opacity,

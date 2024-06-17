@@ -7,16 +7,9 @@ namespace lab1.Shadow
 {
     public class RTX
     {
-        public static int RayCount = 1;
-        public static float LightSize = 0f;
-        public static float Angle = 10f;
-
-        private static Vector3 SphericalToCartesian(float phi, float theta, float radius)
-        {
-            float projection = Sin(theta);
-
-            return new Vector3(Sin(phi) * projection, Cos(theta), Cos(phi) * projection) * radius;
-        }
+        public static int RayCount { get; set; } = 1;
+        public static float LightSize { get; set; } = 0f;
+        public static float Angle { get; set; } = 10f;
 
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {
@@ -60,14 +53,15 @@ namespace lab1.Shadow
             return Dot(e2, qvec) * inv_det;
         }
 
-        public static float GetLightIntensityBVH(Lamp lamp, Vector3 orig) {
+        public static float GetLightIntensityBVH(Lamp lamp, Vector3 orig)
+        {
             float result = 0;
 
             float baseIntensity = 1f / RayCount;
 
             Vector3 position = lamp.Position;
 
-            Vector3 baseDirection = lamp.GetDirection();
+            Vector3 baseDirection = lamp.GetL(orig);
 
             float cos = 1 - Cos(DegreesToRadians(Angle * 0.5f));
 
@@ -81,7 +75,7 @@ namespace lab1.Shadow
                     float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
-                    Vector3 LP = position + SphericalToCartesian(phi, theta, LightSize);
+                    Vector3 LP = position + Utils.SphericalToCartesian(phi, theta, LightSize);
 
                     dir = Normalize(LP - orig);
                     dist = Distance(LP, orig);
@@ -92,7 +86,7 @@ namespace lab1.Shadow
                     float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(1 - cos * Random.Shared.NextSingle());
 
-                    dir = SphericalToCartesian(phi, theta, 1);
+                    dir = Utils.SphericalToCartesian(phi, theta, 1);
 
                     Vector3 xAxis = Cross(baseDirection, UnitZ);
                     xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);

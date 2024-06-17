@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using static System.Windows.Media.PixelFormats;
 

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Windows.Media.Imaging;
+using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1
 {
@@ -14,7 +16,7 @@ namespace lab1
         public List<Vector2> UV = [];
         public List<Material> Materials = [];
         public List<Vector3> Tangents = [];
-        public Vector4[] ProjectionVertices;
+        public Vector4[]? ProjectionVertices;
 
         public Dictionary<string, int> MaterialNames = [];
 
@@ -38,44 +40,45 @@ namespace lab1
         public float Pitch { get; set; }
         public float Roll { get; set; }
 
-        private float minX = float.MaxValue;
-        private float minY = float.MaxValue;
-        private float minZ = float.MaxValue;
+        private float minX = MaxValue;
+        private float minY = MaxValue;
+        private float minZ = MaxValue;
 
-        private float maxX = float.MinValue;
-        private float maxY = float.MinValue;
-        private float maxZ = float.MinValue;
+        private float maxX = MinValue;
+        private float maxY = MinValue;
+        private float maxZ = MinValue;
 
         public float X = 0;
         public float Y = 0;
         public float Z = 0;
 
-        public Model() {
+        public Model()
+        {
             Scale = 1.0f;
             Translation = new Vector3(0, 0, 0);
             Yaw = 0.0f;
             Pitch = 0.0f;
             Roll = 0.0f;
         }
-        
+
         public void AddVertex(float x, float y, float z)
         {
-            maxX = float.Max(maxX, x);
-            maxY = float.Max(maxY, y);
-            maxZ = float.Max(maxZ, z);
+            maxX = Max(maxX, x);
+            maxY = Max(maxY, y);
+            maxZ = Max(maxZ, z);
 
-            minX = float.Min(minX, x);
-            minY = float.Min(minY, y);
-            minZ = float.Min(minZ, z);
+            minX = Min(minX, x);
+            minY = Min(minY, y);
+            minZ = Min(minZ, z);
 
             Positions.Add(new(x, y, z));
         }
 
-        public List<Buffer<Vector3>> AddTexture(string uri, bool useSrgbToLinearTransform = false, bool isNormal = false)
+        public List<Buffer<Vector3>>? AddTexture(string uri, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
             if (File.Exists(uri))
             {
-                if (!Textures.TryGetValue(uri, out List<Buffer<Vector3>> texture))
+                if (!Textures.TryGetValue(uri, out List<Buffer<Vector3>>? texture))
                 {
                     texture = Material.CalculateMIP(new(new BitmapImage(new Uri(uri, UriKind.Relative))), useSrgbToLinearTransform, isNormal);
                     Textures.Add(uri, texture);
@@ -83,7 +86,7 @@ namespace lab1
 
                 return texture;
             }
-            
+
             return null;
         }
 
@@ -130,16 +133,16 @@ namespace lab1
             return new Vector3(X, Y, Z);
         }
 
-        public float GetMinZoomR ()
+        public float GetMinZoomR()
         {
-            return float.Max(float.Max(maxX - minX, maxY - minY), maxZ - minZ);
+            return Max(Max(maxX - minX, maxY - minY), maxZ - minZ);
         }
 
         public void CalculateTangents()
         {
             Dictionary<(int, int, int, int, int), int> tangentDictionary = [];
 
-            for (int i = 0; i < PositionIndices.Count; i += 3) 
+            for (int i = 0; i < PositionIndices.Count; i += 3)
             {
                 Vector3 p0 = Positions[PositionIndices[i]];
                 Vector3 p1 = Positions[PositionIndices[i + 1]];
@@ -155,17 +158,17 @@ namespace lab1
                 float x1 = uv1.X - uv0.X, x2 = uv2.X - uv0.X;
                 float y1 = uv0.Y - uv1.Y, y2 = uv0.Y - uv2.Y;
 
-                float r = 1 / (x1 * y2 - x2 * y1);    
+                float r = 1 / (x1 * y2 - x2 * y1);
                 Vector3 t = (e1 * y2 - e2 * y1) * r;
                 Vector3 b = (e2 * x1 - e1 * x2) * r;
 
-                if (r == float.PositiveInfinity || r == float.NegativeInfinity)
+                if (r == PositiveInfinity || r == NegativeInfinity)
                 {
-                    t = Vector3.Zero; 
-                    b = Vector3.Zero;
+                    t = Zero;
+                    b = Zero;
                 }
 
-                sbyte sign = (sbyte)float.Sign(Vector3.Dot(Vector3.Cross(e1, e2), Vector3.Cross(t, b)));
+                sbyte sign = (sbyte)Sign(Dot(Cross(e1, e2), Cross(t, b)));
                 Signs.Add(sign);
 
                 for (int j = i; j < i + 3; j++)
@@ -182,14 +185,14 @@ namespace lab1
                     TangentIndices.Add(tangentIndex);
                     Vector3 n = Normals[NormalIndices[j]];
 
-                    Tangents[tangentIndex] += t - Vector3.Dot(t, n) * n;
+                    Tangents[tangentIndex] += t - Dot(t, n) * n;
                 }
             }
 
             for (int i = 0; i < PositionIndices.Count; i++)
             {
                 if (Tangents[TangentIndices[i]].Length() > 0)
-                    Tangents[TangentIndices[i]] = Vector3.Normalize(Tangents[TangentIndices[i]]);
+                    Tangents[TangentIndices[i]] = Normalize(Tangents[TangentIndices[i]]);
             }
 
         }

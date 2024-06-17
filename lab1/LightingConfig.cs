@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
+using static System.Numerics.Vector3;
 using static System.Single;
 
 namespace lab1
@@ -12,8 +13,8 @@ namespace lab1
 
     public class Lamp
     {
-        public Vector3 Position = Vector3.Zero;
-        public Vector3 Color = Vector3.One;
+        public Vector3 Position = Zero;
+        public Vector3 Color = One;
         public float Intensity = 100;
         public string Name = "";
         public float Theta = 45;
@@ -25,7 +26,7 @@ namespace lab1
             if (Type == LampTypes.Directional)
                 return Intensity * Color;
 
-            float distance = Vector3.Distance(Position, point);
+            float distance = Distance(Position, point);
 
             return Intensity * Color / (distance * distance);
         }
@@ -33,38 +34,29 @@ namespace lab1
         public Vector3 GetL(Vector3 point)
         {
             if (Type == LampTypes.Directional)
-                return GetDirection();
+                return Normalize(Utils.SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1));
 
-            return Vector3.Normalize(Position - point);
-        }
-
-        public Vector3 GetDirection()
-        {
-            return Vector3.Normalize(new(
-                Sin(DegreesToRadians(Theta)) * Sin(DegreesToRadians(Phi)),
-                Cos(DegreesToRadians(Theta)),
-                Sin(DegreesToRadians(Theta)) * Cos(DegreesToRadians(Phi))
-            ));
+            return Normalize(Position - point);
         }
     }
 
     public class LightingConfig
     {
-        public static float AmbientIntensity = 1f;
+        public static float AmbientIntensity { get; set; } = 1f;
 
-        public static float EmissionIntensity = 1;
+        public static float EmissionIntensity { get; set; } = 1;
 
-        public static int CurrentLamp = 0;
+        public static int CurrentLamp { get; set; } = 0;
 
-        public static bool DrawLights = true;
+        public static bool DrawLights { get; set; } = true;
 
-        public static bool UseShadow = false;
+        public static bool UseShadow { get; set; } = false;
 
-        public static HDRTexture? IBLDiffuseMap = null;
-        public static List<HDRTexture> IBLSpecularMap = [];
-        public static HDRTexture BRDFLLUT = new();
+        public static HDRTexture? IBLDiffuseMap { get; set; } = null;
+        public static List<HDRTexture> IBLSpecularMap { get; set; } = [];
+        public static HDRTexture BRDFLLUT { get; set; } = new();
 
-        public static List<Lamp> Lights = [
+        public static List<Lamp> Lights { get; } = [
             new() { Position = new(10, 10, 10), Color = new(1, 0.5f, 1), Intensity = 500, Name = "Default 0"},
             new() { Position = new(-10, 10, 10), Color = new(0.5f, 1f, 0.5f), Intensity = 500, Name = "Default 1" },
             new() { Position = new(10, 10, -10), Color = new(0.5f, 0.5f, 1), Intensity = 500, Name = "Default 2" },

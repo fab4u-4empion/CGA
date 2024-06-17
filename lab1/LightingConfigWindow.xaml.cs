@@ -1,11 +1,11 @@
-﻿using System.Linq;
+﻿using Microsoft.Win32;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Globalization;
 using static lab1.LightingConfig;
-using Microsoft.Win32;
-using System.IO;
-using System;
 
 namespace lab1
 {
@@ -98,7 +98,7 @@ namespace lab1
 
         private void LampType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (LampType.SelectedIndex ==  0)
+            if (LampType.SelectedIndex == 0)
             {
                 PositionGrid.Visibility = Visibility.Visible;
                 DirectionGrid.Visibility = Visibility.Collapsed;
@@ -118,7 +118,7 @@ namespace lab1
                 Filter = "Light Configs (*.lght)|*.lght"
             };
 
-            if (ofd.ShowDialog() == true )
+            if (ofd.ShowDialog() == true)
             {
                 Lamp? lamp = null;
 
@@ -137,7 +137,7 @@ namespace lab1
                             break;
 
                         case "color":
-                            lamp.Color = new(
+                            lamp!.Color = new(
                                 float.Parse(line[1], CultureInfo.InvariantCulture),
                                 float.Parse(line[2], CultureInfo.InvariantCulture),
                                 float.Parse(line[3], CultureInfo.InvariantCulture)
@@ -145,7 +145,7 @@ namespace lab1
                             break;
 
                         case "position":
-                            lamp.Position = new(
+                            lamp!.Position = new(
                                 float.Parse(line[1], CultureInfo.InvariantCulture),
                                 float.Parse(line[2], CultureInfo.InvariantCulture),
                                 float.Parse(line[3], CultureInfo.InvariantCulture)
@@ -153,29 +153,29 @@ namespace lab1
                             break;
 
                         case "theta":
-                            lamp.Theta = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            lamp!.Theta = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
                         case "phi":
-                            lamp.Phi = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            lamp!.Phi = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
                         case "intensity":
-                            lamp.Intensity = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            lamp!.Intensity = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
                         case "type":
                             switch (line[1])
                             {
                                 case "point":
-                                    lamp.Type = LampTypes.Point;
+                                    lamp!.Type = LampTypes.Point;
                                     break;
 
                                 case "directional":
-                                    lamp.Type = LampTypes.Directional;
+                                    lamp!.Type = LampTypes.Directional;
                                     break;
                             }
-                            
+
                             break;
                     }
                 }

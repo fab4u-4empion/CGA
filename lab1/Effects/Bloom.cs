@@ -1,10 +1,10 @@
 ﻿using Rasterization;
-using System;
 using System.Collections.Concurrent;
 using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
+using static System.Single;
+using static System.Int32;
+using static System.Numerics.Vector3;
 
 namespace lab1.Effects
 {
@@ -12,8 +12,8 @@ namespace lab1.Effects
 
     public class Bloom
     {
-        public static Smoothstep Smoothstep = (0, 5);
-        public static float Smoothing = 1;
+        public static Smoothstep Smoothstep { get; set; } = (0, 5);
+        public static float Smoothing { get; set; } = 1;
 
         public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
         {
@@ -27,9 +27,9 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    float X = float.Clamp((luminance - Smoothstep.A) / (Smoothstep.B - Smoothstep.A), 0, 1);
+                    float X = Clamp((luminance - Smoothstep.A) / (Smoothstep.B - Smoothstep.A), 0, 1);
                     float factor = X * X * (3 - 2 * X);
-                    tmp[x, y] = Vector3.Min(new(50f), color * factor);
+                    tmp[x, y] = Min(new(50f), color * factor);
                 }
             });
 
@@ -41,7 +41,8 @@ namespace lab1.Effects
             return GetImageBasedBlur(tmp, width, height);
         }
 
-        private static (int, int) GetRealSize(int w, int h) {
+        private static (int, int) GetRealSize(int w, int h)
+        {
             int rW = w - 1;
             int rH = h - 1;
 
@@ -67,7 +68,7 @@ namespace lab1.Effects
             Buffer<Vector3> tmp1 = new(width, height);
             Buffer<Vector3> tmp2 = new(width, height);
             Buffer<Vector3> dest = new(width, height);
-            
+
             foreach (Kernel kernel in BloomConfig.Kernels)
             {
                 int r = (int)(kernel.Radius * smoothing);
@@ -80,13 +81,13 @@ namespace lab1.Effects
                     {
                         for (int y = range.Item1; y < range.Item2; y++)
                         {
-                            tmp2[0, y] = Vector3.Zero;
+                            tmp2[0, y] = Zero;
 
                             for (int x = -r; x <= r; x++)
-                                tmp2[0, y] += read[int.Clamp(x, 0, width - 1), y];
+                                tmp2[0, y] += read[Clamp(x, 0, width - 1), y];
 
                             for (int x = 1; x < width; x++)
-                                tmp2[x, y] = tmp2[x - 1, y] + read[int.Clamp(x + r, 0, width - 1), y] - read[int.Clamp(x - r - 1, 0, width - 1), y];
+                                tmp2[x, y] = tmp2[x - 1, y] + read[Clamp(x + r, 0, width - 1), y] - read[Clamp(x - r - 1, 0, width - 1), y];
                         }
                     });
 
@@ -94,18 +95,18 @@ namespace lab1.Effects
                     {
                         for (int x = range.Item1; x < range.Item2; x++)
                         {
-                            tmp1[x, 0] = Vector3.Zero;
+                            tmp1[x, 0] = Zero;
 
                             for (int y = -r; y <= r; y++)
-                                tmp1[x, 0] += tmp2[x, int.Clamp(y, 0, height - 1)];
+                                tmp1[x, 0] += tmp2[x, Clamp(y, 0, height - 1)];
 
                             for (int y = 1; y < height; y++)
-                                tmp1[x, y] = tmp1[x, y - 1] + tmp2[x, int.Clamp(y + r, 0, height - 1)] - tmp2[x, int.Clamp(y - r - 1, 0, height - 1)];
+                                tmp1[x, y] = tmp1[x, y - 1] + tmp2[x, Clamp(y + r, 0, height - 1)] - tmp2[x, Clamp(y - r - 1, 0, height - 1)];
                         }
                     });
                 }
 
-                float denom = kernel.Intensity / float.Pow(2 * r + 1, 2 * 4);
+                float denom = kernel.Intensity / Pow(2 * r + 1, 2 * 4);
 
                 for (int x = 0; x < width; x++)
                     for (int y = 0; y < height; y++)
@@ -117,12 +118,12 @@ namespace lab1.Effects
 
         public static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
         {
-            Pbgra32Bitmap kernel = BloomConfig.KernelImg;
+            Pbgra32Bitmap kernel = BloomConfig.KernelImg!;
 
             (int wp, int hp) = GetRealSize(width, height);
             (int wk, int hk) = GetRealSize(kernel.PixelWidth, kernel.PixelHeight);
 
-            (int w, int h) = (int.Max(wp, wk), int.Max(hp, hk));
+            (int w, int h) = (Max(wp, wk), Max(hp, hk));
 
             float[,] R = new float[w, h];
             float[,] G = new float[w, h];
@@ -132,7 +133,7 @@ namespace lab1.Effects
             float[,] Kg = new float[w, h];
             float[,] Kb = new float[w, h];
 
-            Vector3 sum = Vector3.Zero;
+            Vector3 sum = Zero;
 
             Parallel.For(0, w, (i) =>
             {
@@ -185,9 +186,9 @@ namespace lab1.Effects
             {
                 for (int j = 0; j < height; j++)
                 {
-                    src[i, j].X = float.Max((float)Rc[i, j].Magnitude, 0);
-                    src[i, j].Y = float.Max((float)Gc[i, j].Magnitude, 0);
-                    src[i, j].Z = float.Max((float)Bc[i, j].Magnitude, 0);
+                    src[i, j].X = Max((float)Rc[i, j].Magnitude, 0);
+                    src[i, j].Y = Max((float)Gc[i, j].Magnitude, 0);
+                    src[i, j].Z = Max((float)Bc[i, j].Magnitude, 0);
                 }
             });
 
