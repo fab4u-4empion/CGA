@@ -11,6 +11,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static System.Single;
+using static System.Int32;
 
 namespace lab1
 {
@@ -329,136 +331,293 @@ namespace lab1
         {
             switch (e.Key)
             {
-                case Key.NumPad1:
-                    LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
+                //F* keys
+                case Key.F2:
+                    if (!e.IsRepeat)
+                    {
+                        LightingConfigWindow lightingConfigWindow = new();
+                        lightingConfigWindow.ShowDialog();
+                        Draw();
+                    }
+                    break;
+
+                case Key.F3:
+                    if (!e.IsRepeat)
+                    {
+                        BloomConfigWindow bloomConfigWindow = new();
+                        bloomConfigWindow.ShowDialog();
+                        Draw();
+                    }
+                    break;
+
+                case Key.F4:
+                    if (!e.IsRepeat)
+                    {
+                        IBLConfigWindow iBLConfigWindow = new();
+                        iBLConfigWindow.ShowDialog();
+                        Draw();
+                    }
+                    break;
+
+                case Key.F5:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.UseSkyBox = !Renderer.UseSkyBox;
+                        Draw();
+                    }
+                    break;
+
+                case Key.F6:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.UseBloom = !Renderer.UseBloom;
+                        Draw();
+                    }
+                    break;
+
+                case Key.F7:
+                    if (!e.IsRepeat)
+                    {
+                        LightingConfig.UseShadow = !LightingConfig.UseShadow;
+                        Draw();
+                    }
+                    break;
+
+                case Key.F8:
+                    if (!e.IsRepeat)
+                    {
+                        LightingConfig.DrawLights = !LightingConfig.DrawLights;
+                        Draw();
+                    }
+                    break;
+
+                case Key.F11:
+                    if (!e.IsRepeat)
+                    {
+                        if (WindowStyle != WindowStyle.None)
+                        {
+                            LastState = WindowState;
+                            WindowStyle = WindowStyle.None;
+                            ResizeMode = ResizeMode.NoResize;
+                            WindowState = WindowState.Normal;
+                            WindowState = WindowState.Maximized;
+                        }
+                        else
+                        {
+                            WindowStyle = WindowStyle.SingleBorderWindow;
+                            ResizeMode = ResizeMode.CanResize;
+                            WindowState = LastState;
+                        }
+                    }
+                    break;
+
+                case Key.F12:
+                    if (!e.IsRepeat)
+                    {
+                        PngBitmapEncoder encoder = new();
+                        encoder.Frames.Add(BitmapFrame.Create(Renderer.Bitmap.Source));
+                        DirectoryInfo info = Directory.CreateDirectory("img");
+                        using FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create);
+                        encoder.Save(st);
+                    }
+                    break;
+
+                //Resolution
+                case Key.D1:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.Smoothing = 0.25f;
+                        ResizeHandler();
+                    }
+                    break;
+
+                case Key.D2:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.Smoothing = 0.5f;
+                        ResizeHandler();
+                    }
+                    break;
+
+                case Key.D3:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.Smoothing = 1;
+                        ResizeHandler();
+                    }
+                    break;
+
+                case Key.D4:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.Smoothing = 2;
+                        ResizeHandler();
+                    }
+                    break;
+
+                case Key.D5:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.Smoothing = 4;
+                        ResizeHandler();
+                    }
+                    break;
+
+                //Emission and Ambient
+                case Key.OemMinus:
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    {
+                        LightingConfig.EmissionIntensity -= 0.2f;
+                        LightingConfig.EmissionIntensity = Max(LightingConfig.EmissionIntensity, 0);
+                    }
+                    else
+                    {
+                        LightingConfig.AmbientIntensity -= 0.1f;
+                        LightingConfig.AmbientIntensity = Max(LightingConfig.AmbientIntensity, 0);
+                    }
                     Draw();
                     break;
 
-                case Key.NumPad2:
-                    LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
+                case Key.OemPlus:
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.EmissionIntensity += 0.2f;
+                    else
+                        LightingConfig.AmbientIntensity += 0.1f;
                     Draw();
                     break;
 
-                case Key.NumPad4:
-                    LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
-                    Draw();
-                    break;
-
-                case Key.NumPad5:
-                    LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
-                    Draw();
-                    break;
-
-                case Key.NumPad7:
-                    LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
-                    Draw();
-                    break;
-
-                case Key.NumPad8:
-                    LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
-                    Draw();
-                    break;
-
+                //Arrows
                 case Key.Right:
-                    LightingConfig.ChangeLampIntensity(10);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        RTX.LightSize += 0.001f;
+                    else
+                        LightingConfig.ChangeLampIntensity(10);
                     Draw();
                     break;
 
                 case Key.Left:
-                    LightingConfig.ChangeLampIntensity(-10);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    {
+                        RTX.LightSize -= 0.001f;
+                        RTX.LightSize = Max(RTX.LightSize, 0);
+                    }
+                    else
+                        LightingConfig.ChangeLampIntensity(-10);
                     Draw();
                     break;
 
-                case Key.Add:
-                    LightingConfig.AmbientIntensity += 0.1f;
-                    Draw();
+                case Key.Up:
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    {
+                        RTX.RayCount += 1;
+                        Draw();
+                    } 
+                    else if (!e.IsRepeat)
+                    {
+                        LightingConfig.ChangeLamp(1);
+                        Draw();
+                    }
                     break;
 
-                case Key.Subtract:
-                    LightingConfig.AmbientIntensity -= 0.1f;
-                    LightingConfig.AmbientIntensity = float.Max(LightingConfig.AmbientIntensity, 0);
-                    Draw();
+                case Key.Down:
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    {
+                        RTX.RayCount -= 1;
+                        RTX.RayCount = int.Max(RTX.RayCount, 0);
+                        Draw();
+                    }
+                    else if (!e.IsRepeat)
+                    {
+                        LightingConfig.ChangeLamp(-1);
+                        Draw();
+                    }
                     break;
 
-                case Key.Divide:
-                    LightingConfig.EmissionIntensity -= 0.2f;
-                    LightingConfig.EmissionIntensity = float.Max(LightingConfig.EmissionIntensity, 0);
-                    Draw();
-                    break;
-
-                case Key.Multiply:
-                    LightingConfig.EmissionIntensity += 0.2f;
-                    Draw();
-                    break;
-
-                case Key.Z:
-                    RTX.LightSize -= 0.001f;
-                    RTX.LightSize = float.Max(RTX.LightSize, 0);
-                    Draw();
-                    break;
-
-                case Key.X:
-                    RTX.LightSize += 0.001f;
-                    Draw();
-                    break;
-
-                case Key.C:
-                    RTX.RayCount -= 1;
-                    RTX.RayCount = int.Max(RTX.RayCount, 0);
-                    Draw();
-                    break;
-
-                case Key.V:
-                    RTX.RayCount += 1;
-                    Draw();
-                    break;
-
-                case Key.J:
-                    HDRTexture.Angle += 0.1f;
-                    Draw();
-                    break;
-
-                case Key.K:
-                    HDRTexture.Angle -= 0.1f;
-                    Draw();
-                    break;
-
+                //Camera and Lights
                 case Key.W:
-                    Renderer.Camera.Move(new(0, 0, -0.2f), true);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(0, 0, -0.2f));
+                    else
+                        Renderer.Camera.Move(new(0, 0, -0.2f), true);
                     Draw();
                     break;
 
                 case Key.S:
-                    Renderer.Camera.Move(new(0, 0, 0.2f), true);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(0, 0, 0.2f));
+                    else
+                        Renderer.Camera.Move(new(0, 0, 0.2f), true);
                     Draw();
                     break;
 
                 case Key.A:
-                    Renderer.Camera.Move(new(-0.2f, 0, 0), true);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(-0.2f, 0, 0));
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        HDRTexture.Angle -= 0.1f;
+                    else
+                        Renderer.Camera.Move(new(-0.2f, 0, 0), true);
                     Draw();
                     break;
 
                 case Key.D:
-                    Renderer.Camera.Move(new(0.2f, 0, 0), true);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(0.2f, 0, 0));
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        HDRTexture.Angle += 0.1f;
+                    else
+                        Renderer.Camera.Move(new(0.2f, 0, 0), true);
                     Draw();
                     break;
 
                 case Key.Q:
-                    Renderer.Camera.Move(new(0, -0.2f, 0), false);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(0, -0.2f, 0));
+                    else
+                        Renderer.Camera.Move(new(0, -0.2f, 0), false);
                     Draw();
                     break;
 
                 case Key.E:
-                    Renderer.Camera.Move(new(0, 0.2f, 0), false);
+                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        LightingConfig.ChangeLampPosition(new(0, 0.2f, 0));
+                    else
+                        Renderer.Camera.Move(new(0, 0.2f, 0), false);
                     Draw();
                     break;
-            }
 
-            if (!e.IsRepeat)
-            {
-                switch (e.Key)
-                {
-                    case Key.O:
+                case Key.Back:
+                    if (MainModel != null && !e.IsRepeat)
+                    {
+                        Renderer.Camera.Target = MainModel.GetCenter();
+                        Renderer.Camera.Reset();
+                        Draw();
+                    }
+                    break;
+
+                case Key.Space:
+                    if (!e.IsRepeat)
+                        Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
+                    break;
+
+                //Other
+                case Key.T:
+                    if (!e.IsRepeat)
+                    {
+                        if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        {
+                            if (ToneMapping.Mode == ToneMappingMode.AgX)
+                                ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
+                        }
+                        else
+                            ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
+                        Draw();
+                    }
+                    break;
+
+                case Key.O:
+                    if (!e.IsRepeat)
+                    {
                         OpenFileDialog dlg = new()
                         {
                             Filter = "Wavefront (*.obj)|*.obj"
@@ -487,159 +646,40 @@ namespace lab1
 
                             Draw();
                         }
-                        break;
+                    }
+                    break;
 
-                    case Key.R:
-                        LightingConfig.UseShadow = !LightingConfig.UseShadow;
-                        Draw();
-                        break;
-
-                    case Key.Up:
-                        LightingConfig.ChangeLamp(1);
-                        Draw();
-                        break;
-
-                    case Key.Down:
-                        LightingConfig.ChangeLamp(-1);
-                        Draw();
-                        break;
-
-                    case Key.F6:
-                        Renderer.UseBloom = !Renderer.UseBloom;
-                        Draw();
-                        break;
-
-                    case Key.I:
-                        Renderer.UseTangentNormals = !Renderer.UseTangentNormals;
-                        Draw();
-                        break;
-
-                    case Key.T:
-                        ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
-                        Draw();
-                        break;
-
-                    case Key.Y:
-                        if (ToneMapping.Mode == ToneMappingMode.AgX)
-                        {
-                            ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
-                        }
-                        Draw();
-                        break;
-
-                    case Key.F12:
-                        PngBitmapEncoder encoder = new();
-                        encoder.Frames.Add(BitmapFrame.Create(Renderer.Bitmap.Source));
-                        DirectoryInfo info = Directory.CreateDirectory("img");
-                        using (FileStream st = new($@"{info.Name}/{DateTime.Now:dd-MM-yyyy HH-mm-ss-fff}.png", FileMode.Create))
-                        {
-                            encoder.Save(st);
-                        }
-                        break;
-
-                    case Key.M:
-                        Material.UsingMIPMapping = !Material.UsingMIPMapping;
-                        Draw();
-                        break;
-
-                    case Key.N:
-                        Material.MaxAnisotropy *= 2;
-                        if (Material.MaxAnisotropy > 16)
-                            Material.MaxAnisotropy = 1;
-                        Draw();
-                        break;
-
-                    case Key.B:
-                        LightingConfig.DrawLights = !LightingConfig.DrawLights;
-                        Draw();
-                        break;
-
-                    case Key.P:
+                case Key.P:
+                    if (!e.IsRepeat)
+                    {
                         Renderer.CurrentShader = (ShaderTypes)(((int)Renderer.CurrentShader + 1) % 4);
                         Draw();
-                        break;
+                    }
+                    break;
 
-                    case Key.F5:
-                        Renderer.UseSkyBox = !Renderer.UseSkyBox;
+                case Key.N:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.UseTangentNormals = !Renderer.UseTangentNormals;
                         Draw();
-                        break;
+                    }
+                    break;
 
-                    case Key.F7:
-                        Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
-                        Draw();
-                        break;
-
-                    case Key.NumPad0:
-                        if (MainModel != null)
+                case Key.M:
+                    if (!e.IsRepeat)
+                    {
+                        if (Keyboard.Modifiers == ModifierKeys.Shift)
                         {
-                            Renderer.Camera.Target = MainModel.GetCenter();
-                            Renderer.Camera.Reset();
-                            Draw();
-                        }
-                        break;
-
-                    case Key.D1:
-                        Renderer.Smoothing = 0.25f;
-                        ResizeHandler();
-                        break;
-
-                    case Key.D2:
-                        Renderer.Smoothing = 0.5f;
-                        ResizeHandler();
-                        break;
-
-                    case Key.D3:
-                        Renderer.Smoothing = 1;
-                        ResizeHandler();
-                        break;
-
-                    case Key.D4:
-                        Renderer.Smoothing = 2;
-                        ResizeHandler();
-                        break;
-
-                    case Key.D5:
-                        Renderer.Smoothing = 4;
-                        ResizeHandler();
-                        break;
-
-                    case Key.F11:
-                        if (WindowStyle != WindowStyle.None)
-                        {
-                            LastState = WindowState;
-                            WindowStyle = WindowStyle.None;
-                            ResizeMode = ResizeMode.NoResize;
-                            WindowState = WindowState.Normal;
-                            WindowState = WindowState.Maximized;
+                            Material.MaxAnisotropy *= 2;
+                            if (Material.MaxAnisotropy > 16)
+                                Material.MaxAnisotropy = 1;
                         }
                         else
-                        {
-                            WindowStyle = WindowStyle.SingleBorderWindow;
-                            ResizeMode = ResizeMode.CanResize;
-                            WindowState = LastState;
-                        }
-                        break;
-
-                    case Key.F2:
-                        LightingConfigWindow lightingConfigWindow = new();
-                        lightingConfigWindow.ShowDialog();
+                            Material.UsingMIPMapping = !Material.UsingMIPMapping;
                         Draw();
-                        break;
-
-                    case Key.F3:
-                        BloomConfigWindow bloomConfigWindow = new();
-                        bloomConfigWindow.ShowDialog();
-                        Draw();
-                        break;
-
-                    case Key.F4:
-                        IBLConfigWindow iBLConfigWindow = new();
-                        iBLConfigWindow.ShowDialog();
-                        Draw();
-                        break;
-                }
+                    }
+                    break;
             }
-
         }
     }
 }
