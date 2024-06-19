@@ -43,6 +43,8 @@ namespace lab1
 
         public static Vector3 BackColor { get; set; } = new(0.15f, 0.15f, 0.15f);
 
+        public static bool BackfaceCulling = true;
+
         public Buffer<Vector3> BufferHDR = new(0, 0);
         public Buffer<float> AlphaBuffer = new(0, 0);
         public Buffer<SpinLock> Spins = new(0, 0);
@@ -132,7 +134,7 @@ namespace lab1
                         Vector4 b = result[j];
                         Vector4 c = result[j + 1];
 
-                        if (Utils.PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending)
+                        if (Utils.PerpDotProduct(new(b.X - a.X, b.Y - a.Y), new(c.X - b.X, c.Y - b.Y)) <= 0 || blendMode == BlendModes.AlphaBlending || !BackfaceCulling)
                         {
 
                             if (b.X < a.X)

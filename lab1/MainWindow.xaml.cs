@@ -391,6 +391,14 @@ namespace lab1
                     }
                     break;
 
+                case Key.F9:
+                    if (!e.IsRepeat)
+                    {
+                        Renderer.BackfaceCulling = !Renderer.BackfaceCulling;
+                        Draw();
+                    }
+                    break;
+
                 case Key.F11:
                     if (!e.IsRepeat)
                     {
