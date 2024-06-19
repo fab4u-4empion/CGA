@@ -17,5 +17,11 @@ namespace lab1
         {
             return a.X * b.Y - a.Y * b.X;
         }
+
+        public static float Smoothstep(float a, float b, float x) 
+        {
+            float X = Clamp((x - a) / (b - a), 0, 1);
+            return X * X * (3 - 2 * X);
+        }
     }
 }

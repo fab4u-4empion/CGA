@@ -34,7 +34,7 @@ namespace lab1
         public Vector3 GetL(Vector3 point)
         {
             if (Type == LampTypes.Directional)
-                return Normalize(Utils.SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1));
+                return Utils.SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1);
 
             return Normalize(Position - point);
         }
@@ -89,8 +89,8 @@ namespace lab1
                 Lamp lamp = Lights[CurrentLamp];
                 if (lamp.Type == LampTypes.Directional)
                 {
-                    lamp.Theta = Clamp(lamp.Theta + delta.X * 10, 0, 180);
-                    lamp.Phi += delta.Y * 10;
+                    lamp.Theta = Clamp(lamp.Theta + delta.Z * 10, 0, 180);
+                    lamp.Phi += delta.X * 10;
                     lamp.Phi = (lamp.Phi % 360 + 360) % 360;
                 }
                 else

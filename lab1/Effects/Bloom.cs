@@ -27,9 +27,7 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    float X = Clamp((luminance - Smoothstep.A) / (Smoothstep.B - Smoothstep.A), 0, 1);
-                    float factor = X * X * (3 - 2 * X);
-                    tmp[x, y] = Min(new(50f), color * factor);
+                    tmp[x, y] = Min(new(50f), color * Utils.Smoothstep(luminance, Smoothstep.A, Smoothstep.B));
                 }
             });
 

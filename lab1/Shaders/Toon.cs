@@ -2,6 +2,7 @@
 using static lab1.LightingConfig;
 using static System.Numerics.Vector3;
 using static System.Single;
+using static System.Int32;
 
 namespace lab1.Shaders
 {
@@ -29,10 +30,31 @@ namespace lab1.Shaders
             return colors[index];
         }
 
-        public static Vector3 GetPixelColor(Vector3 baseColor, Vector3 n, Vector3 p, Vector3 emission)
+        public static Vector3 GetPixelColor(
+            Vector3 baseColor, 
+            Vector3 n, 
+            Vector3 p, 
+            Vector3 emission, 
+            int d, 
+            Buffer<int> ViewBuffer, 
+            Buffer<byte> CountBuffer, 
+            int x, 
+            int y
+        )
         {
             Vector3 color = Zero;
-            baseColor = TransformColor(baseColor);
+
+            for (int i = -d; i <= d; i++)
+                for (int j = -d; j <= d; j++)
+                    if (
+                        ViewBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
+                        &&
+                        CountBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == 0
+                    )
+                    {
+                        return One;
+                    }
+
             Vector3 N = Normalize(n);
 
             int lvl = 2;
@@ -49,7 +71,7 @@ namespace lab1.Shaders
                 color += baseColor * lamp.GetIrradiance(p) * dot / Pi;
             }
 
-            color += baseColor * AmbientIntensity * 0.1f + TransformColor(emission) * EmissionIntensity;
+            color += baseColor * AmbientIntensity * 0.1f + emission * EmissionIntensity;
 
             return color;
         }

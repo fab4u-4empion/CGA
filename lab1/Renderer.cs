@@ -291,19 +291,8 @@ namespace lab1
                     break;
 
                 case ShaderTypes.Toon:
-                    color = Toon.GetPixelColor(baseColor, n, pw, emission);
                     int d = (int)Ceiling(2 * Smoothing);
-                    for (int i = -d; i <= d; i++)
-                        for (int j = -d; j <= d; j++)
-                            if (
-                                ViewBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
-                                &&
-                                CountBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == 0
-                            )
-                            {
-                                color = Vector3.One;
-                                break;
-                            }
+                    color = Toon.GetPixelColor(baseColor, n, pw, emission, d, ViewBuffer, CountBuffer, x, y);
                     opacity = 1;
                     dissolve = 1;
                     break;
