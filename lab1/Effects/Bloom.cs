@@ -7,13 +7,8 @@ using static System.Int32;
 using static System.Numerics.Vector3;
 
 namespace lab1.Effects
-{
-    using Smoothstep = (float A, float B);
-
-    public class Bloom
+{    public class Bloom
     {
-        public static Smoothstep Smoothstep { get; set; } = (0, 5);
-
         public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
         {
             if (BloomConfig.Kernels.Count == 0 && BloomConfig.KernelImg == null)
