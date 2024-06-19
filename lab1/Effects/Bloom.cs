@@ -13,7 +13,6 @@ namespace lab1.Effects
     public class Bloom
     {
         public static Smoothstep Smoothstep { get; set; } = (0, 5);
-        public static float Smoothing { get; set; } = 1;
 
         public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
         {
@@ -27,7 +26,7 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    tmp[x, y] = Min(new(50f), color * Utils.Smoothstep(luminance, Smoothstep.A, Smoothstep.B));
+                    tmp[x, y] = Min(new(50f), color * Utils.Smoothstep(0, 5, luminance));
                 }
             });
 
