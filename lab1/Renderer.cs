@@ -41,9 +41,7 @@ namespace lab1
         public static ShaderTypes CurrentShader { get; set; } = ShaderTypes.MetallicPBR;
         public static bool UseSkyBox { get; set; } = true;
 
-        public static Vector3 BackColor { get; set; } = new(0.15f, 0.15f, 0.15f);
-
-        public static bool BackfaceCulling = true;
+        public static bool BackfaceCulling { get; set; } = true;
 
         public Buffer<Vector3> BufferHDR = new(0, 0);
         public Buffer<float> AlphaBuffer = new(0, 0);
@@ -438,12 +436,11 @@ namespace lab1
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        Vector3 backColor = BackColor;
+                        Vector3 backColor = AmbientColor;
                         if (UseSkyBox && IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
-                            backColor *= AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]));
@@ -456,12 +453,11 @@ namespace lab1
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        Vector3 backColor = BackColor;
+                        Vector3 backColor = AmbientColor;
                         if (UseSkyBox && IBLSpecularMap.Count > 0)
                         {
                             Vector3 p = p0 + dpdx * x + dpdy * y;
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
-                            backColor *= AmbientIntensity;
                         }
 
                         Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])));
@@ -615,7 +611,7 @@ namespace lab1
                 for (int j = 0; j < this.height; j++)
                 {
                     Spins[i, j] = new(false);
-                    BufferHDR[i, j] = BackColor;
+                    BufferHDR[i, j] = AmbientColor;
                 }
             }
             ZBuffer = new(this.width, this.height);

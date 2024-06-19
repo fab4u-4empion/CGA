@@ -20,7 +20,7 @@ namespace lab1.Shaders
             float AO,
             float glossiness)
         {
-            Vector3 color = baseColor * AmbientIntensity * AO * opacity * 0.1f + emission * EmissionIntensity;
+            Vector3 color = baseColor * AmbientColor * AO * opacity + emission * EmissionIntensity;
 
             Vector3 V = Normalize(camera - p);
             Vector3 N = Normalize(n);

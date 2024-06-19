@@ -123,42 +123,35 @@ namespace lab1.Shaders
                 color += (((One - reflectance) * diffuse + specular) * (One - clearCoatReflectance) * NdotL + clearCoatSpecular * CNdotL) * irradiance * intensity;
             }
 
-            if (IBLDiffuseMap == null && IBLSpecularMap.Count == 0)
-            {
-                color += (diffuse + F0) * ao * AmbientIntensity * 0.1f;
-            }
-            else
-            {
-                Vector3 ambientReflectance = F0;
-                Vector3 ambientDiffuse = baseColor / Pi * opacity;
-                Vector3 ambientIrradiance = IBLDiffuseMap!.GetColor(N);
+            Vector3 ambientReflectance = F0;
+            Vector3 ambientDiffuse = baseColor / Pi * opacity;
+            Vector3 ambientIrradiance = GetIBLDiffuseColor(N);
 
-                float lod = roughness * (IBLSpecularMap.Count - 1);
-                int lod0 = (int)lod, lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);
+            float lod = roughness * (IBLSpecularMap.Count - 1);
+            int lod0 = (int)lod, lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);
 
-                Vector3 R = Reflect(-V, N);
+            Vector3 R = Reflect(-V, N);
 
-                Vector3 ambientSpecularLight0 = IBLSpecularMap[lod0].GetColor(R);
-                Vector3 ambientSpecularLight1 = IBLSpecularMap[lod1].GetColor(R);
-                Vector3 ambientSpecularLight = Lerp(ambientSpecularLight0, ambientSpecularLight1, lod - lod0);
-                Vector3 brdf = BRDFLLUT.GetColor(NdotV, 1 - roughness);
+            Vector3 ambientSpecularLight0 = GetIBLSpecularColor(R, lod0);
+            Vector3 ambientSpecularLight1 = GetIBLSpecularColor(R, lod1);
+            Vector3 ambientSpecularLight = Lerp(ambientSpecularLight0, ambientSpecularLight1, lod - lod0);
+            Vector3 brdf = BRDFLLUT.GetColor(NdotV, 1 - roughness);
 
-                Vector3 ambientSpecular = ambientSpecularLight * (ambientReflectance * brdf.X + new Vector3(brdf.Y));
+            Vector3 ambientSpecular = ambientSpecularLight * (ambientReflectance * brdf.X + new Vector3(brdf.Y));
 
-                Vector3 clearCoatReflectance = new Vector3(0.04f) * clearCoat;
-                lod = clearCoatRougness * (IBLSpecularMap.Count - 1);
-                lod0 = (int)lod;
-                lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);
-                R = Reflect(-V, CN);
+            Vector3 clearCoatReflectanceIBL = new Vector3(0.04f) * clearCoat;
+            lod = clearCoatRougness * (IBLSpecularMap.Count - 1);
+            lod0 = (int)lod;
+            lod1 = int.Min(lod0 + 1, IBLSpecularMap.Count - 1);
+            R = Reflect(-V, CN);
 
-                Vector3 coatSpecularLight0 = IBLSpecularMap[lod0].GetColor(R);
-                Vector3 coatSpecularLight1 = IBLSpecularMap[lod1].GetColor(R);
-                Vector3 coatSpecularLight = Lerp(coatSpecularLight0, coatSpecularLight1, lod - lod0);
-                brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
-                Vector3 clearCoatSpecular = coatSpecularLight * (clearCoatReflectance * brdf.X + new Vector3(brdf.Y) * clearCoat);
+            Vector3 coatSpecularLight0 = GetIBLSpecularColor(R, lod0);
+            Vector3 coatSpecularLight1 = GetIBLSpecularColor(R, lod1);
+            Vector3 coatSpecularLight = Lerp(coatSpecularLight0, coatSpecularLight1, lod - lod0);
+            brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
+            Vector3 clearCoatSpecularIBL = coatSpecularLight * (clearCoatReflectanceIBL * brdf.X + new Vector3(brdf.Y) * clearCoat);
 
-                color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectance) + clearCoatSpecular) * ao * AmbientIntensity;
-            }
+            color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectanceIBL) + clearCoatSpecularIBL) * ao;
 
             color += emission * EmissionIntensity;
 

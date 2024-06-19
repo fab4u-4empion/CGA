@@ -42,7 +42,7 @@ namespace lab1
 
     public class LightingConfig
     {
-        public static float AmbientIntensity { get; set; } = 1f;
+        public static Vector3 AmbientColor { get; set; } = ToneMapping.SrgbToLinear(new(0.3f, 0.3f, 0.3f));
 
         public static float EmissionIntensity { get; set; } = 1;
 
@@ -98,6 +98,22 @@ namespace lab1
                     Lights[CurrentLamp].Position += delta;
                 }
             }
+        }
+
+        public static Vector3 GetIBLDiffuseColor(Vector3 n)
+        {
+            if (IBLDiffuseMap == null)
+                return AmbientColor;
+
+            return IBLDiffuseMap.GetColor(n);
+        }
+
+        public static Vector3 GetIBLSpecularColor(Vector3 n, int lod)
+        {
+            if (IBLSpecularMap.Count == 0)
+                return AmbientColor;
+
+            return IBLSpecularMap[lod].GetColor(n);
         }
     }
 }
