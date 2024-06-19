@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using static lab1.Utils;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -75,7 +76,7 @@ namespace lab1.Shadow
                     float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
-                    Vector3 LP = position + Utils.SphericalToCartesian(phi, theta, LightSize);
+                    Vector3 LP = position + SphericalToCartesian(phi, theta, LightSize);
 
                     dir = Normalize(LP - orig);
                     dist = Distance(LP, orig);
@@ -86,7 +87,7 @@ namespace lab1.Shadow
                     float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(1 - cos * Random.Shared.NextSingle());
 
-                    dir = Utils.SphericalToCartesian(phi, theta, 1);
+                    dir = SphericalToCartesian(phi, theta, 1);
 
                     Vector3 xAxis = Cross(baseDirection, UnitZ);
                     xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);

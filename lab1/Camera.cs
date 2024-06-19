@@ -1,7 +1,8 @@
 ﻿using System.Numerics;
-using static System.Single;
+using static lab1.Utils;
 using static System.Numerics.Matrix4x4;
 using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1
 {
@@ -23,22 +24,26 @@ namespace lab1
         private float o = 90;
         private float f = 0;
 
-        public Camera() { 
+        public Camera()
+        {
             Position = GetPosition();
             LookVector = GetLookVector();
         }
 
-        private Vector3 GetPosition() {
-            return Utils.SphericalToCartesian(DegreesToRadians(f), DegreesToRadians(o), r);
+        private Vector3 GetPosition()
+        {
+            return SphericalToCartesian(DegreesToRadians(f), DegreesToRadians(o), r);
         }
 
-        private Vector3 GetLookVector() { 
+        private Vector3 GetLookVector()
+        {
             return Normalize(Target - Position);
         }
 
-        public void UpdatePosition(float dR, float dO, float dF) {
+        public void UpdatePosition(float dR, float dO, float dF)
+        {
             r = Max(r + dR, 0.1f);
-            o = Min(179, Max(1, o + dO)); 
+            o = Min(179, Max(1, o + dO));
             f += dF;
 
             if (Mode == CameraMode.Arcball)

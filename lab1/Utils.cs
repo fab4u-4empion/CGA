@@ -3,7 +3,7 @@ using static System.Single;
 
 namespace lab1
 {
-    public class Utils
+    public static class Utils
     {
         public static Vector3 SphericalToCartesian(float phi, float theta, float radius)
         {
@@ -12,16 +12,15 @@ namespace lab1
             return new Vector3(Sin(phi) * projection, Cos(theta), Cos(phi) * projection) * radius;
         }
 
-
         public static float PerpDotProduct(Vector2 a, Vector2 b)
         {
             return a.X * b.Y - a.Y * b.X;
         }
 
-        public static float Smoothstep(float a, float b, float x) 
+        public static float Smoothstep(float a, float b, float x)
         {
-            float X = Clamp((x - a) / (b - a), 0, 1);
-            return X * X * (3 - 2 * X);
+            float t = Clamp((x - a) / (b - a), 0, 1);
+            return t * t * (3 - 2 * t);
         }
     }
 }

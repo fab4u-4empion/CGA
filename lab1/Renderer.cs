@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using static lab1.LightingConfig;
+using static lab1.Utils;
 using static System.Int32;
 using static System.Numerics.Matrix4x4;
 using static System.Numerics.Vector3;
@@ -132,7 +133,7 @@ namespace lab1
                         Vector4 b = result[j];
                         Vector4 c = result[j + 1];
 
-                        if (Utils.PerpDotProduct(new(c.X - a.X, c.Y - a.Y), new(b.X - a.X, b.Y - a.Y)) > 0 || blendMode == BlendModes.AlphaBlending || !BackfaceCulling)
+                        if (PerpDotProduct(new(c.X - a.X, c.Y - a.Y), new(b.X - a.X, b.Y - a.Y)) > 0 || blendMode == BlendModes.AlphaBlending || !BackfaceCulling)
                         {
 
                             if (b.X < a.X)
