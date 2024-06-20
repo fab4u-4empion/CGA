@@ -480,8 +480,8 @@ namespace lab1
                     }
                     else
                     {
-                        //LightingConfig.AmbientIntensity -= 0.1f;
-                        //LightingConfig.AmbientIntensity = Max(LightingConfig.AmbientIntensity, 0);
+                        Renderer.Exposition -= 0.1f;
+                        Renderer.Exposition = Max(Renderer.Exposition, 0);
                     }
                     Draw();
                     break;
@@ -490,7 +490,7 @@ namespace lab1
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                         LightingConfig.EmissionIntensity += 0.2f;
                     else
-                        //LightingConfig.AmbientIntensity += 0.1f;
+                        Renderer.Exposition += 0.1f;
                     Draw();
                     break;
 
