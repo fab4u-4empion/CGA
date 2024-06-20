@@ -6,20 +6,20 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        Title="3D visualizer" Height="700" Width="800"
+        Title="3D Visualizer"
+        Height="700" Width="800"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         MouseMove="Window_MouseMove"
         MouseDown="Window_MouseDown"
         MouseWheel="Window_MouseWheel"
         SizeChanged="Window_SizeChanged"
-        KeyDown="Window_KeyDown"
-    >
+        KeyDown="Window_KeyDown">
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
         <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top"/>

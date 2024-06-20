@@ -6,14 +6,15 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        Title="Lighting settings" Height="450" Width="500"
-        WindowStartupLocation="CenterScreen"
+        Title="Lighting Settings"
+        Height="450" Width="500"
         ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded">
     <Grid Margin="10">
         <Grid.ColumnDefinitions>

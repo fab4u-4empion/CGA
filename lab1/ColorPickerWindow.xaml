@@ -3,63 +3,62 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
         Title="Color Picker"
-        Height="400" Width="250"
+        SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen"
-        Loaded="Window_Loaded">
-    <Grid Margin="10">
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10" Width="200">
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
-            <RowDefinition Height="200"/>
-            <RowDefinition/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="236"/>
+            <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
-        <Border x:Name="ColorPreview" Margin="0,0,0,10" Grid.Row="0" Height="50" Background="Black"/>
-        <materialDesign:ColorPicker x:Name="ColorPicker" Grid.Row="1" MouseMove="ColorPicker_MouseMove" ColorChanged="ColorPicker_ColorChanged"/>
-        <Grid Grid.Row="2" MouseMove="Grid_MouseMove">
+        <Grid Grid.Row="3">
             <Grid.RowDefinitions>
                 <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="35"/>
-                </Grid.ColumnDefinitions>
-                <Label Content="R" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Slider x:Name="SliderR" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1"/>
-                <Label x:Name="LabelR" Content="0" Grid.Column="2" VerticalAlignment="Center" HorizontalContentAlignment="Center"/>
-            </Grid>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="35"/>
-                </Grid.ColumnDefinitions>
-                <Label Content="G" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Slider x:Name="SliderG" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1"/>
-                <Label x:Name="LabelG" Content="0" Grid.Column="2" VerticalAlignment="Center" HorizontalContentAlignment="Center"/>
-            </Grid>
-            <Grid Grid.Row="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="35"/>
-                </Grid.ColumnDefinitions>
-                <Label Content="B" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Slider x:Name="SliderB" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1"/>
-                <Label x:Name="LabelB" Content="0" Grid.Column="2" VerticalAlignment="Center" HorizontalContentAlignment="Center"/>
-            </Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="40"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="R" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Label Content="G" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Label Content="B" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Slider x:Name="SliderR" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1" IsSnapToTickEnabled="True" TickFrequency="1"/>
+            <Slider x:Name="SliderG" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1" IsSnapToTickEnabled="True" TickFrequency="1"/>
+            <Slider x:Name="SliderB" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Minimum="0" Maximum="255" SmallChange="1" IsSnapToTickEnabled="True" TickFrequency="1"/>
+            <Label Content="{Binding ElementName=SliderR, Path=Value}" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Label Content="{Binding ElementName=SliderG, Path=Value}" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Label Content="{Binding ElementName=SliderB, Path=Value}" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </Grid>
+        <materialDesign:ColorPicker x:Name="ColorPicker" Grid.Row="2">
+            <materialDesign:ColorPicker.Color>
+                <MultiBinding>
+                    <MultiBinding.Converter>
+                        <local:RgbToColorConverter/>
+                    </MultiBinding.Converter>
+                    <Binding ElementName="SliderR" Path="Value"/>
+                    <Binding ElementName="SliderG" Path="Value"/>
+                    <Binding ElementName="SliderB" Path="Value"/>
+                </MultiBinding>
+            </materialDesign:ColorPicker.Color>
+        </materialDesign:ColorPicker>
+        <Border Grid.Row="0" BorderThickness="1" BorderBrush="#404040">
+            <Border.Background>
+                <SolidColorBrush Color="{Binding ElementName=ColorPicker, Path=Color}"/>
+            </Border.Background>
+        </Border>
     </Grid>
 </Window>

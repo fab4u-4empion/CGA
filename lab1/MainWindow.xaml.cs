@@ -11,8 +11,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static System.Single;
 using static System.Int32;
+using static System.Single;
 
 namespace lab1
 {
@@ -275,10 +275,8 @@ namespace lab1
 
             Draw();
 
-            ColorPickerWindow wnd = new()
-            {
-                Color = new(0.2f, 0.2f, 0.2f)
-            };
+            ColorPickerWindow wnd = new();
+            wnd.ColorPicker.Color = Colors.YellowGreen;
             wnd.ShowDialog();
         }
 
@@ -497,7 +495,7 @@ namespace lab1
                         LightingConfig.EmissionIntensity += 0.2f;
                     else
                         //LightingConfig.AmbientIntensity += 0.1f;
-                    Draw();
+                        Draw();
                     break;
 
                 //Arrows
@@ -525,7 +523,7 @@ namespace lab1
                     {
                         RTX.RayCount += 1;
                         Draw();
-                    } 
+                    }
                     else if (!e.IsRepeat)
                     {
                         LightingConfig.ChangeLamp(1);

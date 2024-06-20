@@ -6,15 +6,16 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
+        Title="Bloom Settings"
+        Height="600" Width="600"
+        ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
-        Title="Bloom settings" Height="600" Width="600"
-        Loaded="Window_Loaded"
-        ResizeMode="NoResize">
+        Loaded="Window_Loaded">
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
