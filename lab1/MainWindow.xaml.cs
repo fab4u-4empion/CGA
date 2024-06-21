@@ -32,6 +32,8 @@ namespace lab1
 
         WindowState LastState;
 
+        bool UIVisible = true;
+
         public MainWindow()
         {
             Renderer = new();
@@ -230,23 +232,35 @@ namespace lab1
 
         private void UpdateInfo()
         {
-            Reso.Content = $"{Renderer.Bitmap.PixelWidth}×{Renderer.Bitmap.PixelHeight}";
+            ResolutionInfo.Content = $"{Renderer.Bitmap.PixelWidth}×{Renderer.Bitmap.PixelHeight}";
 
-            Ray_Count.Content = $"Ray count: {RTX.RayCount}";
-            Light_size.Content = $"Light size: {RTX.LightSize}";
+            SkyboxInfo.Content = $"Skybox: {Renderer.UseSkyBox}";
+            BloomInfo.Content = $"Blom: {Renderer.UseBloom}";
+            ShadowsInfo.Content = $"Shadows: {LightingConfig.UseShadow}";
+            LightsInfo.Content = $"Lights visibility: {LightingConfig.DrawLights}";
+            BackfaceInfo.Content = $"Backface culling: {Renderer.BackfaceCulling}";
 
-            ToneMode.Content = $"Tone mapping: {ToneMapping.Mode}";
-            if (ToneMapping.Mode == ToneMappingMode.AgX)
-                ToneMode.Content += $" {ToneMapping.LookMode}";
+            ShaderInfo.Content = $"Shader: {Renderer.CurrentShader}";
+            NormalsInfo.Content = $"Normals: {(Renderer.UseTangentNormals ? "Tangent" : "Model")}";
 
-            MIPMapping.Content = $"MIP mapping: {Material.UsingMIPMapping}";
+            FilteringInfo.Content = "Texture filtering: ";
             if (Material.UsingMIPMapping)
-                MIPMapping.Content += $" ×{Material.MaxAnisotropy}";
+            {
+                if (Material.MaxAnisotropy == 1)
+                    FilteringInfo.Content += "Trilinear";
+                else
+                    FilteringInfo.Content += $"{Material.MaxAnisotropy}× Anysotropy";
+            }
+            else
+                FilteringInfo.Content += "Bilinear";
 
-            CurrLamp.Content = $"Current lamp: {(LightingConfig.CurrentLamp > -1 ? LightingConfig.Lights[LightingConfig.CurrentLamp].Name : "*")}";
+            TonemapInfo.Content = $"Tonemapping: {ToneMapping.Mode}";
+            if (ToneMapping.Mode == ToneMappingMode.AgX)
+                TonemapInfo.Content += $" {ToneMapping.LookMode}";
 
-            Contrl.Content = $"Camera control mode: {Renderer.Camera.Mode}";
-            Shader.Content = $"Shader: {Renderer.CurrentShader}";
+            CurrentLampInfo.Content = $"Current lamp: {(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
+            CameraInfo.Content = $"Camera mode: {Renderer.Camera.Mode}";
+            RaysInfo.Content = $"Ray count: {RTX.RayCount}";
         }
 
         private void Draw()
@@ -259,7 +273,7 @@ namespace lab1
 
             Timer.Stop();
 
-            Time.Content = (double.Round(Timer.ElapsedMilliseconds) + " ms");
+            RenderTimeInfo.Content = (double.Round(Timer.ElapsedMilliseconds) + " ms");
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -605,7 +619,10 @@ namespace lab1
 
                 case Key.Space:
                     if (!e.IsRepeat)
+                    {
                         Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
+                        UpdateInfo();
+                    }
                     break;
 
                 //Other
@@ -635,19 +652,11 @@ namespace lab1
                         {
                             MainModel = new();
 
-                            Timer.Restart();
                             LoadModel(dlg.FileName, MainModel);
                             MainModel.CalculateTangents();
-                            Timer.Stop();
-                            Model_time.Content = $"Model loaded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-
-                            Timer.Restart();
 
                             if (MainModel.OpaqueFacesIndices.Count > 0)
                                 BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
-
-                            BVH_time.Content = $"BVH builded in {double.Round(Timer.ElapsedMilliseconds)} ms";
-                            Timer.Stop();
 
                             Renderer.Camera.Target = MainModel.GetCenter();
                             Renderer.Camera.Reset();
@@ -685,6 +694,14 @@ namespace lab1
                         else
                             Material.UsingMIPMapping = !Material.UsingMIPMapping;
                         Draw();
+                    }
+                    break;
+
+                case Key.I:
+                    if (!e.IsRepeat)
+                    {
+                        UI.Visibility = UIVisible ? Visibility.Collapsed : Visibility.Visible;
+                        UIVisible = !UIVisible;
                     }
                     break;
             }
