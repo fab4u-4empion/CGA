@@ -44,7 +44,7 @@ namespace lab1
 
         public static bool BackfaceCulling { get; set; } = true;
 
-        public static float Exposition { get; set; } = 1f;
+        public static float Exposure { get; set; } = 1f;
 
         public Buffer<Vector3> BufferHDR = new(0, 0);
         public Buffer<float> AlphaBuffer = new(0, 0);
@@ -446,7 +446,7 @@ namespace lab1
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
                         }
 
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]) * Exposition));
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]) * Exposure));
                     }
                 });
             }
@@ -463,7 +463,7 @@ namespace lab1
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
                         }
 
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])) * Exposition));
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])) * Exposure));
                     }
                 });
             }

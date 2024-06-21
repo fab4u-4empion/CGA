@@ -480,8 +480,8 @@ namespace lab1
                     }
                     else
                     {
-                        Renderer.Exposition -= 0.1f;
-                        Renderer.Exposition = Max(Renderer.Exposition, 0);
+                        Renderer.Exposure -= 0.1f;
+                        Renderer.Exposure = Max(Renderer.Exposure, 0);
                     }
                     Draw();
                     break;
@@ -490,7 +490,7 @@ namespace lab1
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                         LightingConfig.EmissionIntensity += 0.2f;
                     else
-                        Renderer.Exposition += 0.1f;
+                        Renderer.Exposure += 0.1f;
                     Draw();
                     break;
 
