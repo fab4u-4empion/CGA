@@ -26,16 +26,31 @@
         </Grid.RowDefinitions>
         <Label Content="Environment Preview" HorizontalAlignment="Center"/>
         <Border Grid.Row="2" Background="#404040">
-            <Image x:Name="EnvironmentPreview" Grid.Row="2" RenderOptions.BitmapScalingMode="Fant" Width="800" Height="400"/>
+            <Image x:Name="EnvironmentPreview" Grid.Row="2" RenderOptions.BitmapScalingMode="Fant" Width="400" Height="200"/>
         </Border>
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Button HorizontalAlignment="Center" Width="200" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
-            <Button Grid.Column="2" HorizontalAlignment="Center" Width="200" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0" HorizontalAlignment="Center" Width="150" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
+                <Button Grid.Row="2" HorizontalAlignment="Center" Width="150" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
+            </Grid>
+            <Grid Grid.Column="2" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Label Content="Ambient color" HorizontalAlignment="Center"/>
+                <Button x:Name="AmbientColorBtn" Grid.Row="1" VerticalAlignment="Top" BorderThickness="0" Click="AmbientColorBtn_Click"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

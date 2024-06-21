@@ -28,6 +28,7 @@ namespace lab1
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            LampColorBtn.Background = new SolidColorBrush(Colors.Black);
             UpdateListBox();
         }
 
