@@ -3,9 +3,12 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using static lab1.LightingConfig;
+using static lab1.Utils;
 
 namespace lab1
 {
@@ -35,19 +38,19 @@ namespace lab1
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 LampName.Text = lamp.Name;
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
-                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InvariantCulture), lamp.Color.Y.ToString(CultureInfo.InvariantCulture), lamp.Color.Z.ToString(CultureInfo.InvariantCulture));
                 (LampDir_T.Text, LampDir_Ph.Text) = (lamp.Theta.ToString(CultureInfo.InvariantCulture), lamp.Phi.ToString(CultureInfo.InvariantCulture));
                 LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
                 LampType.SelectedIndex = (int)lamp.Type;
+                LampColorBtn.Background = new SolidColorBrush(Vector3ToColor(ToneMapping.LinearToSrgb(lamp.Color)));
             }
             else
             {
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = ("", "", "");
                 (LampDir_T.Text, LampDir_Ph.Text) = ("", "");
-                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = ("", "", "");
                 LampInt.Text = "";
                 LampName.Text = "";
                 LampType.SelectedIndex = -1;
+                LampColorBtn.Background = new SolidColorBrush(Colors.Black);
             }
         }
 
@@ -78,16 +81,12 @@ namespace lab1
             {
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 lamp.Name = LampName.Text;
-                lamp.Color = new(
-                    float.Parse(LampCol_R.Text, CultureInfo.InvariantCulture),
-                    float.Parse(LampCol_G.Text, CultureInfo.InvariantCulture),
-                    float.Parse(LampCol_B.Text, CultureInfo.InvariantCulture)
-                );
                 lamp.Position = new(
                     float.Parse(LampPos_X.Text, CultureInfo.InvariantCulture),
                     float.Parse(LampPos_Y.Text, CultureInfo.InvariantCulture),
                     float.Parse(LampPos_Z.Text, CultureInfo.InvariantCulture)
                 );
+                lamp.Color = ToneMapping.SrgbToLinear(ColorToVector3(((SolidColorBrush)LampColorBtn.Background).Color));
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
                 lamp.Theta = float.Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
                 lamp.Phi = float.Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
@@ -185,6 +184,14 @@ namespace lab1
 
                 UpdateListBox();
             }
+        }
+
+        private void LampColorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ColorPickerWindow colorPicker = new();
+            colorPicker.ColorPicker.Color = ((SolidColorBrush)LampColorBtn.Background).Color;
+            colorPicker.ShowDialog();
+            LampColorBtn.Background = new SolidColorBrush(colorPicker.ColorPicker.Color);
         }
     }
 }

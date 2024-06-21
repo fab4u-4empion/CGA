@@ -274,10 +274,6 @@ namespace lab1
             LightingConfig.BRDFLLUT.Open("BRDFIntegrationMap.pfm");
 
             Draw();
-
-            ColorPickerWindow wnd = new();
-            wnd.ColorPicker.Color = Colors.YellowGreen;
-            wnd.ShowDialog();
         }
 
         private void Window_MouseMove(object sender, MouseEventArgs e)
