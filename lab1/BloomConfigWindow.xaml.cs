@@ -31,11 +31,15 @@ namespace lab1
             ImgPreview.Source = preview.Source;
             ImgKernel.Source = KernelImg?.Source;
             UpdateListBox();
+            KernelListBox.SelectedIndex = 0;
         }
 
         private void UpdateListBox()
         {
+            int selectedIndex = KernelListBox.SelectedIndex;
             KernelListBox.ItemsSource = Kernels.Select(x => x.Name);
+            KernelListBox.SelectedIndex = int.Max(0, int.Min(selectedIndex, KernelListBox.Items.Count - 1));
+
             Buffer<Vector3> bmpBuf = new(bmp.PixelWidth, bmp.PixelHeight);
 
             for (int x = 0; x < bmp.PixelWidth; x++)
@@ -59,6 +63,7 @@ namespace lab1
             Kernels.Add(kernel);
             NewKernelNumber++;
             UpdateListBox();
+            KernelListBox.SelectedIndex = KernelListBox.Items.Count - 1;
         }
 
         private void KernelListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

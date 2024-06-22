@@ -15,42 +15,34 @@
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
-            <RowDefinition/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="10"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Label Content="Environment Preview" HorizontalAlignment="Center"/>
+        <Label Content="Environment preview" Foreground="LightGray" HorizontalAlignment="Center"/>
         <Border Grid.Row="2" Background="#404040">
-            <Image x:Name="EnvironmentPreview" Grid.Row="2" RenderOptions.BitmapScalingMode="Fant" Width="400" Height="200"/>
+            <Image x:Name="EnvironmentPreview" RenderOptions.BitmapScalingMode="Fant" Width="600" Height="300"/>
         </Border>
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="150"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Button Grid.Row="0" HorizontalAlignment="Center" Width="150" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
-                <Button Grid.Row="2" HorizontalAlignment="Center" Width="150" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
-            </Grid>
-            <Grid Grid.Column="2" VerticalAlignment="Center">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-                <Label Content="Ambient color" HorizontalAlignment="Center"/>
-                <Button x:Name="AmbientColorBtn" Grid.Row="1" VerticalAlignment="Top" BorderThickness="0" Click="AmbientColorBtn_Click"/>
-            </Grid>
+            <Button Grid.Column="0" Content="Open" Background="#198754" BorderBrush="#198754" Click="Button_Click"/>
+            <Button Grid.Column="2" Content="Close" Background="#dc3545" BorderBrush="#dc3545" Click="Button_Click_1"/>
+            <Label Grid.Column="4" Content="Ambient color:" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            <local:ColorButton x:Name="AmbientColorBtn" Grid.Column="6"/>
         </Grid>
     </Grid>
 </Window>

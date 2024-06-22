@@ -1,9 +1,8 @@
 ﻿using Microsoft.Win32;
 using System.IO;
 using System.Windows;
-using System.Windows.Media;
-using static lab1.Utils;
 using static lab1.LightingConfig;
+using static lab1.Utils;
 
 namespace lab1
 {
@@ -61,7 +60,7 @@ namespace lab1
                 EnvironmentPreview.Source = IBLSpecularMap[0].ToLDR().Source;
             }
 
-            AmbientColorBtn.Background = new SolidColorBrush(Vector3ToColor(ToneMapping.LinearToSrgb(AmbientColor)));
+            AmbientColorBtn.Color = Vector3ToColor(ToneMapping.LinearToSrgb(AmbientColor));
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -71,13 +70,9 @@ namespace lab1
             IBLSpecularMap.Clear();
         }
 
-        private void AmbientColorBtn_Click(object sender, RoutedEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            ColorPickerWindow colorPicker = new();
-            colorPicker.ColorPicker.Color = ((SolidColorBrush)AmbientColorBtn.Background).Color;
-            colorPicker.ShowDialog();
-            AmbientColorBtn.Background = new SolidColorBrush(colorPicker.ColorPicker.Color);
-            AmbientColor = ToneMapping.SrgbToLinear(ColorToVector3(colorPicker.ColorPicker.Color));
+            AmbientColor = ToneMapping.SrgbToLinear(ColorToVector3(AmbientColorBtn.Color));
         }
     }
 }
