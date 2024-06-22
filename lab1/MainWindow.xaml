@@ -34,14 +34,29 @@
                     <RowDefinition/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                <Label x:Name="ResolutionInfo" Content="reso" FontSize="18" HorizontalAlignment="Left"/>
+                <Label x:Name="ResolutionInfo" Content="reso" HorizontalAlignment="Left"/>
                 <Grid Grid.Row="2">
                     <StackPanel>
-                        <Label x:Name="SkyboxInfo" Content="Skybox"/>
-                        <Label x:Name="BloomInfo" Content="Bloom"/>
-                        <Label x:Name="ShadowsInfo" Content="Shadows"/>
-                        <Label x:Name="LightsInfo" Content="Lights visibility"/>
-                        <Label x:Name="BackfaceInfo" Content="Backface culling"/>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Skybox: " Foreground="Gray"/>
+                            <Run x:Name="SkyboxInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Bloom: " Foreground="Gray"/>
+                            <Run x:Name="BloomInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Shadows: " Foreground="Gray"/>
+                            <Run x:Name="ShadowsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Lights visibility: " Foreground="Gray"/>
+                            <Run x:Name="LightsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Backface culling: " Foreground="Gray"/>
+                            <Run x:Name="BackfaceInfo" Text="text"/>
+                        </TextBlock>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -51,16 +66,37 @@
                     <RowDefinition/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                <Label x:Name="RenderTimeInfo" Content="time" FontSize="18" HorizontalAlignment="Right"/>
+                <Label x:Name="RenderTimeInfo" Content="time" HorizontalAlignment="Right"/>
                 <Grid Grid.Row="2">
                     <StackPanel>
-                        <Label x:Name="ShaderInfo" Content="Shader" HorizontalAlignment="Right"/>
-                        <Label x:Name="NormalsInfo" Content="Normals" HorizontalAlignment="Right"/>
-                        <Label x:Name="FilteringInfo" Content="Textute filtering" HorizontalAlignment="Right"/>
-                        <Label x:Name="TonemapInfo" Content="Tonemapping" HorizontalAlignment="Right"/>
-                        <Label x:Name="CurrentLampInfo" Content="Current Lamp" HorizontalAlignment="Right"/>
-                        <Label x:Name="CameraInfo" Content="Camera mode" HorizontalAlignment="Right"/>
-                        <Label x:Name="RaysInfo" Content="Ray count" HorizontalAlignment="Right"/>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Shader: " Foreground="Gray"/>
+                            <Run x:Name="ShaderInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Normals: " Foreground="Gray"/>
+                            <Run x:Name="NormalsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Textute filtering: " Foreground="Gray"/>
+                            <Run x:Name="FilteringInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Tonemapping: " Foreground="Gray"/>
+                            <Run x:Name="TonemapInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Current Lamp: " Foreground="Gray"/>
+                            <Run x:Name="CurrentLampInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Camera mode: " Foreground="Gray"/>
+                            <Run x:Name="CameraInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Ray count: " Foreground="Gray"/>
+                            <Run x:Name="RaysInfo" Text="text"/>
+                        </TextBlock>
                     </StackPanel>
                 </Grid>
             </Grid>

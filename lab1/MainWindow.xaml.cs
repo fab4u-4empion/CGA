@@ -234,33 +234,32 @@ namespace lab1
         {
             ResolutionInfo.Content = $"{Renderer.Bitmap.PixelWidth}×{Renderer.Bitmap.PixelHeight}";
 
-            SkyboxInfo.Content = $"Skybox: {Renderer.UseSkyBox}";
-            BloomInfo.Content = $"Blom: {Renderer.UseBloom}";
-            ShadowsInfo.Content = $"Shadows: {LightingConfig.UseShadow}";
-            LightsInfo.Content = $"Lights visibility: {LightingConfig.DrawLights}";
-            BackfaceInfo.Content = $"Backface culling: {Renderer.BackfaceCulling}";
+            SkyboxInfo.Text = $"{(Renderer.UseSkyBox ? "On" : "Off")}";
+            BloomInfo.Text = $"{(Renderer.UseBloom ? "On" : "Off")}";
+            ShadowsInfo.Text = $"{(LightingConfig.UseShadow ? "On" : "Off")}";
+            LightsInfo.Text = $"{(LightingConfig.DrawLights ? "On" : "Off")}";
+            BackfaceInfo.Text = $"{(Renderer.BackfaceCulling ? "On" : "Off")}";
 
-            ShaderInfo.Content = $"Shader: {Renderer.CurrentShader}";
-            NormalsInfo.Content = $"Normals: {(Renderer.UseTangentNormals ? "Tangent" : "Model")}";
+            ShaderInfo.Text = $"{Renderer.CurrentShader}";
+            NormalsInfo.Text = $"{(Renderer.UseTangentNormals ? "Tangent" : "Model")}";
 
-            FilteringInfo.Content = "Texture filtering: ";
             if (Material.UsingMIPMapping)
             {
                 if (Material.MaxAnisotropy == 1)
-                    FilteringInfo.Content += "Trilinear";
+                    FilteringInfo.Text = "Trilinear";
                 else
-                    FilteringInfo.Content += $"{Material.MaxAnisotropy}× Anysotropy";
+                    FilteringInfo.Text = $"{Material.MaxAnisotropy}× Anisotropic";
             }
             else
-                FilteringInfo.Content += "Bilinear";
+                FilteringInfo.Text = "Bilinear";
 
-            TonemapInfo.Content = $"Tonemapping: {ToneMapping.Mode}";
+            TonemapInfo.Text = $"{ToneMapping.Mode}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
-                TonemapInfo.Content += $" {ToneMapping.LookMode}";
+                TonemapInfo.Text += $" {ToneMapping.LookMode}";
 
-            CurrentLampInfo.Content = $"Current lamp: {(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
-            CameraInfo.Content = $"Camera mode: {Renderer.Camera.Mode}";
-            RaysInfo.Content = $"Ray count: {RTX.RayCount}";
+            CurrentLampInfo.Text = $"{(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
+            CameraInfo.Text = $"{Renderer.Camera.Mode}";
+            RaysInfo.Text = $"{RTX.RayCount}";
         }
 
         private void Draw()
