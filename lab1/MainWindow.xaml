@@ -9,10 +9,10 @@
         Style="{StaticResource MaterialDesignWindow}"
         Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
-        TextElement.FontSize="14"
+        TextElement.FontSize="12"
         FontFamily="{materialDesign:MaterialDesignFont}"
         Title="3D Visualizer"
-        Height="700" Width="800"
+        Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         MouseMove="Window_MouseMove"
@@ -23,83 +23,82 @@
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
         <Grid x:Name="UI" Margin="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition/>
-                    <RowDefinition Height="auto"/>
-                </Grid.RowDefinitions>
-                <Label x:Name="ResolutionInfo" Content="reso" HorizontalAlignment="Left"/>
-                <Grid Grid.Row="2">
+            <Border Padding="8,5" CornerRadius="4" VerticalAlignment="Top" HorizontalAlignment="Left" Background="#A0000000">
+                <TextBlock x:Name="ResolutionInfo" Text="reso" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+            </Border>
+            <Border Padding="8,5" CornerRadius="4" VerticalAlignment="Top" HorizontalAlignment="Right" Background="#A0000000">
+                <TextBlock x:Name="RenderTimeInfo" Text="time" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+            </Border>
+            <Border Padding="8,5" CornerRadius="4" VerticalAlignment="Bottom" HorizontalAlignment="Left" Background="#A0000000">
+                <StackPanel>
+                    <TextBlock Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Skybox: " Foreground="Gray"/>
+                        <Run x:Name="SkyboxInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Bloom: " Foreground="Gray"/>
+                        <Run x:Name="BloomInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Shadows: " Foreground="Gray"/>
+                        <Run x:Name="ShadowsInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Visible lamps: " Foreground="Gray"/>
+                        <Run x:Name="LampsInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Backface culling: " Foreground="Gray"/>
+                        <Run x:Name="BackfaceInfo" Text="text"/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                <Border Padding="8,5" HorizontalAlignment="Right" CornerRadius="4" Background="#A0000000">
                     <StackPanel>
-                        <TextBlock Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Skybox: " Foreground="Gray"/>
-                            <Run x:Name="SkyboxInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Bloom: " Foreground="Gray"/>
-                            <Run x:Name="BloomInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Shadows: " Foreground="Gray"/>
-                            <Run x:Name="ShadowsInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Lights visibility: " Foreground="Gray"/>
-                            <Run x:Name="LightsInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Backface culling: " Foreground="Gray"/>
-                            <Run x:Name="BackfaceInfo" Text="text"/>
-                        </TextBlock>
-                    </StackPanel>
-                </Grid>
-            </Grid>
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition/>
-                    <RowDefinition Height="auto"/>
-                </Grid.RowDefinitions>
-                <Label x:Name="RenderTimeInfo" Content="time" HorizontalAlignment="Right"/>
-                <Grid Grid.Row="2">
-                    <StackPanel>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Shader: " Foreground="Gray"/>
-                            <Run x:Name="ShaderInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Normals: " Foreground="Gray"/>
-                            <Run x:Name="NormalsInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Textute filtering: " Foreground="Gray"/>
-                            <Run x:Name="FilteringInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Tonemapping: " Foreground="Gray"/>
-                            <Run x:Name="TonemapInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Current Lamp: " Foreground="Gray"/>
-                            <Run x:Name="CurrentLampInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
-                            <Run Text="Camera mode: " Foreground="Gray"/>
-                            <Run x:Name="CameraInfo" Text="text"/>
-                        </TextBlock>
-                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                        <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
                             <Run Text="Ray count: " Foreground="Gray"/>
                             <Run x:Name="RaysInfo" Text="text"/>
                         </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Current lamp: " Foreground="Gray"/>
+                            <Run x:Name="CurrentLampInfo" Text="text"/>
+                        </TextBlock>
                     </StackPanel>
-                </Grid>
-            </Grid>
+                </Border>
+                <Border Margin="0,10,0,0" Padding="8,5" HorizontalAlignment="Right" CornerRadius="4" Background="#A0000000">
+                    <StackPanel>
+                        <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Camera mode: " Foreground="Gray"/>
+                            <Run x:Name="CameraInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Field of view: " Foreground="Gray"/>
+                            <Run x:Name="FovInfo" Text="text"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <Border Margin="0,10,0,0" Padding="8,5" HorizontalAlignment="Right" CornerRadius="4" Background="#A0000000">
+                    <StackPanel>
+                        <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Shader: " Foreground="Gray"/>
+                            <Run x:Name="ShaderInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Normal space: " Foreground="Gray"/>
+                            <Run x:Name="NormalsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                             <Run Text="Texture filtering: " Foreground="Gray"/>
+                             <Run x:Name="FilteringInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Tonemapping: " Foreground="Gray"/>
+                            <Run x:Name="TonemapInfo" Text="text"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

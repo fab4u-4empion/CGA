@@ -43,13 +43,13 @@ namespace lab1
 
     public class LightingConfig
     {
-        public static Vector3 AmbientColor { get; set; } = new(0.08f, 0.08f, 0.08f);
+        public static Vector3 AmbientColor { get; set; } = ToneMapping.SrgbToLinear(new(0.3f, 0.3f, 0.3f));
 
         public static float EmissionIntensity { get; set; } = 1;
 
         public static int CurrentLamp { get; set; } = 0;
 
-        public static bool DrawLights { get; set; } = true;
+        public static bool DrawLamps { get; set; } = true;
 
         public static bool UseShadow { get; set; } = false;
 

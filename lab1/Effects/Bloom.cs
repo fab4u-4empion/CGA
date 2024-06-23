@@ -11,7 +11,7 @@ namespace lab1.Effects
 {
     public class Bloom
     {
-        public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
+        public static Buffer<Vector3> GetBloomBuffer(Buffer<Vector3> src, int width, int height, float scaling)
         {
             if (BloomConfig.Kernels.Count == 0 && BloomConfig.KernelImg == null)
                 return new(width, height);
@@ -29,7 +29,7 @@ namespace lab1.Effects
 
             if (BloomConfig.KernelImg == null)
             {
-                return GetGaussianClassicBlur(tmp, width, height, smoothing);
+                return GetGaussianClassicBlur(tmp, width, height, scaling);
             }
 
             return GetImageBasedBlur(tmp, width, height);
@@ -57,7 +57,7 @@ namespace lab1.Effects
             return (rW + 1, rH + 1);
         }
 
-        public static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float smoothing)
+        public static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float scaling)
         {
             Buffer<Vector3> tmp1 = new(width, height);
             Buffer<Vector3> tmp2 = new(width, height);
@@ -65,7 +65,7 @@ namespace lab1.Effects
 
             foreach (Kernel kernel in BloomConfig.Kernels)
             {
-                int r = (int)(kernel.Radius * smoothing);
+                int r = (int)(kernel.Radius * scaling);
 
                 for (int b = 0; b < 4; b++)
                 {

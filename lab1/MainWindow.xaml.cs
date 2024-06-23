@@ -32,8 +32,6 @@ namespace lab1
 
         WindowState LastState;
 
-        bool UIVisible = true;
-
         public MainWindow()
         {
             Renderer = new();
@@ -232,16 +230,23 @@ namespace lab1
 
         private void UpdateInfo()
         {
-            ResolutionInfo.Content = $"{Renderer.Bitmap.PixelWidth}×{Renderer.Bitmap.PixelHeight}";
+            ResolutionInfo.Text = $"{Renderer.Bitmap.PixelWidth} × {Renderer.Bitmap.PixelHeight}";
 
             SkyboxInfo.Text = $"{(Renderer.UseSkyBox ? "On" : "Off")}";
             BloomInfo.Text = $"{(Renderer.UseBloom ? "On" : "Off")}";
             ShadowsInfo.Text = $"{(LightingConfig.UseShadow ? "On" : "Off")}";
-            LightsInfo.Text = $"{(LightingConfig.DrawLights ? "On" : "Off")}";
+            LampsInfo.Text = $"{(LightingConfig.DrawLamps ? "On" : "Off")}";
             BackfaceInfo.Text = $"{(Renderer.BackfaceCulling ? "On" : "Off")}";
 
+            RaysInfo.Text = $"{RTX.RayCount}";
+            CurrentLampInfo.Text = $"{(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
+
+            CameraInfo.Text = $"{Renderer.Camera.Mode}";
+            FovInfo.Text = $"{Round(RadiansToDegrees(Renderer.Camera.FoV), MidpointRounding.AwayFromZero)}°";
+
             ShaderInfo.Text = $"{Renderer.CurrentShader}";
-            NormalsInfo.Text = $"{(Renderer.UseTangentNormals ? "Tangent" : "Model")}";
+            NormalsInfo.Text = $"{(Renderer.UseTangentNormals ? "Tangent" : "Object")}";
+            TonemapInfo.Text = $"{ToneMapping.Mode}";
 
             if (Material.UsingMIPMapping)
             {
@@ -253,13 +258,8 @@ namespace lab1
             else
                 FilteringInfo.Text = "Bilinear";
 
-            TonemapInfo.Text = $"{ToneMapping.Mode}";
             if (ToneMapping.Mode == ToneMappingMode.AgX)
                 TonemapInfo.Text += $" {ToneMapping.LookMode}";
-
-            CurrentLampInfo.Text = $"{(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
-            CameraInfo.Text = $"{Renderer.Camera.Mode}";
-            RaysInfo.Text = $"{RTX.RayCount}";
         }
 
         private void Draw()
@@ -272,7 +272,7 @@ namespace lab1
 
             Timer.Stop();
 
-            RenderTimeInfo.Content = (double.Round(Timer.ElapsedMilliseconds) + " ms");
+            RenderTimeInfo.Text = (double.Round(Timer.ElapsedMilliseconds) + " ms");
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -309,13 +309,14 @@ namespace lab1
 
         private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (e.Delta > 0)
+            if (Keyboard.Modifiers == ModifierKeys.Control)
             {
-                Renderer.Camera.UpdatePosition(-0.3f, 0, 0);
+                Renderer.Camera.FoV -= Pi / 60 * Sign(e.Delta);
+                Renderer.Camera.FoV = Clamp(Renderer.Camera.FoV, Pi / 6, Pi / 2);
             }
             else
             {
-                Renderer.Camera.UpdatePosition(0.3f, 0, 0);
+                Renderer.Camera.UpdatePosition(-0.3f * Sign(e.Delta), 0, 0);
             }
             Draw();
         }
@@ -399,7 +400,7 @@ namespace lab1
                 case Key.F8:
                     if (!e.IsRepeat)
                     {
-                        LightingConfig.DrawLights = !LightingConfig.DrawLights;
+                        LightingConfig.DrawLamps = !LightingConfig.DrawLamps;
                         Draw();
                     }
                     break;
@@ -447,7 +448,7 @@ namespace lab1
                 case Key.D1:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Smoothing = 0.25f;
+                        Renderer.Scaling = 0.25f;
                         ResizeHandler();
                     }
                     break;
@@ -455,7 +456,7 @@ namespace lab1
                 case Key.D2:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Smoothing = 0.5f;
+                        Renderer.Scaling = 0.5f;
                         ResizeHandler();
                     }
                     break;
@@ -463,7 +464,7 @@ namespace lab1
                 case Key.D3:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Smoothing = 1;
+                        Renderer.Scaling = 1;
                         ResizeHandler();
                     }
                     break;
@@ -471,7 +472,7 @@ namespace lab1
                 case Key.D4:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Smoothing = 2;
+                        Renderer.Scaling = 2;
                         ResizeHandler();
                     }
                     break;
@@ -479,7 +480,7 @@ namespace lab1
                 case Key.D5:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Smoothing = 4;
+                        Renderer.Scaling = 4;
                         ResizeHandler();
                     }
                     break;
@@ -608,10 +609,17 @@ namespace lab1
                     break;
 
                 case Key.Back:
-                    if (MainModel != null && !e.IsRepeat)
+                    if (!e.IsRepeat)
                     {
-                        Renderer.Camera.Target = MainModel.GetCenter();
-                        Renderer.Camera.Reset();
+                        if (Keyboard.Modifiers == ModifierKeys.Control)
+                        {
+                            HDRTexture.Angle = 0;
+                        }
+                        else if (MainModel != null)
+                        {
+                            Renderer.Camera.Target = MainModel.GetCenter();
+                            Renderer.Camera.Reset();
+                        }
                         Draw();
                     }
                     break;
@@ -699,8 +707,8 @@ namespace lab1
                 case Key.I:
                     if (!e.IsRepeat)
                     {
-                        UI.Visibility = UIVisible ? Visibility.Collapsed : Visibility.Visible;
-                        UIVisible = !UIVisible;
+                        UI.Visibility = UI.Visibility == Visibility.Visible ?
+                            Visibility.Collapsed : Visibility.Visible;
                     }
                     break;
             }

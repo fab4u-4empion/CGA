@@ -35,7 +35,7 @@ namespace lab1
     {
         public static bool UseTangentNormals { get; set; } = true;
         public static bool UseBloom { get; set; } = false;
-        public static float Smoothing { get; set; } = 1f;
+        public static float Scaling { get; set; } = 1f;
 
         public static Model? Sphere { get; set; }
 
@@ -292,7 +292,7 @@ namespace lab1
                     break;
 
                 case ShaderTypes.Toon:
-                    int d = (int)Ceiling(2 * Smoothing);
+                    int d = (int)Ceiling(2 * Scaling);
                     color = Toon.GetPixelColor(baseColor, n, pw, emission, d, ViewBuffer, CountBuffer, x, y);
                     opacity = 1;
                     dissolve = 1;
@@ -434,7 +434,7 @@ namespace lab1
         {
             if (UseBloom)
             {
-                Buffer<Vector3> bloomBuffer = Bloom.GetBoolmBuffer(BufferHDR, width, height, Smoothing);
+                Buffer<Vector3> bloomBuffer = Bloom.GetBloomBuffer(BufferHDR, width, height, Scaling);
                 Parallel.For(0, width, (x) =>
                 {
                     for (int y = 0; y < height; y++)
@@ -469,12 +469,12 @@ namespace lab1
             }
         }
 
-        private void DrawLights()
+        private void DrawLamps()
         {
             if (Sphere == null)
                 return;
 
-            if (LightingConfig.DrawLights)
+            if (LightingConfig.DrawLamps)
             {
                 for (int i = 0; i < Lights.Count; i++)
                 {
@@ -513,7 +513,7 @@ namespace lab1
             if (model.OpaqueFacesIndices.Count > 0)
                 Rasterize(model.OpaqueFacesIndices, model, DrawPixelIntoViewBuffer, BlendModes.Opaque);
 
-            DrawLights();
+            DrawLamps();
 
             if (model.TransparentFacesIndices.Count > 0)
             {
@@ -581,7 +581,7 @@ namespace lab1
             if (model != null)
                 DrawScene(model);
             else
-                DrawLights();
+                DrawLamps();
 
             (p0, dpdx, dpdy) = GetViewportToWorldParams(float.Pi / 4);
 
@@ -595,7 +595,7 @@ namespace lab1
 
         public void CreateBuffers(double width, double height, DPIScale scale)
         {
-            Bitmap = new((int)(width * Smoothing * scale.X), (int)(height * Smoothing * scale.Y));
+            Bitmap = new((int)(width * Scaling * scale.X), (int)(height * Scaling * scale.Y));
 
             this.width = Bitmap.PixelWidth;
             this.height = Bitmap.PixelHeight;
