@@ -1,6 +1,8 @@
 ﻿using Microsoft.Win32;
 using System.IO;
 using System.Windows;
+using static lab1.LightingConfig;
+using static lab1.Utils;
 
 namespace lab1
 {
@@ -23,7 +25,7 @@ namespace lab1
 
             if (ofd.ShowDialog() == true)
             {
-                LightingConfig.IBLSpecularMap.Clear();
+                IBLSpecularMap.Clear();
 
                 using (StreamReader reader = new(ofd.FileName))
                 {
@@ -33,8 +35,8 @@ namespace lab1
 
                         if (str!.StartsWith("irradiance"))
                         {
-                            LightingConfig.IBLDiffuseMap = new();
-                            LightingConfig.IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 10).Trim()));
+                            IBLDiffuseMap = new();
+                            IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 10).Trim()));
                         }
 
                         if (str.StartsWith("specular"))
@@ -42,28 +44,35 @@ namespace lab1
                             HDRTexture texture = new();
                             texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 8).Trim()));
 
-                            LightingConfig.IBLSpecularMap.Add(texture);
+                            IBLSpecularMap.Add(texture);
                         }
                     }
                 }
 
-                EnvironmentPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
+                EnvironmentPreview.Source = IBLSpecularMap[0].ToLDR().Source;
             }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            if (LightingConfig.IBLSpecularMap.Count > 0)
+            if (IBLSpecularMap.Count > 0)
             {
-                EnvironmentPreview.Source = LightingConfig.IBLSpecularMap[0].ToLDR().Source;
+                EnvironmentPreview.Source = IBLSpecularMap[0].ToLDR().Source;
             }
+
+            AmbientColorBtn.Color = Vector3ToColor(ToneMapping.LinearToSrgb(AmbientColor));
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            LightingConfig.IBLDiffuseMap = null;
+            IBLDiffuseMap = null;
             EnvironmentPreview.Source = null;
-            LightingConfig.IBLSpecularMap.Clear();
+            IBLSpecularMap.Clear();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            AmbientColor = ToneMapping.SrgbToLinear(ColorToVector3(AmbientColorBtn.Color));
         }
     }
 }

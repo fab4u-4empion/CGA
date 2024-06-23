@@ -11,8 +11,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static System.Single;
 using static System.Int32;
+using static System.Single;
 
 namespace lab1
 {
@@ -532,7 +532,7 @@ namespace lab1
                     {
                         RTX.RayCount += 1;
                         Draw();
-                    } 
+                    }
                     else if (!e.IsRepeat)
                     {
                         LightingConfig.ChangeLamp(1);

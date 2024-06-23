@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using static lab1.LightingConfig;
+using static lab1.Utils;
 
 namespace lab1
 {
@@ -20,12 +22,16 @@ namespace lab1
 
         private void UpdateListBox()
         {
+            int selectedIndex = LightsListBox.SelectedIndex;
             LightsListBox.ItemsSource = Lights.Select(x => x.Name);
+            LightsListBox.SelectedIndex = int.Max(0, int.Min(selectedIndex, LightsListBox.Items.Count - 1));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            LampColorBtn.Color = Colors.Black;
             UpdateListBox();
+            LightsListBox.SelectedIndex = 0;
         }
 
         private void LightsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -35,19 +41,19 @@ namespace lab1
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 LampName.Text = lamp.Name;
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
-                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = (lamp.Color.X.ToString(CultureInfo.InvariantCulture), lamp.Color.Y.ToString(CultureInfo.InvariantCulture), lamp.Color.Z.ToString(CultureInfo.InvariantCulture));
                 (LampDir_T.Text, LampDir_Ph.Text) = (lamp.Theta.ToString(CultureInfo.InvariantCulture), lamp.Phi.ToString(CultureInfo.InvariantCulture));
                 LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
                 LampType.SelectedIndex = (int)lamp.Type;
+                LampColorBtn.Color = Vector3ToColor(ToneMapping.LinearToSrgb(lamp.Color));
             }
             else
             {
                 (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = ("", "", "");
                 (LampDir_T.Text, LampDir_Ph.Text) = ("", "");
-                (LampCol_R.Text, LampCol_G.Text, LampCol_B.Text) = ("", "", "");
                 LampInt.Text = "";
                 LampName.Text = "";
                 LampType.SelectedIndex = -1;
+                LampColorBtn.Color = Colors.Black;
             }
         }
 
@@ -56,6 +62,7 @@ namespace lab1
             Lamp lamp = new() { Color = new(1, 1, 1), Intensity = 100, Position = new(0, 0, 0), Name = $"New lamp {NewLampNumber}" };
             Lights.Add(lamp);
             UpdateListBox();
+            LightsListBox.SelectedIndex = LightsListBox.Items.Count - 1;
             NewLampNumber++;
         }
 
@@ -78,16 +85,12 @@ namespace lab1
             {
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 lamp.Name = LampName.Text;
-                lamp.Color = new(
-                    float.Parse(LampCol_R.Text, CultureInfo.InvariantCulture),
-                    float.Parse(LampCol_G.Text, CultureInfo.InvariantCulture),
-                    float.Parse(LampCol_B.Text, CultureInfo.InvariantCulture)
-                );
                 lamp.Position = new(
                     float.Parse(LampPos_X.Text, CultureInfo.InvariantCulture),
                     float.Parse(LampPos_Y.Text, CultureInfo.InvariantCulture),
                     float.Parse(LampPos_Z.Text, CultureInfo.InvariantCulture)
                 );
+                lamp.Color = ToneMapping.SrgbToLinear(ColorToVector3(LampColorBtn.Color));
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
                 lamp.Theta = float.Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
                 lamp.Phi = float.Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
@@ -184,6 +187,7 @@ namespace lab1
                     Lights.Add(lamp);
 
                 UpdateListBox();
+                LightsListBox.SelectedIndex = 0;
             }
         }
     }

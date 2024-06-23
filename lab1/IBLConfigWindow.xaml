@@ -3,37 +3,46 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:lab1"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        xmlns:local="clr-namespace:lab1"
+        mc:Ignorable="d"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        mc:Ignorable="d"
-        Title="IBL Settings" SizeToContent="WidthAndHeight"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        Loaded="Window_Loaded">
+        Title="IBL Settings"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
-            <RowDefinition/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="10"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Label Content="Environment Preview" HorizontalAlignment="Center"/>
+        <Label Content="Environment preview" Foreground="LightGray" HorizontalAlignment="Center"/>
         <Border Grid.Row="2" Background="#404040">
-            <Image x:Name="EnvironmentPreview" Grid.Row="2" RenderOptions.BitmapScalingMode="Fant" Width="800" Height="400"/>
+            <Image x:Name="EnvironmentPreview" RenderOptions.BitmapScalingMode="Fant" Width="600" Height="300"/>
         </Border>
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="150"/>
             </Grid.ColumnDefinitions>
-            <Button HorizontalAlignment="Center" Width="200" Click="Button_Click" Content="Open" Background="#198754" BorderBrush="#13653f"/>
-            <Button Grid.Column="2" HorizontalAlignment="Center" Width="200" Click="Button_Click_1" Content="Close" Background="#dc3545" BorderBrush="#a52834"/>
+            <Button Grid.Column="0" Content="Open" Background="#198754" BorderBrush="#198754" Click="Button_Click"/>
+            <Button Grid.Column="2" Content="Close" Background="#dc3545" BorderBrush="#dc3545" Click="Button_Click_1"/>
+            <Label Grid.Column="4" Content="Ambient color:" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            <local:ColorButton x:Name="AmbientColorBtn" Grid.Column="6"/>
         </Grid>
     </Grid>
 </Window>

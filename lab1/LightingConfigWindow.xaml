@@ -6,78 +6,46 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:lab1"
         mc:Ignorable="d"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.FontWeight="Medium"
         TextElement.FontSize="14"
         FontFamily="{materialDesign:MaterialDesignFont}"
-        Title="Lighting settings" Height="450" Width="500"
-        WindowStartupLocation="CenterScreen"
+        Title="Lighting Settings"
+        SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded">
     <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="332"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="10"/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="200"/>
         </Grid.ColumnDefinitions>
-        <Grid>
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="auto"/>
-                </Grid.RowDefinitions>
-                <ListBox x:Name="LightsListBox" SelectedIndex="0" Background="#404040" SelectionChanged="LightsListBox_SelectionChanged"/>
-                <Button Grid.Row="2" Content="Add new lamp" BorderBrush="#FF4B1C9E" Click="Button_Click" BorderThickness="3"/>
-                <Button Grid.Row="4" Background="#198754" BorderBrush="#13653f" Content="Load config" Click="Button_Click_3" BorderThickness="3"/>
-            </Grid>
-        </Grid>
+        <ListBox x:Name="LightsListBox" Background="#404040" SelectionChanged="LightsListBox_SelectionChanged"/>
+        <Button Grid.Row="2" Content="Add new lamp" Click="Button_Click"/>
+        <Button Grid.Row="4" Content="Load config" Click="Button_Click_3"/>
         <StackPanel Grid.Column="2">
-            <Label Content="Name"/>
-            <TextBox x:Name="LampName"/>
-
-            <Grid Margin="0,10,0,0" x:Name="PositionGrid">
+            <Label Content="Name" Foreground="LightGray"/>
+            <TextBox x:Name="LampName" Margin="0,5,0,0"/>
+            <Label Margin="0,10,0,0" Content="Type" Foreground="LightGray"/>
+            <ComboBox x:Name="LampType" Margin="0,5,0,0" SelectionChanged="LampType_SelectionChanged">
+                <ComboBoxItem Content="Point"/>
+                <ComboBoxItem Content="Directional"/>
+            </ComboBox>
+            <Grid x:Name="PositionGrid" Margin="0,10,0,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                <Label Content="Position (X, Y, Z)" Grid.Row="0"/>
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="LampPos_X"/>
-                    <TextBox x:Name="LampPos_Y" Grid.Column="2"/>
-                    <TextBox x:Name="LampPos_Z" Grid.Column="4"/>
-                </Grid>
-            </Grid>
-
-            <Grid Margin="0,10,0,0" x:Name="DirectionGrid" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Content="Direction (θ, φ)" Grid.Row="0"/>
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="LampDir_T"/>
-                    <TextBox x:Name="LampDir_Ph" Grid.Column="2"/>
-                </Grid>
-            </Grid>
-
-            <Label Content="Color (RGB)" Margin="0,10,0,0"/>
-            <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
                     <ColumnDefinition Width="10"/>
@@ -85,22 +53,32 @@
                     <ColumnDefinition Width="10"/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="LampCol_R"/>
-                <TextBox x:Name="LampCol_G" Grid.Column="2"/>
-                <TextBox x:Name="LampCol_B" Grid.Column="4"/>
+                <Label Grid.ColumnSpan="5" Content="Position (X, Y, Z)" Foreground="LightGray"/>
+                <TextBox x:Name="LampPos_X" Grid.Row="2" Grid.Column="0"/>
+                <TextBox x:Name="LampPos_Y" Grid.Row="2" Grid.Column="2"/>
+                <TextBox x:Name="LampPos_Z" Grid.Row="2" Grid.Column="4"/>
             </Grid>
-
-            <Label Content="Intensity" Margin="0,10,0,0"/>
-            <TextBox x:Name="LampInt"/>
-
-            <Label Content="Type" Margin="0,10,0,0"/>
-            <ComboBox x:Name="LampType" SelectionChanged="LampType_SelectionChanged">
-                <ComboBoxItem Content="Point" />
-                <ComboBoxItem Content="Directional" Tag="Directional"/>
-            </ComboBox>
-
-            <Button Content="Save" Margin="0,10,0,0" BorderThickness="3" Background="#198754" BorderBrush="#13653f" Click="Button_Click_2"/>
-            <Button Content="Delete" Margin="0,10,0,0" BorderThickness="3" Background="#dc3545" BorderBrush="#a52834" Click="Button_Click_1"/>
+            <Grid x:Name="DirectionGrid" Margin="0,10,0,0" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Label Grid.ColumnSpan="3" Content="Direction (θ, φ)" Foreground="LightGray"/>
+                <TextBox x:Name="LampDir_T" Grid.Row="2" Grid.Column="0"/>
+                <TextBox x:Name="LampDir_Ph" Grid.Row="2" Grid.Column="2"/>
+            </Grid>
+            <Label Margin="0,10,0,0" Content="Color (RGB)" Foreground="LightGray"/>
+            <local:ColorButton x:Name="LampColorBtn" Margin="0,10,0,0"/>
+            <Label Margin="0,10,0,0" Content="Intensity" Foreground="LightGray"/>
+            <TextBox x:Name="LampInt" Margin="0,5,0,0"/>
         </StackPanel>
+        <Button Grid.Row="2" Grid.Column="2" Content="Save" Background="#198754" BorderBrush="#198754" Click="Button_Click_2"/>
+        <Button Grid.Row="4" Grid.Column="2" Content="Delete" Background="#dc3545" BorderBrush="#dc3545" Click="Button_Click_1"/>
     </Grid>
 </Window>

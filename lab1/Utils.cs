@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Windows.Media;
 using static System.Single;
 
 namespace lab1
@@ -21,6 +22,17 @@ namespace lab1
         {
             float t = Clamp((x - a) / (b - a), 0, 1);
             return t * t * (3 - 2 * t);
+        }
+
+        public static Color Vector3ToColor(Vector3 color)
+        {
+            color *= 255f;
+            return Color.FromRgb((byte)color.X, (byte)color.Y, (byte)color.Z);
+        }
+
+        public static Vector3 ColorToVector3(Color color)
+        {
+            return new Vector3(color.R, color.G, color.B) / 255f;
         }
     }
 }
