@@ -10,7 +10,7 @@ namespace lab1.Shadow
     {
         public static int RayCount { get; set; } = 1;
         public static float LightSize { get; set; } = 0f;
-        public static float Angle { get; set; } = 10f;
+        public static float Angle { get; set; } = 0.526f;
 
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {

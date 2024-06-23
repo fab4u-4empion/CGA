@@ -41,8 +41,8 @@ namespace lab1
 
         public BlendModes BlendMode = BlendModes.Opaque;
 
-        public static bool UsingMIPMapping { get; set; } = false;
-        public static int MaxAnisotropy { get; set; } = 1;
+        public static bool UsingMIPMapping { get; set; } = true;
+        public static int MaxAnisotropy { get; set; } = 16;
 
         public static List<Buffer<Vector3>> CalculateMIP(Pbgra32Bitmap src, bool useSrgbToLinearTransform = false, bool isNormal = false)
         {
