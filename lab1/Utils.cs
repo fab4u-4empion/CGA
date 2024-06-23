@@ -4,7 +4,7 @@ using static System.Single;
 
 namespace lab1
 {
-    public class Utils
+    public static class Utils
     {
         public static Vector3 SphericalToCartesian(float phi, float theta, float radius)
         {
@@ -20,8 +20,8 @@ namespace lab1
 
         public static float Smoothstep(float a, float b, float x)
         {
-            float X = Clamp((x - a) / (b - a), 0, 1);
-            return X * X * (3 - 2 * X);
+            float t = Clamp((x - a) / (b - a), 0, 1);
+            return t * t * (3 - 2 * t);
         }
 
         public static Color Vector3ToColor(Vector3 color)

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
+using static lab1.Utils;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -34,7 +35,7 @@ namespace lab1
         public Vector3 GetL(Vector3 point)
         {
             if (Type == LampTypes.Directional)
-                return Utils.SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1);
+                return SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1);
 
             return Normalize(Position - point);
         }

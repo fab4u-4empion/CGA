@@ -2,12 +2,14 @@
 using System.Collections.Concurrent;
 using System.Numerics;
 using System.Threading.Tasks;
-using static System.Single;
+using static lab1.Utils;
 using static System.Int32;
 using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1.Effects
-{    public class Bloom
+{
+    public class Bloom
     {
         public static Buffer<Vector3> GetBoolmBuffer(Buffer<Vector3> src, int width, int height, float smoothing)
         {
@@ -21,7 +23,7 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    tmp[x, y] = Min(new(50f), color * Utils.Smoothstep(0, 5, luminance));
+                    tmp[x, y] = Min(new(50f), color * Smoothstep(0, 5, luminance));
                 }
             });
 

@@ -22,16 +22,84 @@
         KeyDown="Window_KeyDown">
     <Grid x:Name="Grid">
         <Image x:Name="Canvas" RenderOptions.BitmapScalingMode="Fant"/>
-        <Label x:Name="Time" Content="Label" HorizontalAlignment="Right" Margin="20" VerticalAlignment="Top"/>
-        <Label x:Name="Reso" Content="Label" HorizontalAlignment="Left" Margin="20" VerticalAlignment="Top"/>
-        <Label x:Name="Ray_Count" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Top"/>
-        <Label x:Name="Light_size" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Top"/>
-        <Label x:Name="CurrLamp" Content="Label" HorizontalAlignment="Left" Margin="20 80" VerticalAlignment="Bottom"/>
-        <Label x:Name="Contrl" Content="Label" HorizontalAlignment="Left" Margin="20 60" VerticalAlignment="Bottom"/>
-        <Label x:Name="Model_time" Content="Label" HorizontalAlignment="Left" Margin="20 40" VerticalAlignment="Bottom"/>
-        <Label x:Name="BVH_time" Content="Label" HorizontalAlignment="Left" Margin="20 20" VerticalAlignment="Bottom"/>
-        <Label x:Name="ToneMode" Content="Label" HorizontalAlignment="Right" Margin="20 20" VerticalAlignment="Bottom"/>
-        <Label x:Name="MIPMapping" Content="Label" HorizontalAlignment="Right" Margin="20 40" VerticalAlignment="Bottom"/>
-        <Label x:Name="Shader" Content="Label" HorizontalAlignment="Right" Margin="20 60" VerticalAlignment="Bottom"/>
+        <Grid x:Name="UI" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Label x:Name="ResolutionInfo" Content="reso" HorizontalAlignment="Left"/>
+                <Grid Grid.Row="2">
+                    <StackPanel>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Skybox: " Foreground="Gray"/>
+                            <Run x:Name="SkyboxInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Bloom: " Foreground="Gray"/>
+                            <Run x:Name="BloomInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Shadows: " Foreground="Gray"/>
+                            <Run x:Name="ShadowsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Lights visibility: " Foreground="Gray"/>
+                            <Run x:Name="LightsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Backface culling: " Foreground="Gray"/>
+                            <Run x:Name="BackfaceInfo" Text="text"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Label x:Name="RenderTimeInfo" Content="time" HorizontalAlignment="Right"/>
+                <Grid Grid.Row="2">
+                    <StackPanel>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Shader: " Foreground="Gray"/>
+                            <Run x:Name="ShaderInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Normals: " Foreground="Gray"/>
+                            <Run x:Name="NormalsInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Textute filtering: " Foreground="Gray"/>
+                            <Run x:Name="FilteringInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Tonemapping: " Foreground="Gray"/>
+                            <Run x:Name="TonemapInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Current Lamp: " Foreground="Gray"/>
+                            <Run x:Name="CurrentLampInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Camera mode: " Foreground="Gray"/>
+                            <Run x:Name="CameraInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Right" Foreground="White" Margin="0,0,0,5">
+                            <Run Text="Ray count: " Foreground="Gray"/>
+                            <Run x:Name="RaysInfo" Text="text"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
