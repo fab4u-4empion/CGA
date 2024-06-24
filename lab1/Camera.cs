@@ -14,7 +14,6 @@ namespace lab1
         public Vector3 Position { get; set; }
         public Vector3 Up { get; set; } = UnitY;
         public float FoV { get; set; } = Pi / 4;
-        public Vector3 LookVector { get; set; }
         public CameraMode Mode { get; set; } = CameraMode.Arcball;
 
         public float Yaw { get => DegreesToRadians(f); }
@@ -27,17 +26,11 @@ namespace lab1
         public Camera()
         {
             Position = GetPosition();
-            LookVector = GetLookVector();
         }
 
         private Vector3 GetPosition()
         {
             return SphericalToCartesian(DegreesToRadians(f), DegreesToRadians(o), r);
-        }
-
-        private Vector3 GetLookVector()
-        {
-            return Normalize(Target - Position);
         }
 
         public void UpdatePosition(float dR, float dO, float dF)
@@ -47,15 +40,9 @@ namespace lab1
             f += dF;
 
             if (Mode == CameraMode.Arcball)
-            {
                 Position = GetPosition() + Target;
-                LookVector = GetLookVector();
-            }
             else
-            {
                 Target = -GetPosition() + Position;
-                LookVector = -GetLookVector();
-            }
         }
 
         public void Move(Vector3 delta, bool rotate)
