@@ -612,10 +612,11 @@ namespace lab1
                         {
                             HDRTexture.Angle = 0;
                         }
-                        else if (MainModel != null)
+                        else
                         {
-                            Renderer.Camera.Target = MainModel.GetCenter();
                             Renderer.Camera.Reset();
+                            if (MainModel != null)
+                                Renderer.Camera.Target = MainModel.GetCenter();
                         }
                         Draw();
                     }

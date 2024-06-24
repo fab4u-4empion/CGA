@@ -85,6 +85,8 @@ namespace lab1
             f = 0;
             Mode = CameraMode.Arcball;
             UpdatePosition(0, 0, 0);
+            FoV = Pi / 4;
+            Target = Zero;
         }
     }
 }
