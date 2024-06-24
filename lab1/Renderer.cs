@@ -483,7 +483,7 @@ namespace lab1
                     if (lamp.Type != LampTypes.Point) continue;
 
                     Sphere.Translation = lamp.Position;
-                    Sphere.Scale = Max(0.05f, RTX.LightSize);
+                    Sphere.Scale = Max(0.05f, lamp.Radius);
 
                     TransformCoordinates(Sphere);
 

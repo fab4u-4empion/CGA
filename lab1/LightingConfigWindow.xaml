@@ -18,7 +18,7 @@
         Loaded="Window_Loaded">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="332"/>
+            <RowDefinition Height="400"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="10"/>
@@ -77,6 +77,24 @@
             <local:ColorButton x:Name="LampColorBtn" Margin="0,10,0,0"/>
             <Label Margin="0,10,0,0" Content="Intensity" Foreground="LightGray"/>
             <TextBox x:Name="LampInt" Margin="0,5,0,0"/>
+            <Grid x:Name="RadiusGrid" Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="0" Content="Radius" Foreground="LightGray"/>
+                <TextBox Grid.Row="2" x:Name="LampRadius"/>
+            </Grid>
+            <Grid x:Name="AngleGrid" Margin="0,10,0,0" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="0" Content="Angle" Foreground="LightGray"/>
+                <TextBox Grid.Row="2" x:Name="LampAngle"/>
+            </Grid>
         </StackPanel>
         <Button Grid.Row="2" Grid.Column="2" Content="Save" Background="#198754" BorderBrush="#198754" Click="Button_Click_2"/>
         <Button Grid.Row="4" Grid.Column="2" Content="Delete" Background="#dc3545" BorderBrush="#dc3545" Click="Button_Click_1"/>

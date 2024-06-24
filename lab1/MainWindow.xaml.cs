@@ -511,7 +511,7 @@ namespace lab1
                 //Arrows
                 case Key.Right:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
-                        RTX.LightSize += 0.001f;
+                        LightingConfig.ChangeLampSize(0.01f, 0.5f);
                     else
                         LightingConfig.ChangeLampIntensity(10);
                     Draw();
@@ -519,10 +519,7 @@ namespace lab1
 
                 case Key.Left:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
-                    {
-                        RTX.LightSize -= 0.001f;
-                        RTX.LightSize = Max(RTX.LightSize, 0);
-                    }
+                        LightingConfig.ChangeLampSize(-0.01f, -0.5f);
                     else
                         LightingConfig.ChangeLampIntensity(-10);
                     Draw();

@@ -9,8 +9,6 @@ namespace lab1.Shadow
     public class RTX
     {
         public static int RayCount { get; set; } = 1;
-        public static float LightSize { get; set; } = 0f;
-        public static float Angle { get; set; } = 0.526f;
 
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {
@@ -64,7 +62,7 @@ namespace lab1.Shadow
 
             Vector3 baseDirection = lamp.GetL(orig);
 
-            float cos = 1 - Cos(DegreesToRadians(Angle * 0.5f));
+            float cos = 1 - Cos(DegreesToRadians(lamp.Angle * 0.5f));
 
             for (int j = 0; j < RayCount; j++)
             {
@@ -76,7 +74,7 @@ namespace lab1.Shadow
                     float phi = (2 * Pi) * Random.Shared.NextSingle();
                     float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
 
-                    Vector3 LP = position + SphericalToCartesian(phi, theta, LightSize);
+                    Vector3 LP = position + SphericalToCartesian(phi, theta, lamp.Radius);
 
                     dir = Normalize(LP - orig);
                     dist = Distance(LP, orig);

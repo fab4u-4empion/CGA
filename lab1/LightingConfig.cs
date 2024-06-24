@@ -21,6 +21,8 @@ namespace lab1
         public float Theta = 45;
         public float Phi = 45;
         public LampTypes Type = LampTypes.Point;
+        public float Radius = 0;
+        public float Angle = 0.526f;
 
         public Vector3 GetIrradiance(Vector3 point)
         {
@@ -80,6 +82,17 @@ namespace lab1
                     Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta / 10, 0);
                 else
                     Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta, 0);
+            }
+        }
+
+        public static void ChangeLampSize(float deltaRadius, float deltaAngel)
+        {
+            if (CurrentLamp > -1)
+            {
+                if (Lights[CurrentLamp].Type == LampTypes.Directional)
+                    Lights[CurrentLamp].Angle = Clamp(Lights[CurrentLamp].Angle + deltaAngel, 0, 90);
+                else
+                    Lights[CurrentLamp].Radius = Max(Lights[CurrentLamp].Radius + deltaRadius, 0);
             }
         }
 

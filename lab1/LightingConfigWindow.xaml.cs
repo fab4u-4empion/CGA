@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using static lab1.LightingConfig;
 using static lab1.Utils;
+using static System.Single;
+using static System.Int32;
 
 namespace lab1
 {
@@ -24,7 +26,7 @@ namespace lab1
         {
             int selectedIndex = LightsListBox.SelectedIndex;
             LightsListBox.ItemsSource = Lights.Select(x => x.Name);
-            LightsListBox.SelectedIndex = int.Max(0, int.Min(selectedIndex, LightsListBox.Items.Count - 1));
+            LightsListBox.SelectedIndex = Max(0, Min(selectedIndex, LightsListBox.Items.Count - 1));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -45,6 +47,8 @@ namespace lab1
                 LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
                 LampType.SelectedIndex = (int)lamp.Type;
                 LampColorBtn.Color = Vector3ToColor(ToneMapping.LinearToSrgb(lamp.Color));
+                LampAngle.Text = lamp.Angle.ToString(CultureInfo.InvariantCulture);
+                LampRadius.Text = lamp.Radius.ToString(CultureInfo.InvariantCulture);
             }
             else
             {
@@ -54,6 +58,8 @@ namespace lab1
                 LampName.Text = "";
                 LampType.SelectedIndex = -1;
                 LampColorBtn.Color = Colors.Black;
+                LampAngle.Text = "";
+                LampRadius.Text = "";
             }
         }
 
@@ -92,9 +98,11 @@ namespace lab1
                 );
                 lamp.Color = ToneMapping.SrgbToLinear(ColorToVector3(LampColorBtn.Color));
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
-                lamp.Theta = float.Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
-                lamp.Phi = float.Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
+                lamp.Theta = Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
+                lamp.Phi = Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
                 lamp.Type = (LampTypes)LampType.SelectedIndex;
+                lamp.Angle = Clamp(float.Parse(LampAngle.Text, CultureInfo.InvariantCulture), 0, 90);
+                lamp.Radius = Max(float.Parse(LampRadius.Text, CultureInfo.InvariantCulture), 0);
                 UpdateListBox();
             }
         }
@@ -104,13 +112,19 @@ namespace lab1
             if (LampType.SelectedIndex == 0)
             {
                 PositionGrid.Visibility = Visibility.Visible;
+                RadiusGrid.Visibility = Visibility.Visible;
+
                 DirectionGrid.Visibility = Visibility.Collapsed;
+                AngleGrid.Visibility = Visibility.Collapsed;
             }
 
             if (LampType.SelectedIndex == 1)
             {
                 PositionGrid.Visibility = Visibility.Collapsed;
+                RadiusGrid.Visibility = Visibility.Collapsed;
+
                 DirectionGrid.Visibility = Visibility.Visible;
+                AngleGrid.Visibility = Visibility.Visible;
             }
         }
 
@@ -140,11 +154,11 @@ namespace lab1
                             break;
 
                         case "color":
-                            lamp!.Color = new(
+                            lamp!.Color = ToneMapping.LinearToSrgb(new(
                                 float.Parse(line[1], CultureInfo.InvariantCulture),
                                 float.Parse(line[2], CultureInfo.InvariantCulture),
                                 float.Parse(line[3], CultureInfo.InvariantCulture)
-                            );
+                            ));
                             break;
 
                         case "position":
@@ -165,6 +179,14 @@ namespace lab1
 
                         case "intensity":
                             lamp!.Intensity = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+
+                        case "radius":
+                            lamp!.Radius = float.Parse(line[1], CultureInfo.InvariantCulture);
+                            break;
+
+                        case "angle":
+                            lamp!.Angle = float.Parse(line[1], CultureInfo.InvariantCulture);
                             break;
 
                         case "type":
