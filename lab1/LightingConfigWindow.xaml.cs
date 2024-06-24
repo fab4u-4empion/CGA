@@ -8,8 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using static lab1.LightingConfig;
 using static lab1.Utils;
-using static System.Single;
 using static System.Int32;
+using static System.Single;
 
 namespace lab1
 {
@@ -154,7 +154,7 @@ namespace lab1
                             break;
 
                         case "color":
-                            lamp!.Color = ToneMapping.LinearToSrgb(new(
+                            lamp!.Color = ToneMapping.SrgbToLinear(new(
                                 float.Parse(line[1], CultureInfo.InvariantCulture),
                                 float.Parse(line[2], CultureInfo.InvariantCulture),
                                 float.Parse(line[3], CultureInfo.InvariantCulture)

@@ -85,12 +85,12 @@ namespace lab1
             }
         }
 
-        public static void ChangeLampSize(float deltaRadius, float deltaAngel)
+        public static void ChangeLampSize(float deltaRadius, float deltaAngle)
         {
             if (CurrentLamp > -1)
             {
                 if (Lights[CurrentLamp].Type == LampTypes.Directional)
-                    Lights[CurrentLamp].Angle = Clamp(Lights[CurrentLamp].Angle + deltaAngel, 0, 90);
+                    Lights[CurrentLamp].Angle = Clamp(Lights[CurrentLamp].Angle + deltaAngle, 0, 90);
                 else
                     Lights[CurrentLamp].Radius = Max(Lights[CurrentLamp].Radius + deltaRadius, 0);
             }
