@@ -58,44 +58,53 @@ namespace lab1.Shadow
 
             float baseIntensity = 1f / RayCount;
 
-            Vector3 position = lamp.Position;
-
             Vector3 baseDirection = lamp.GetL(orig);
 
-            float cos = 1 - Cos(DegreesToRadians(lamp.Angle * 0.5f));
-
-            for (int j = 0; j < RayCount; j++)
+            if (lamp.Type == LampTypes.Point)
             {
-                Vector3 dir = Zero;
-                float dist = 0;
+                float cosRange = 1 - lamp.Radius / (lamp.Position - orig).Length();
 
-                if (lamp.Type == LampTypes.Point)
+                if (IsNaN(cosRange))
+                    return 0;
+
+                for (int j = 0; j < RayCount; j++)
                 {
-                    float phi = (2 * Pi) * Random.Shared.NextSingle();
-                    float theta = Acos(Random.Shared.NextSingle() * 2 - 1);
+                    float phi = 2 * Pi * Random.Shared.NextSingle();
+                    float theta = Acos(1 - cosRange * Random.Shared.NextSingle());
 
-                    Vector3 LP = position + SphericalToCartesian(phi, theta, lamp.Radius);
+                    Vector3 LP = SphericalToCartesian(phi, theta, lamp.Radius);
 
-                    dir = Normalize(LP - orig);
-                    dist = Distance(LP, orig);
+                    Vector3 xAxis = Cross(-baseDirection, UnitZ);
+                    xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
+                    Vector3 zAxis = Cross(xAxis, -baseDirection);
+
+                    LP = lamp.Position + xAxis * LP.X + -baseDirection * LP.Y + zAxis * LP.Z;
+
+                    Vector3 dir = Normalize(LP - orig);
+                    float dist = Distance(LP, orig);
+
+                    result += BVH.IntersectBVH(orig, dir, dist, 0) ? 0 : baseIntensity;
                 }
+            }
+            else
+            {
+                float cosRange = 1 - Cos(DegreesToRadians(lamp.Angle * 0.5f));
 
-                if (lamp.Type == LampTypes.Directional)
+                for (int j = 0; j < RayCount; j++)
                 {
-                    float phi = (2 * Pi) * Random.Shared.NextSingle();
-                    float theta = Acos(1 - cos * Random.Shared.NextSingle());
+                    float phi = 2 * Pi * Random.Shared.NextSingle();
+                    float theta = Acos(1 - cosRange * Random.Shared.NextSingle());
 
-                    dir = SphericalToCartesian(phi, theta, 1);
+                    Vector3 dir = SphericalToCartesian(phi, theta, 1);
 
                     Vector3 xAxis = Cross(baseDirection, UnitZ);
                     xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
                     Vector3 zAxis = Cross(xAxis, baseDirection);
 
                     dir = xAxis * dir.X + baseDirection * dir.Y + zAxis * dir.Z;
-                    dist = PositiveInfinity;
-                }
 
-                result += BVH.IntersectBVH(orig, dir, dist, 0) ? 0 : baseIntensity;
+                    result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : baseIntensity;
+                }
             }
 
             return result;
