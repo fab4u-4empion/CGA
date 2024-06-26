@@ -609,15 +609,9 @@ namespace lab1
                     if (!e.IsRepeat)
                     {
                         if (Keyboard.Modifiers == ModifierKeys.Control)
-                        {
                             HDRTexture.Angle = 0;
-                        }
                         else
-                        {
-                            Renderer.Camera.Reset();
-                            if (MainModel != null)
-                                Renderer.Camera.Target = MainModel.GetCenter();
-                        }
+                            Renderer.Camera.Reset(MainModel == null ? Vector3.Zero : MainModel.GetCenter());
                         Draw();
                     }
                     break;
@@ -663,9 +657,8 @@ namespace lab1
                             if (MainModel.OpaqueFacesIndices.Count > 0)
                                 BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
 
-                            Renderer.Camera.Target = MainModel.GetCenter();
-                            Renderer.Camera.Reset();
-
+                            Renderer.Camera.Reset(MainModel.GetCenter());
+                            
                             Draw();
                         }
                     }
