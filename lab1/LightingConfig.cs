@@ -47,7 +47,7 @@ namespace lab1
     {
         public static Vector3 AmbientColor { get; set; } = ToneMapping.SrgbToLinear(new(0.3f, 0.3f, 0.3f));
 
-        public static float EmissionIntensity { get; set; } = 1;
+        public static float EmissionIntensity { get; set; } = 20;
 
         public static int CurrentLamp { get; set; } = 0;
 

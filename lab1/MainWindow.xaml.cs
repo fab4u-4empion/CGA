@@ -489,7 +489,7 @@ namespace lab1
                 case Key.OemMinus:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                     {
-                        LightingConfig.EmissionIntensity -= 0.2f;
+                        LightingConfig.EmissionIntensity -= 5f;
                         LightingConfig.EmissionIntensity = Max(LightingConfig.EmissionIntensity, 0);
                     }
                     else
@@ -502,7 +502,7 @@ namespace lab1
 
                 case Key.OemPlus:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
-                        LightingConfig.EmissionIntensity += 0.2f;
+                        LightingConfig.EmissionIntensity += 5f;
                     else
                         Renderer.Exposure += 0.1f;
                     Draw();
