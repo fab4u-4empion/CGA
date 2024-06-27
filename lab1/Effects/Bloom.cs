@@ -23,7 +23,7 @@ namespace lab1.Effects
                 {
                     Vector3 color = src[x, y];
                     float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    tmp[x, y] = Min(new(50f), color * Smoothstep(0, 5, luminance));
+                    tmp[x, y] = Min(new(100f), color * Smoothstep(0, 100, luminance));
                 }
             });
 
