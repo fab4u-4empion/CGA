@@ -150,7 +150,7 @@ namespace lab1
                 {
                     Tri tri = Tris![node.firstTri + i];
                     float d = RTX.IntersectTriangle(orig, dir, tri.v0, tri.v1, tri.v2);
-                    if (d > -0 && d < dist) return true;
+                    if (d > 1e-4f && (dist - d) > 1e-4f) return true;
                 }
                 return false;
             }
