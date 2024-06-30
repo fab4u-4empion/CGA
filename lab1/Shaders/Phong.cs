@@ -36,7 +36,7 @@ namespace lab1.Shaders
                 if (Dot(N, L) <= 0)
                     continue;
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f, N) : 1;
 
                 Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 5f;
 

@@ -528,7 +528,7 @@ namespace lab1
                 case Key.Up:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                     {
-                        RTX.RayCount += 1;
+                        RTX.RayCount = Min(4096, RTX.RayCount * 2);
                         Draw();
                     }
                     else if (!e.IsRepeat)
@@ -541,8 +541,7 @@ namespace lab1
                 case Key.Down:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                     {
-                        RTX.RayCount -= 1;
-                        RTX.RayCount = int.Max(RTX.RayCount, 0);
+                        RTX.RayCount = Max(1, RTX.RayCount / 2);
                         Draw();
                     }
                     else if (!e.IsRepeat)
@@ -658,7 +657,7 @@ namespace lab1
                                 BVH.Build(MainModel.Positions, MainModel.OpaqueFacesIndices, MainModel.PositionIndices);
 
                             Renderer.Camera.Reset(MainModel.GetCenter());
-                            
+
                             Draw();
                         }
                     }

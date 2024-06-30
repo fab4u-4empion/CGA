@@ -52,11 +52,10 @@ namespace lab1.Shadow
             return Dot(e2, qvec) * inv_det;
         }
 
-        public static float GetLightIntensityBVH(Lamp lamp, Vector3 orig)
+        public static float GetLightIntensityBVH(Lamp lamp, Vector3 orig, Vector3 normal)
         {
             float result = 0;
-
-            float baseIntensity = 1f / RayCount;
+            float total = 0;
 
             Vector3 baseDirection = lamp.GetL(orig);
 
@@ -69,8 +68,8 @@ namespace lab1.Shadow
 
                 for (int j = 0; j < RayCount; j++)
                 {
-                    float phi = 2 * Pi * Random.Shared.NextSingle();
-                    float theta = Acos(1 - cosRange * Random.Shared.NextSingle());
+                    (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
+                    (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
 
                     Vector3 LP = SphericalToCartesian(phi, theta, lamp.Radius);
 
@@ -80,10 +79,14 @@ namespace lab1.Shadow
 
                     LP = lamp.Position + xAxis * LP.X + -baseDirection * LP.Y + zAxis * LP.Z;
 
-                    Vector3 dir = Normalize(LP - orig);
                     float dist = Distance(LP, orig);
+                    Vector3 dir = (LP - orig) / dist;
+                    Vector3 LN = lamp.Radius > 0 ? Normalize(LP - lamp.Position) : -dir;
 
-                    result += BVH.IntersectBVH(orig, dir, dist, 0) ? 0 : baseIntensity;
+                    float cosTheta1 = Dot(LN, -dir);
+                    float cosTheta2 = Dot(normal, dir);
+                    result += BVH.IntersectBVH(orig, dir, dist, 0) ? 0 : cosTheta1 * cosTheta2;
+                    total += cosTheta1 * cosTheta2;
                 }
             }
             else
@@ -92,8 +95,8 @@ namespace lab1.Shadow
 
                 for (int j = 0; j < RayCount; j++)
                 {
-                    float phi = 2 * Pi * Random.Shared.NextSingle();
-                    float theta = Acos(1 - cosRange * Random.Shared.NextSingle());
+                    (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
+                    (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
 
                     Vector3 dir = SphericalToCartesian(phi, theta, 1);
 
@@ -103,11 +106,13 @@ namespace lab1.Shadow
 
                     dir = xAxis * dir.X + baseDirection * dir.Y + zAxis * dir.Z;
 
-                    result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : baseIntensity;
+                    float cosTheta = Dot(normal, dir);
+                    result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : cosTheta;
+                    total += cosTheta;
                 }
             }
 
-            return result;
+            return MaxNumber(0, Min(1, result / total));
         }
     }
 }

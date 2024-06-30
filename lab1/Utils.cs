@@ -34,5 +34,12 @@ namespace lab1
         {
             return new Vector3(color.R, color.G, color.B) / 255f;
         }
+
+        public static (double, double) R2(double seed, int n)
+        {
+            double x = (seed + n * 0.75487766624669276005) % 1;
+            double y = (seed + n * 0.56984029099805326591) % 1;
+            return (x, y);
+        }
     }
 }

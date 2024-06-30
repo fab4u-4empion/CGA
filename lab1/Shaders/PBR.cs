@@ -100,7 +100,7 @@ namespace lab1.Shaders
 
                 Vector3 H = Normalize(V + L);
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f, N) : 1;
 
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
