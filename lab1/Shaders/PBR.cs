@@ -151,6 +151,7 @@ namespace lab1.Shaders
             brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
             Vector3 clearCoatSpecularIBL = coatSpecularLight * (clearCoatReflectanceIBL * brdf.X + new Vector3(brdf.Y) * clearCoat);
 
+            if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(p + N * 0.01f, N);
             color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectanceIBL) + clearCoatSpecularIBL) * ao;
 
             color += emission * EmissionIntensity;

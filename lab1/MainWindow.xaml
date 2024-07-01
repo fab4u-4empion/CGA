@@ -40,6 +40,10 @@
                         <Run x:Name="BloomInfo" Text="text"/>
                     </TextBlock>
                     <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="RTAO: " Foreground="Gray"/>
+                        <Run x:Name="RTAOInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
                         <Run Text="Shadows: " Foreground="Gray"/>
                         <Run x:Name="ShadowsInfo" Text="text"/>
                     </TextBlock>
@@ -57,8 +61,16 @@
                 <Border Padding="8,5" HorizontalAlignment="Right" CornerRadius="4" Background="#A0000000">
                     <StackPanel>
                         <TextBlock HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
-                            <Run Text="Ray count: " Foreground="Gray"/>
-                            <Run x:Name="RaysInfo" Text="text"/>
+                            <Run Text="RTAO ray distance: " Foreground="Gray"/>
+                            <Run x:Name="RTAORayDistInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="RTAO ray count: " Foreground="Gray"/>
+                            <Run x:Name="RTAORayInfo" Text="text"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                            <Run Text="Shadow ray count: " Foreground="Gray"/>
+                            <Run x:Name="ShadowRayInfo" Text="text"/>
                         </TextBlock>
                         <TextBlock Margin="0,3,0,0" HorizontalAlignment="Right" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
                             <Run Text="Current lamp: " Foreground="Gray"/>

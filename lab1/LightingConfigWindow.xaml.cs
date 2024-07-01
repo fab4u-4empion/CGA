@@ -42,13 +42,13 @@ namespace lab1
             {
                 Lamp lamp = Lights[LightsListBox.SelectedIndex];
                 LampName.Text = lamp.Name;
-                (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString(CultureInfo.InvariantCulture), lamp.Position.Y.ToString(CultureInfo.InvariantCulture), lamp.Position.Z.ToString(CultureInfo.InvariantCulture));
-                (LampDir_T.Text, LampDir_Ph.Text) = (lamp.Theta.ToString(CultureInfo.InvariantCulture), lamp.Phi.ToString(CultureInfo.InvariantCulture));
-                LampInt.Text = lamp.Intensity.ToString(CultureInfo.InvariantCulture);
+                (LampPos_X.Text, LampPos_Y.Text, LampPos_Z.Text) = (lamp.Position.X.ToString("0.###", CultureInfo.InvariantCulture), lamp.Position.Y.ToString("0.###", CultureInfo.InvariantCulture), lamp.Position.Z.ToString("0.###", CultureInfo.InvariantCulture));
+                (LampDir_T.Text, LampDir_Ph.Text) = (lamp.Theta.ToString("0.###", CultureInfo.InvariantCulture), lamp.Phi.ToString("0.###", CultureInfo.InvariantCulture));
+                LampInt.Text = lamp.Intensity.ToString("0.###", CultureInfo.InvariantCulture);
                 LampType.SelectedIndex = (int)lamp.Type;
                 LampColorBtn.Color = Vector3ToColor(ToneMapping.LinearToSrgb(lamp.Color));
-                LampAngle.Text = lamp.Angle.ToString(CultureInfo.InvariantCulture);
-                LampRadius.Text = lamp.Radius.ToString(CultureInfo.InvariantCulture);
+                LampAngle.Text = lamp.Angle.ToString("0.###", CultureInfo.InvariantCulture);
+                LampRadius.Text = lamp.Radius.ToString("0.###", CultureInfo.InvariantCulture);
             }
             else
             {

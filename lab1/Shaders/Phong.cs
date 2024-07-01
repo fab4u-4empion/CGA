@@ -17,16 +17,17 @@ namespace lab1.Shaders
             Vector3 emission,
             float opacity,
             float dissolve,
-            float AO,
+            float ao,
             float glossiness)
         {
-            Vector3 color = baseColor * AmbientColor * AO * opacity + emission * EmissionIntensity;
-
             Vector3 V = Normalize(camera - p);
             Vector3 N = Normalize(n);
 
             float a2 = glossiness * glossiness;
             float a4 = a2 * a2;
+
+            if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(p + N * 0.01f, N);
+            Vector3 color = baseColor * AmbientColor * ao * opacity + emission * EmissionIntensity;
 
             for (int i = 0; i < Lights.Count; i++)
             {

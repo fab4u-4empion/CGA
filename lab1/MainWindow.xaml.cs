@@ -234,11 +234,14 @@ namespace lab1
 
             SkyboxInfo.Text = $"{(Renderer.UseSkyBox ? "On" : "Off")}";
             BloomInfo.Text = $"{(Renderer.UseBloom ? "On" : "Off")}";
+            RTAOInfo.Text = $"{(LightingConfig.UseRTAO ? "On" : "Off")}";
             ShadowsInfo.Text = $"{(LightingConfig.UseShadow ? "On" : "Off")}";
             LampsInfo.Text = $"{(LightingConfig.DrawLamps ? "On" : "Off")}";
             BackfaceInfo.Text = $"{(Renderer.BackfaceCulling ? "On" : "Off")}";
 
-            RaysInfo.Text = $"{RTX.RayCount}";
+            RTAORayDistInfo.Text = RTX.RTAORayDistance.ToString("0.0", CultureInfo.InvariantCulture);
+            RTAORayInfo.Text = $"{RTX.RTAORayCount}";
+            ShadowRayInfo.Text = $"{RTX.ShadowRayCount}";
             CurrentLampInfo.Text = $"{(LightingConfig.CurrentLamp == -1 ? "*" : LightingConfig.Lights[LightingConfig.CurrentLamp].Name)}";
 
             CameraInfo.Text = $"{Renderer.Camera.Mode}";
@@ -392,7 +395,10 @@ namespace lab1
                 case Key.F7:
                     if (!e.IsRepeat)
                     {
-                        LightingConfig.UseShadow = !LightingConfig.UseShadow;
+                        if (Keyboard.Modifiers == ModifierKeys.Control)
+                            LightingConfig.UseRTAO = !LightingConfig.UseRTAO;
+                        else
+                            LightingConfig.UseShadow = !LightingConfig.UseShadow;
                         Draw();
                     }
                     break;
@@ -512,6 +518,8 @@ namespace lab1
                 case Key.Right:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                         LightingConfig.ChangeLampSize(0.01f, 0.5f);
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        RTX.RTAORayDistance += 0.1f;
                     else
                         LightingConfig.ChangeLampIntensity(10);
                     Draw();
@@ -520,34 +528,52 @@ namespace lab1
                 case Key.Left:
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                         LightingConfig.ChangeLampSize(-0.01f, -0.5f);
+                    else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        RTX.RTAORayDistance = Max(0, RTX.RTAORayDistance - 0.1f);
                     else
                         LightingConfig.ChangeLampIntensity(-10);
                     Draw();
                     break;
 
                 case Key.Up:
-                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    if (!e.IsRepeat)
                     {
-                        RTX.RayCount = Min(4096, RTX.RayCount * 2);
-                        Draw();
-                    }
-                    else if (!e.IsRepeat)
-                    {
-                        LightingConfig.ChangeLamp(1);
-                        Draw();
+                        if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        {
+                            RTX.ShadowRayCount = Min(4096, RTX.ShadowRayCount * 2);
+                            Draw();
+                        }
+                        else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        {
+                            RTX.RTAORayCount = Min(4096, RTX.RTAORayCount * 2);
+                            Draw();
+                        }
+                        else
+                        {
+                            LightingConfig.ChangeLamp(1);
+                            UpdateInfo();
+                        }
                     }
                     break;
 
                 case Key.Down:
-                    if (Keyboard.Modifiers == ModifierKeys.Shift)
+                    if (!e.IsRepeat)
                     {
-                        RTX.RayCount = Max(1, RTX.RayCount / 2);
-                        Draw();
-                    }
-                    else if (!e.IsRepeat)
-                    {
-                        LightingConfig.ChangeLamp(-1);
-                        Draw();
+                        if (Keyboard.Modifiers == ModifierKeys.Shift)
+                        {
+                            RTX.ShadowRayCount = Max(1, RTX.ShadowRayCount / 2);
+                            Draw();
+                        }
+                        else if (Keyboard.Modifiers == ModifierKeys.Control)
+                        {
+                            RTX.RTAORayCount = Max(1, RTX.RTAORayCount / 2);
+                            Draw();
+                        }
+                        else
+                        {
+                            LightingConfig.ChangeLamp(-1);
+                            UpdateInfo();
+                        }
                     }
                     break;
 
@@ -627,11 +653,8 @@ namespace lab1
                 case Key.T:
                     if (!e.IsRepeat)
                     {
-                        if (Keyboard.Modifiers == ModifierKeys.Shift)
-                        {
-                            if (ToneMapping.Mode == ToneMappingMode.AgX)
-                                ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
-                        }
+                        if (Keyboard.Modifiers == ModifierKeys.Shift && ToneMapping.Mode == ToneMappingMode.AgX)
+                            ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
                         else
                             ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
                         Draw();

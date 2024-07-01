@@ -72,8 +72,8 @@ namespace lab1
             {
                 Kernel kernel = Kernels[KernelListBox.SelectedIndex];
                 KernelName.Text = kernel.Name;
-                KernelInt.Text = kernel.Intensity.ToString(CultureInfo.InvariantCulture);
-                KernelR.Text = kernel.Radius.ToString();
+                KernelInt.Text = kernel.Intensity.ToString("0.###", CultureInfo.InvariantCulture);
+                KernelR.Text = kernel.Radius.ToString("0.###");
             }
             else
             {

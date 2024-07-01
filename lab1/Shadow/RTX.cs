@@ -8,7 +8,9 @@ namespace lab1.Shadow
 {
     public class RTX
     {
-        public static int RayCount { get; set; } = 1;
+        public static int ShadowRayCount { get; set; } = 1;
+        public static int RTAORayCount { get; set; } = 1;
+        public static float RTAORayDistance { get; set; } = 1;
 
         public static bool IntersectAABB(Vector3 O, Vector3 D, Vector3 bmin, Vector3 bmax)
         {
@@ -66,7 +68,7 @@ namespace lab1.Shadow
                 if (IsNaN(cosRange))
                     return 0;
 
-                for (int j = 0; j < RayCount; j++)
+                for (int j = 0; j < ShadowRayCount; j++)
                 {
                     (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
                     (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
@@ -93,7 +95,7 @@ namespace lab1.Shadow
             {
                 float cosRange = 1 - Cos(DegreesToRadians(lamp.Angle * 0.5f));
 
-                for (int j = 0; j < RayCount; j++)
+                for (int j = 0; j < ShadowRayCount; j++)
                 {
                     (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
                     (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
@@ -113,6 +115,29 @@ namespace lab1.Shadow
             }
 
             return MaxNumber(0, Min(1, result / total));
+        }
+
+        public static float GetAmbientOcclusionBVH(Vector3 orig, Vector3 normal)
+        {
+            float result = 0;
+
+            for (int j = 0; j < RTAORayCount; j++)
+            {
+                (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
+                (float phi, float theta) = (2 * Pi * (float)x, Asin(Sqrt((float)y)));
+
+                Vector3 dir = SphericalToCartesian(phi, theta, 1);
+
+                Vector3 xAxis = Cross(normal, UnitZ);
+                xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
+                Vector3 zAxis = Cross(xAxis, normal);
+
+                dir = xAxis * dir.X + normal * dir.Y + zAxis * dir.Z;
+
+                result += BVH.IntersectBVH(orig, dir, RTAORayDistance, 0) ? 0 : 1;
+            }
+
+            return result / RTAORayCount;
         }
     }
 }

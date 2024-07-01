@@ -55,6 +55,8 @@ namespace lab1
 
         public static bool UseShadow { get; set; } = false;
 
+        public static bool UseRTAO { get; set; } = false;
+
         public static HDRTexture? IBLDiffuseMap { get; set; } = null;
         public static List<HDRTexture> IBLSpecularMap { get; set; } = [];
         public static HDRTexture BRDFLLUT { get; set; } = new();
