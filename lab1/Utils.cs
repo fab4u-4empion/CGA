@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Windows.Media;
 using static System.Single;
+using static System.Numerics.Vector3;
 
 namespace lab1
 {
@@ -40,6 +41,15 @@ namespace lab1
             double x = (seed + n * 0.75487766624669276005) % 1;
             double y = (seed + n * 0.56984029099805326591) % 1;
             return (x, y);
+        }
+
+        public static Vector3 Transform(Vector3 vector, Vector3 yAxis)
+        {
+            Vector3 xAxis = Cross(yAxis, UnitZ);
+            xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
+            Vector3 zAxis = Cross(xAxis, yAxis);
+
+            return xAxis * vector.X + yAxis * vector.Y + zAxis * vector.Z;
         }
     }
 }

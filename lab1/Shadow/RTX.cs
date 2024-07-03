@@ -73,13 +73,7 @@ namespace lab1.Shadow
                     (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
                     (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
 
-                    Vector3 LP = SphericalToCartesian(phi, theta, lamp.Radius);
-
-                    Vector3 xAxis = Cross(-baseDirection, UnitZ);
-                    xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
-                    Vector3 zAxis = Cross(xAxis, -baseDirection);
-
-                    LP = lamp.Position + xAxis * LP.X + -baseDirection * LP.Y + zAxis * LP.Z;
+                    Vector3 LP = Transform(SphericalToCartesian(phi, theta, lamp.Radius), -baseDirection) + lamp.Position;
 
                     float dist = Distance(LP, orig);
                     Vector3 dir = (LP - orig) / dist;
@@ -100,13 +94,7 @@ namespace lab1.Shadow
                     (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
                     (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
 
-                    Vector3 dir = SphericalToCartesian(phi, theta, 1);
-
-                    Vector3 xAxis = Cross(baseDirection, UnitZ);
-                    xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
-                    Vector3 zAxis = Cross(xAxis, baseDirection);
-
-                    dir = xAxis * dir.X + baseDirection * dir.Y + zAxis * dir.Z;
+                    Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), baseDirection);
 
                     float cosTheta = Dot(normal, dir);
                     result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : cosTheta;
@@ -126,13 +114,7 @@ namespace lab1.Shadow
                 (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
                 (float phi, float theta) = (2 * Pi * (float)x, Asin(Sqrt((float)y)));
 
-                Vector3 dir = SphericalToCartesian(phi, theta, 1);
-
-                Vector3 xAxis = Cross(normal, UnitZ);
-                xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
-                Vector3 zAxis = Cross(xAxis, normal);
-
-                dir = xAxis * dir.X + normal * dir.Y + zAxis * dir.Z;
+                Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), normal);
 
                 result += BVH.IntersectBVH(orig, dir, RTAORayDistance, 0) ? 0 : 1;
             }
