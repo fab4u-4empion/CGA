@@ -47,130 +47,115 @@ namespace lab1
             Material? material = null;
             int mtlIndex = 0;
 
-            while (!mtlReader.EndOfStream)
+            foreach (string l in File.ReadLines(fileName))
             {
-                string mtlLine = mtlReader.ReadLine()!.Trim();
+                string[] line = l.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
-                if (mtlLine.StartsWith("newmtl"))
-                {
-                    if (material != null)
-                    {
-                        model.Materials.Add(material);
-                        mtlIndex++;
-                    }
-                    material = new();
-                    model.MaterialNames.Add(mtlLine.Remove(0, 6).Trim(), mtlIndex);
-                }
+                if (line.Length == 0) continue;
 
-                if (mtlLine.StartsWith("Pm"))
+                switch (line[0])
                 {
-                    material!.Pm = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                }
+                    case "newmtl":
+                        if (material != null)
+                        {
+                            model.Materials.Add(material);
+                            mtlIndex++;
+                        }
+                        material = new();
+                        model.MaterialNames.Add(line[1], mtlIndex);
+                        break;
 
-                if (mtlLine.StartsWith("map_Tr"))
-                {
-                    material!.Transmission = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()));
-                    material!.BlendMode = BlendModes.AlphaBlending;
-                }
+                    case "Kd":
+                        material!.Kd = ToneMapping.SrgbToLinear(new(
+                            float.Parse(line[1], CultureInfo.InvariantCulture),
+                            float.Parse(line[2], CultureInfo.InvariantCulture),
+                            float.Parse(line[3], CultureInfo.InvariantCulture)
+                        ));
+                        break;
 
-                if (mtlLine.StartsWith("Tr"))
-                {
-                    material!.Tr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                    material!.BlendMode = BlendModes.AlphaBlending;
-                }
+                    case "map_Kd":
+                        material!.Diffuse = model.AddTexture(Path.Combine(fold!, line[1]), useSrgbToLinearTransform: true);
+                        break;
 
-                if (mtlLine.StartsWith('d'))
-                {
-                    material!.D = float.Parse(mtlLine.Remove(0, 1).Trim(), CultureInfo.InvariantCulture);
-                    material!.BlendMode = BlendModes.AlphaBlending;
-                }
+                    case "Ks":
+                        material!.Ks = ToneMapping.SrgbToLinear(new(
+                            float.Parse(line[1], CultureInfo.InvariantCulture),
+                            float.Parse(line[2], CultureInfo.InvariantCulture),
+                            float.Parse(line[3], CultureInfo.InvariantCulture)
+                        ));
+                        break;
 
-                if (mtlLine.StartsWith("map_d"))
-                {
-                    material!.Dissolve = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 5).Trim()));
-                    material!.BlendMode = BlendModes.AlphaBlending;
-                }
+                    case "map_Ks":
+                        material!.Specular = model.AddTexture(Path.Combine(fold!, line[1]), useSrgbToLinearTransform: true);
+                        break;
 
-                if (mtlLine.StartsWith("Kd"))
-                {
-                    float[] Kd = mtlLine
-                        .Remove(0, 2)
-                        .Trim()
-                        .Split(' ')
-                        .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
-                        .ToArray();
-                    material!.Kd = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
-                }
+                    case "d":
+                        material!.D = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        material!.BlendMode = BlendModes.AlphaBlending;
+                        break;
 
-                if (mtlLine.StartsWith("Ks"))
-                {
-                    float[] Kd = mtlLine
-                        .Remove(0, 2)
-                        .Trim()
-                        .Split(' ')
-                        .Select(c => float.Parse(c, CultureInfo.InvariantCulture))
-                        .ToArray();
-                    material!.Ks = ToneMapping.SrgbToLinear(new(Kd[0], Kd[1], Kd[2]));
-                }
+                    case "map_d":
+                        material!.Dissolve = model.AddTexture(Path.Combine(fold!, line[1]));
+                        material!.BlendMode = BlendModes.AlphaBlending;
+                        break;
 
-                if (mtlLine.StartsWith("Pr"))
-                {
-                    material!.Pr = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                }
+                    case "Tr":
+                        material!.Tr = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        material!.BlendMode = BlendModes.AlphaBlending;
+                        break;
 
-                if (mtlLine.StartsWith("map_Kd"))
-                {
-                    material!.Diffuse = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
-                }
+                    case "map_Tr":
+                        material!.Transmission = model.AddTexture(Path.Combine(fold!, line[1]));
+                        material!.BlendMode = BlendModes.AlphaBlending;
+                        break;
 
-                if (mtlLine.StartsWith("map_Ks"))
-                {
-                    material!.Specular = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
-                }
+                    case "Pm":
+                        material!.Pm = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        break;
 
-                if (mtlLine.StartsWith("map_Ke"))
-                {
-                    material!.Emission = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()), true);
-                }
+                    case "Pr":
+                        material!.Pr = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        break;
 
-                if (mtlLine.StartsWith("map_MRAO"))
-                {
-                    material!.MRAO = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 8).Trim()));
-                }
+                    case "map_MRAO":
+                        material!.MRAO = model.AddTexture(Path.Combine(fold!, line[1]));
+                        break;
 
-                if (mtlLine.StartsWith("map_Pcr"))
-                {
-                    material!.ClearCoatRoughness = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 7).Trim()));
-                    continue;
-                }
+                    case "map_ORM":
+                        material!.MRAO = model.AddTexture(Path.Combine(fold!, line[1]));
+                        material!.UseORM = true;
+                        break;
 
-                if (mtlLine.StartsWith("Pcr"))
-                {
-                    material!.Pcr = float.Parse(mtlLine.Remove(0, 3).Trim(), CultureInfo.InvariantCulture);
-                    continue;
-                }
+                    case "map_Ke":
+                        material!.Emission = model.AddTexture(Path.Combine(fold!, line[1]), useSrgbToLinearTransform: true);
+                        break;
 
-                if (mtlLine.StartsWith("map_Pc"))
-                {
-                    material!.ClearCoat = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 6).Trim()));
-                }
+                    case "norm":
+                        material!.Normals = model.AddTexture(Path.Combine(fold!, line[1]), isNormal: true);
+                        break;
 
-                if (mtlLine.StartsWith("Pc"))
-                {
-                    material!.Pc = float.Parse(mtlLine.Remove(0, 2).Trim(), CultureInfo.InvariantCulture);
-                }
+                    case "Pc":
+                        material!.Pc = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        break;
 
-                if (mtlLine.StartsWith("norm_pc"))
-                {
-                    material!.ClearCoatNormals = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 7).Trim()), false, true);
-                    continue;
-                }
+                    case "Pcr":
+                        material!.Pcr = float.Parse(line[1], CultureInfo.InvariantCulture);
+                        break;
 
-                if (mtlLine.StartsWith("norm"))
-                {
-                    material!.Normals = model.AddTexture(Path.Combine(fold!, mtlLine.Remove(0, 4).Trim()), false, true);
+                    case "map_Pc":
+                        material!.ClearCoat = model.AddTexture(Path.Combine(fold!, line[1]));
+                        break;
+
+                    case "map_Pcr":
+                        material!.ClearCoatRoughness = model.AddTexture(Path.Combine(fold!, line[1]));
+                        break;
+
+                    case "norm_pc":
+                        material!.ClearCoatNormals = model.AddTexture(Path.Combine(fold!, line[1]), isNormal: true);
+                        break;
                 }
             }
+
             model.Materials.Add(material!);
         }
 

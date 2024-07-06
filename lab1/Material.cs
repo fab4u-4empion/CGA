@@ -40,6 +40,7 @@ namespace lab1
         public float D = 1;
 
         public BlendModes BlendMode = BlendModes.Opaque;
+        public bool UseORM = false;
 
         public static bool UsingMIPMapping { get; set; } = true;
         public static int MaxAnisotropy { get; set; } = 16;
@@ -222,7 +223,15 @@ namespace lab1
 
         public Vector3 GetMRAO(Vector2 uv, Vector2 uv1, Vector2 uv2)
         {
-            return GetColorFromTexture(MRAO, uv, new(Pm, Pr, 1), uv1, uv2);
+            if (MRAO == null)
+                return new(Pm, Pr, 1);
+
+            Vector3 mrao = GetColorFromTexture(MRAO, uv, Zero, uv1, uv2);
+
+            if (UseORM)
+                return new(mrao.Z, mrao.Y, mrao.X);
+
+            return mrao;
         }
     }
 }
