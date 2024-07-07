@@ -59,10 +59,13 @@ namespace lab1.Shadow
             float result = 0;
             float total = 0;
 
+            double seed = Random.Shared.NextDouble();
+
             Vector3 baseDirection = lamp.GetL(orig);
 
             if (lamp.Type == LampTypes.Point)
             {
+                Matrix4x4 worldMatrix = CreateWorldMatrix(lamp.Position, -baseDirection);
                 float cosRange = 1 - lamp.Radius / (lamp.Position - orig).Length();
 
                 if (IsNaN(cosRange))
@@ -70,10 +73,11 @@ namespace lab1.Shadow
 
                 for (int j = 0; j < ShadowRayCount; j++)
                 {
-                    (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
-                    (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
+                    (double x, double y) = R2(seed, j + 1);
+                    float theta = Acos(1 - cosRange * (float)x);
+                    float phi = 2 * Pi * (float)y;
 
-                    Vector3 LP = Transform(SphericalToCartesian(phi, theta, lamp.Radius), -baseDirection) + lamp.Position;
+                    Vector3 LP = Transform(SphericalToCartesian(phi, theta, lamp.Radius), worldMatrix);
 
                     float dist = Distance(LP, orig);
                     Vector3 dir = (LP - orig) / dist;
@@ -87,14 +91,16 @@ namespace lab1.Shadow
             }
             else
             {
+                Matrix4x4 worldMatrix = CreateWorldMatrix(Zero, baseDirection);
                 float cosRange = 1 - Cos(DegreesToRadians(lamp.Angle * 0.5f));
 
                 for (int j = 0; j < ShadowRayCount; j++)
                 {
-                    (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
-                    (float phi, float theta) = (2 * Pi * (float)x, Acos(1 - cosRange * (float)y));
+                    (double x, double y) = R2(seed, j + 1);
+                    float theta = Acos(1 - cosRange * (float)x);
+                    float phi = 2 * Pi * (float)y;
 
-                    Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), baseDirection);
+                    Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
                     float cosTheta = Dot(normal, dir);
                     result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : cosTheta;
@@ -109,12 +115,17 @@ namespace lab1.Shadow
         {
             float result = 0;
 
+            double seed = Random.Shared.NextDouble();
+
+            Matrix4x4 worldMatrix = CreateWorldMatrix(Zero, normal);
+
             for (int j = 0; j < RTAORayCount; j++)
             {
-                (double x, double y) = R2(Random.Shared.NextDouble(), j + 1);
-                (float phi, float theta) = (2 * Pi * (float)x, Asin(Sqrt((float)y)));
+                (double x, double y) = R2(seed, j + 1);
+                float theta = Asin(Sqrt((float)x));
+                float phi = 2 * Pi * (float)y;
 
-                Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), normal);
+                Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
                 result += BVH.IntersectBVH(orig, dir, RTAORayDistance, 0) ? 0 : 1;
             }
