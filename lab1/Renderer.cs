@@ -1,6 +1,5 @@
 ﻿using lab1.Effects;
 using lab1.Shaders;
-using lab1.Shadow;
 using Rasterization;
 using System;
 using System.Buffers;

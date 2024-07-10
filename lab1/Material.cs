@@ -110,8 +110,8 @@ namespace lab1
             float u = uv.X * src.Width - 0.5f;
             float v = uv.Y * src.Height - 0.5f;
 
-            int x0 = (int)float.Floor(u);
-            int y0 = (int)float.Floor(v);
+            int x0 = (int)Floor(u);
+            int y0 = (int)Floor(v);
 
             int x1 = x0 + 1;
             int y1 = y0 + 1;
