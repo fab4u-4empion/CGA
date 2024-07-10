@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Windows.Media;
-using static System.Single;
 using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1
 {
@@ -43,13 +43,15 @@ namespace lab1
             return (x, y);
         }
 
-        public static Vector3 Transform(Vector3 vector, Vector3 yAxis)
+        public static Matrix4x4 CreateWorldMatrix(Vector3 position, Vector3 yAxis)
         {
             Vector3 xAxis = Cross(yAxis, UnitZ);
             xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
             Vector3 zAxis = Cross(xAxis, yAxis);
-
-            return xAxis * vector.X + yAxis * vector.Y + zAxis * vector.Z;
+            return new(xAxis.X, xAxis.Y, xAxis.Z, 0,
+                       yAxis.X, yAxis.Y, yAxis.Z, 0,
+                       zAxis.X, zAxis.Y, zAxis.Z, 0,
+                       position.X, position.Y, position.Z, 1);
         }
     }
 }
