@@ -36,14 +36,12 @@ namespace lab1
             return new Vector3(color.R, color.G, color.B) / 255f;
         }
 
-        public static (double, double) R2(double seed, int n)
+        public static (double, double) FibonacciLattice(double seed, int i, int n)
         {
-            double x = (seed + n * 0.75487766624669276005) % 1;
-            double y = (seed + n * 0.56984029099805326591) % 1;
-            return (x, y);
+            return ((seed + i * 0.61803398874989484821) % 1, (i + 0.5) / n);
         }
 
-        public static Matrix4x4 CreateWorldMatrix(Vector3 position, Vector3 yAxis)
+        public static Matrix4x4 CreateWorldMatrix(Vector3 yAxis)
         {
             Vector3 xAxis = Cross(yAxis, UnitZ);
             xAxis = xAxis.Equals(Zero) ? UnitX : Normalize(xAxis);
@@ -51,7 +49,7 @@ namespace lab1
             return new(xAxis.X, xAxis.Y, xAxis.Z, 0,
                        yAxis.X, yAxis.Y, yAxis.Z, 0,
                        zAxis.X, zAxis.Y, zAxis.Z, 0,
-                       position.X, position.Y, position.Z, 1);
+                       0, 0, 0, 1);
         }
     }
 }
