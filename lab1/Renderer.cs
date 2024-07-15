@@ -292,7 +292,7 @@ namespace lab1
 
                 case ShaderTypes.Toon:
                     int d = (int)Ceiling(2 * Scaling);
-                    color = Toon.GetPixelColor(baseColor, n, pw, emission, d, ViewBuffer, CountBuffer, x, y);
+                    color = Toon.GetPixelColor(baseColor, oN, pw, emission, d, ViewBuffer, CountBuffer, x, y);
                     opacity = 1;
                     dissolve = 1;
                     break;
