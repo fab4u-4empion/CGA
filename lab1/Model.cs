@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Windows.Media.Imaging;
 using static System.Numerics.Vector3;
 using static System.Single;
-using static System.Numerics.Matrix4x4;
 
 namespace lab1
 {
