@@ -73,7 +73,7 @@ namespace lab1
             Matrix4x4 translationMatrix = CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
             Matrix4x4 viewMatrix = CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
-            Matrix4x4 projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / (float)height, 0.1f, 500f);
+            Matrix4x4 projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / height, 0.1f, 500f);
 
             Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix;
 
@@ -238,6 +238,7 @@ namespace lab1
             Vector2 uv2 = u2 * uv_1 + v2 * uv_2 + w2 * uv_3;
 
             Vector3 oN = u * n1 + v * n2 + w * n3;
+
             Vector3 pw = u * aw + v * bw + w * cw;
 
             Vector3 T = (u * t1 + v * t2 + w * t3);

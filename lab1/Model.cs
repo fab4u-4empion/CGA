@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Windows.Media.Imaging;
 using static System.Numerics.Vector3;
 using static System.Single;
+using static System.Numerics.Matrix4x4;
 
 namespace lab1
 {
@@ -32,13 +33,13 @@ namespace lab1
 
         public Dictionary<string, List<Buffer<Vector3>>> Textures = [];
 
-        public float Scale { get; set; }
+        public float Scale { get; set; } = 1f;
 
-        public Vector3 Translation { get; set; }
+        public Vector3 Translation { get; set; } = Zero;
 
-        public float Yaw { get; set; }
-        public float Pitch { get; set; }
-        public float Roll { get; set; }
+        public float Yaw { get; set; } = 0f;
+        public float Pitch { get; set; } = 0f;
+        public float Roll { get; set; } = 0f;
 
         private float minX = MaxValue;
         private float minY = MaxValue;
@@ -47,19 +48,6 @@ namespace lab1
         private float maxX = MinValue;
         private float maxY = MinValue;
         private float maxZ = MinValue;
-
-        public float X = 0;
-        public float Y = 0;
-        public float Z = 0;
-
-        public Model()
-        {
-            Scale = 1.0f;
-            Translation = new Vector3(0, 0, 0);
-            Yaw = 0.0f;
-            Pitch = 0.0f;
-            Roll = 0.0f;
-        }
 
         public void AddVertex(float x, float y, float z)
         {
@@ -90,7 +78,7 @@ namespace lab1
             return null;
         }
 
-        public void AddFace(String v1, String v2, String v3, int materialIndex, int faceIndex)
+        public void AddFace(string v1, string v2, string v3, int materialIndex, int faceIndex)
         {
             MaterialIndices.Add(materialIndex);
 
@@ -127,10 +115,7 @@ namespace lab1
 
         public Vector3 GetCenter()
         {
-            X = (maxX + minX) / 2;
-            Y = (maxY + minY) / 2;
-            Z = (maxZ + minZ) / 2;
-            return new Vector3(X, Y, Z);
+            return new Vector3(maxX + minX, maxY + minY, maxZ + minZ) / 2;
         }
 
         public float GetMinZoomR()
