@@ -158,19 +158,15 @@ namespace lab1
                                 Vector4 p1 = a + (x - a.X) * k1;
                                 Vector4 p2 = x < b.X ? a + (x - a.X) * k2 : b + (x - b.X) * k3;
 
-                                if (p1.Y > p2.Y)
-                                    (p1, p2) = (p2, p1);
-
                                 Vector4 k = (p2 - p1) / (p2.Y - p1.Y);
 
-                                int top = Max((int)Ceiling(p1.Y), 0);
-                                int bottom = Min((int)Ceiling(p2.Y), height);
+                                int top = Max((int)Ceiling(Min(p1.Y, p2.Y)), 0);
+                                int bottom = Min((int)Ceiling(Max(p1.Y, p2.Y)), height);
 
                                 for (int y = top; y < bottom; y++)
                                 {
                                     Vector4 p = p1 + (y - p1.Y) * k;
-                                    if (p.Z >= 0 && p.Z <= 1)
-                                        action(x, y, p.Z, facesIndices[i]);
+                                    action(x, y, p.Z, facesIndices[i]);
                                 }
                             }
                         }
@@ -569,7 +565,7 @@ namespace lab1
 
         public void Draw(Model? model)
         {
-            Array.Fill(ZBuffer.Array, float.MaxValue);
+            Array.Fill(ZBuffer.Array, 1);
             Array.Fill(ViewBuffer.Array, -1);
             Array.Fill(CountBuffer.Array, (byte)0);
             Array.Fill(OffsetBuffer.Array, 0);
