@@ -119,7 +119,7 @@ namespace lab1
         public static Vector3 GetIBLDiffuseColor(Vector3 n)
         {
             if (IBLDiffuseMap == null)
-                return AmbientColor;
+                return Pi * AmbientColor;
 
             return IBLDiffuseMap.GetColor(n);
         }
