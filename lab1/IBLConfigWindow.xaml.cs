@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using lab1.Effects;
+using Microsoft.Win32;
 using System.IO;
 using System.Windows;
 using static lab1.LightingConfig;

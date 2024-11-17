@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using static lab1.LightingConfig;
-using static lab1.Utils;
 using static System.Int32;
 using static System.Numerics.Matrix4x4;
 using static System.Numerics.Vector3;
@@ -22,7 +21,7 @@ namespace lab1
     using DPIScale = (double X, double Y);
     using Layer = (int Index, float Z);
 
-    public enum ShaderTypes
+    public enum ShaderType
     {
         MetallicPBR,
         SpecularPBR,
@@ -38,12 +37,10 @@ namespace lab1
 
         public static Model? Sphere { get; set; }
 
-        public static ShaderTypes CurrentShader { get; set; } = ShaderTypes.MetallicPBR;
+        public static ShaderType CurrentShader { get; set; } = ShaderType.MetallicPBR;
         public static bool UseSkyBox { get; set; } = true;
 
         public static bool BackfaceCulling { get; set; } = true;
-
-        public static float Exposure { get; set; } = 1f;
 
         public Buffer<Vector3> BufferHDR = new(0, 0);
         public Buffer<float> AlphaBuffer = new(0, 0);
@@ -83,7 +80,7 @@ namespace lab1
             }
         }
 
-        private void Rasterize(List<int> facesIndices, Model model, Action<int, int, float, int> action, BlendModes blendMode)
+        private void Rasterize(List<int> facesIndices, Model model, Action<int, int, float, int> action, BlendMode blendMode)
         {
             Parallel.ForEach(Partitioner.Create(0, facesIndices.Count), (range) =>
             {
@@ -134,7 +131,7 @@ namespace lab1
                         Vector4 b = result[j];
                         Vector4 c = result[j + 1];
 
-                        if (PerpDotProduct(new(c.X - a.X, c.Y - a.Y), new(b.X - a.X, b.Y - a.Y)) > 0 || blendMode == BlendModes.AlphaBlending || !BackfaceCulling)
+                        if ((c.X - a.X) * (b.Y - a.Y) - (c.Y - a.Y) * (b.X - a.X) > 0 || blendMode == BlendMode.AlphaBlending || !BackfaceCulling)
                         {
 
                             if (b.X < a.X)
@@ -275,19 +272,19 @@ namespace lab1
 
             switch (CurrentShader)
             {
-                case ShaderTypes.MetallicPBR:
+                case ShaderType.MetallicPBR:
                     color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
                     break;
 
-                case ShaderTypes.Phong:
+                case ShaderType.Phong:
                     color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
                     break;
 
-                case ShaderTypes.SpecularPBR:
+                case ShaderType.SpecularPBR:
                     color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
                     break;
 
-                case ShaderTypes.Toon:
+                case ShaderType.Toon:
                     int d = (int)Ceiling(2 * Scaling);
                     color = Toon.GetPixelColor(baseColor, oN, pw, emission, d, ViewBuffer, CountBuffer, x, y);
                     opacity = 1;
@@ -442,7 +439,7 @@ namespace lab1
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
                         }
 
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + 0.01f * bloomBuffer[x, y]) * Exposure));
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + 0.01f * bloomBuffer[x, y]));
                     }
                 });
             }
@@ -459,7 +456,7 @@ namespace lab1
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
                         }
 
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])) * Exposure));
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor(BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y])));
                     }
                 });
             }
@@ -476,7 +473,7 @@ namespace lab1
                 {
                     Lamp lamp = Lights[i];
 
-                    if (lamp.Type != LampTypes.Point) continue;
+                    if (lamp.Type != LampType.Point) continue;
 
                     Sphere.Translation = lamp.Position;
                     Sphere.Scale = Max(0.05f, lamp.Radius);
@@ -497,7 +494,7 @@ namespace lab1
                         }
 
                         Spins[x, y].Exit(false);
-                    }, BlendModes.Opaque);
+                    }, BlendMode.Opaque);
                 }
             }
         }
@@ -507,13 +504,13 @@ namespace lab1
             TransformCoordinates(model);
 
             if (model.OpaqueFacesIndices.Count > 0)
-                Rasterize(model.OpaqueFacesIndices, model, DrawPixelIntoViewBuffer, BlendModes.Opaque);
+                Rasterize(model.OpaqueFacesIndices, model, DrawPixelIntoViewBuffer, BlendMode.Opaque);
 
             DrawLamps();
 
             if (model.TransparentFacesIndices.Count > 0)
             {
-                Rasterize(model.TransparentFacesIndices, model, IncDepth, BlendModes.AlphaBlending);
+                Rasterize(model.TransparentFacesIndices, model, IncDepth, BlendMode.AlphaBlending);
 
                 int prefixSum = 0;
                 int depth = 0;
@@ -532,7 +529,7 @@ namespace lab1
                 {
                     LayersBuffer = new Layer[prefixSum];
 
-                    Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendModes.AlphaBlending);
+                    Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendMode.AlphaBlending);
 
                     DrawLayers(model);
                 }

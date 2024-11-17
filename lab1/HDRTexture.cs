@@ -1,12 +1,15 @@
-﻿using Rasterization;
+﻿using lab1.Effects;
+using Rasterization;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using static System.Single;
+using System.Threading.Tasks;
 using static System.Int32;
 using static System.Numerics.Vector3;
+using static System.Single;
 
 namespace lab1
 {
@@ -79,9 +82,12 @@ namespace lab1
 
             bmp.Source.Lock();
 
-            for (int x = 0; x < Width; x++)
-                for (int y = 0; y < Height; y++)
-                    bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AcesFilmic(Source![x, y])));
+            Parallel.ForEach(Partitioner.Create(0, Width), range =>
+            {
+                for (int x = range.Item1; x < range.Item2; x++)
+                    for (int y = 0; y < Height; y++)
+                        bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(Source![x, y])));
+            });
 
             bmp.Source.AddDirtyRect(new(0, 0, Width, Height));
             bmp.Source.Unlock();
@@ -92,10 +98,10 @@ namespace lab1
         public Vector3 GetColor(Vector3 N)
         {
             float theta = Acos(Clamp(N.Y, -1, 1));
-            float phi = Atan2(N.X, -N.Z) + Pi + Angle;
+            float phi = Atan2(N.X, -N.Z) + float.Pi + Angle;
 
-            float x = phi / (2 * Pi) * Width - 0.5f;
-            float y = theta / Pi * Height - 0.5f;
+            float x = phi / float.Tau * Width - 0.5f;
+            float y = theta / float.Pi * Height - 0.5f;
 
             int x0 = (int)Floor(x);
             int y0 = (int)Floor(y);

@@ -1,4 +1,5 @@
-﻿using lab1.Shadow;
+﻿using lab1.Effects;
+using lab1.Shadow;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
@@ -90,22 +91,22 @@ namespace lab1
 
                     case "d":
                         material!.D = float.Parse(line[1], CultureInfo.InvariantCulture);
-                        material!.BlendMode = BlendModes.AlphaBlending;
+                        material!.BlendMode = BlendMode.AlphaBlending;
                         break;
 
                     case "map_d":
                         material!.Dissolve = model.AddTexture(Path.Combine(fold!, line[1]));
-                        material!.BlendMode = BlendModes.AlphaBlending;
+                        material!.BlendMode = BlendMode.AlphaBlending;
                         break;
 
                     case "Tr":
                         material!.Tr = float.Parse(line[1], CultureInfo.InvariantCulture);
-                        material!.BlendMode = BlendModes.AlphaBlending;
+                        material!.BlendMode = BlendMode.AlphaBlending;
                         break;
 
                     case "map_Tr":
                         material!.Transmission = model.AddTexture(Path.Combine(fold!, line[1]));
-                        material!.BlendMode = BlendModes.AlphaBlending;
+                        material!.BlendMode = BlendMode.AlphaBlending;
                         break;
 
                     case "Pm":
@@ -233,7 +234,7 @@ namespace lab1
 
             ShaderInfo.Text = $"{Renderer.CurrentShader}";
             NormalsInfo.Text = $"{(Renderer.UseTangentNormals ? "Tangent" : "Object")}";
-            TonemapInfo.Text = $"{ToneMapping.Mode}";
+            TonemapInfo.Text = $"{ToneMapping.ToneMapper}";
 
             if (Material.UsingMIPMapping)
             {
@@ -244,9 +245,6 @@ namespace lab1
             }
             else
                 FilteringInfo.Text = "Bilinear";
-
-            if (ToneMapping.Mode == ToneMappingMode.AgX)
-                TonemapInfo.Text += $" {ToneMapping.LookMode}";
         }
 
         private void Draw()
@@ -484,8 +482,8 @@ namespace lab1
                     }
                     else
                     {
-                        Renderer.Exposure -= 0.1f;
-                        Renderer.Exposure = Max(Renderer.Exposure, 0);
+                        ToneMapping.Exposure *= 0.84089642f;
+                        ToneMapping.Exposure = Max(ToneMapping.Exposure, 0.03125f);
                     }
                     Draw();
                     break;
@@ -494,7 +492,10 @@ namespace lab1
                     if (Keyboard.Modifiers == ModifierKeys.Shift)
                         LightingConfig.EmissionIntensity += 10f;
                     else
-                        Renderer.Exposure += 0.1f;
+                    {
+                        ToneMapping.Exposure *= 1.18920712f;
+                        ToneMapping.Exposure = Min(ToneMapping.Exposure, 32);
+                    }
                     Draw();
                     break;
 
@@ -628,7 +629,7 @@ namespace lab1
                 case Key.Space:
                     if (!e.IsRepeat)
                     {
-                        Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % 2);
+                        Renderer.Camera.Mode = (CameraMode)(((int)Renderer.Camera.Mode + 1) % Enum.GetNames<CameraMode>().Length);
                         UpdateInfo();
                     }
                     break;
@@ -637,10 +638,7 @@ namespace lab1
                 case Key.T:
                     if (!e.IsRepeat)
                     {
-                        if (Keyboard.Modifiers == ModifierKeys.Shift && ToneMapping.Mode == ToneMappingMode.AgX)
-                            ToneMapping.LookMode = (AgXLookMode)(((int)ToneMapping.LookMode + 1) % 3);
-                        else
-                            ToneMapping.Mode = (ToneMappingMode)(((int)ToneMapping.Mode + 1) % 3);
+                        ToneMapping.ToneMapper = (ToneMapper)(((int)ToneMapping.ToneMapper + 1) % Enum.GetNames<ToneMapper>().Length);
                         Draw();
                     }
                     break;
@@ -673,7 +671,7 @@ namespace lab1
                 case Key.P:
                     if (!e.IsRepeat)
                     {
-                        Renderer.CurrentShader = (ShaderTypes)(((int)Renderer.CurrentShader + 1) % 4);
+                        Renderer.CurrentShader = (ShaderType)(((int)Renderer.CurrentShader + 1) % Enum.GetNames<ShaderType>().Length);
                         Draw();
                     }
                     break;

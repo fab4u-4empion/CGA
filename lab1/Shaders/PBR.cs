@@ -21,7 +21,7 @@ namespace lab1.Shaders
             float a2 = roughness * roughness;
 
             float k = NdotH * NdotH * (a2 - 1) + 1;
-            float d = a2 / (Pi * k * k);
+            float d = a2 / (float.Pi * k * k);
 
             return d < 1e12f ? d : 1e12f;
         }
@@ -87,7 +87,7 @@ namespace lab1.Shaders
 
             Vector3 color = Zero;
 
-            Vector3 diffuse = baseColor / Pi * opacity;
+            Vector3 diffuse = baseColor / float.Pi * opacity;
 
             for (int i = 0; i < Lights.Count; i++)
             {
@@ -124,7 +124,7 @@ namespace lab1.Shaders
             }
 
             Vector3 ambientReflectance = F0;
-            Vector3 ambientDiffuse = baseColor / Pi * opacity;
+            Vector3 ambientDiffuse = baseColor / float.Pi * opacity;
             Vector3 ambientIrradiance = GetIBLDiffuseColor(N);
 
             float lod = roughness * (IBLSpecularMap.Count - 1);

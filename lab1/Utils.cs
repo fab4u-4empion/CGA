@@ -9,14 +9,9 @@ namespace lab1
     {
         public static Vector3 SphericalToCartesian(float phi, float theta, float radius)
         {
-            float projection = Sin(theta);
-
-            return new Vector3(Sin(phi) * projection, Cos(theta), Cos(phi) * projection) * radius;
-        }
-
-        public static float PerpDotProduct(Vector2 a, Vector2 b)
-        {
-            return a.X * b.Y - a.Y * b.X;
+            (float sinPhi, float cosPhi) = SinCos(phi);
+            (float sinTheta, float cosTheta) = SinCos(theta);
+            return Create(sinPhi * sinTheta, cosTheta, cosPhi * sinTheta) * radius;
         }
 
         public static Color Vector3ToColor(Vector3 color)
@@ -27,7 +22,7 @@ namespace lab1
 
         public static Vector3 ColorToVector3(Color color)
         {
-            return new Vector3(color.R, color.G, color.B) / 255f;
+            return Create(color.R, color.G, color.B) / 255f;
         }
 
         public static (double, double) FibonacciLattice(double seed, int i, int n)

@@ -46,7 +46,7 @@ namespace lab1.Shaders
 
                 float dot = Floor(Max(Dot(N, L), 0) * (lvl + 1)) * step;
 
-                color += baseColor * lamp.GetIrradiance(p) * dot / Pi;
+                color += baseColor * lamp.GetIrradiance(p) * dot / float.Pi;
             }
 
             color += baseColor * AmbientColor + emission * EmissionIntensity;

@@ -61,7 +61,7 @@ namespace lab1.Shadow
             Vector3 baseDirection = lamp.GetL(orig);
             Matrix4x4 worldMatrix = CreateWorldMatrix(baseDirection);
 
-            if (lamp.Type == LampTypes.Point)
+            if (lamp.Type == LampType.Point)
             {
                 float r = lamp.Radius;
                 float d = Distance(orig, lamp.Position);
@@ -75,7 +75,7 @@ namespace lab1.Shadow
                 for (int j = 0; j < ShadowRayCount; j++)
                 {
                     (double x, double y) = FibonacciLattice(seed, j, ShadowRayCount);
-                    float phi = 2 * Pi * (float)x, theta = Acos(1 - cosRange * (float)y);
+                    float phi = float.Tau * (float)x, theta = Acos(1 - cosRange * (float)y);
                     Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
                     (float sinTheta, float cosTheta) = SinCos(theta);
@@ -93,11 +93,11 @@ namespace lab1.Shadow
                 for (int j = 0; j < ShadowRayCount; j++)
                 {
                     (double x, double y) = FibonacciLattice(seed, j, ShadowRayCount);
-                    float phi = 2 * Pi * (float)x, theta = Acos(1 - cosRange * (float)y);
+                    float phi = float.Tau * (float)x, theta = Acos(1 - cosRange * (float)y);
                     Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
                     float cosThetaHat = Max(0, Dot(normal, dir));
-                    result += BVH.IntersectBVH(orig, dir, PositiveInfinity, 0) ? 0 : cosThetaHat;
+                    result += BVH.IntersectBVH(orig, dir, float.PositiveInfinity, 0) ? 0 : cosThetaHat;
                     total += cosThetaHat;
                 }
             }
@@ -114,7 +114,7 @@ namespace lab1.Shadow
             for (int j = 0; j < RTAORayCount; j++)
             {
                 (double x, double y) = FibonacciLattice(seed, j, RTAORayCount);
-                float phi = 2 * Pi * (float)x, theta = Asin(Sqrt((float)y));
+                float phi = float.Tau * (float)x, theta = Asin(Sqrt((float)y));
                 Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
                 result += BVH.IntersectBVH(orig, dir, RTAORayDistance, 0) ? 0 : 1;
