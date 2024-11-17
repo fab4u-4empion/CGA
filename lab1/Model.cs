@@ -91,7 +91,7 @@ namespace lab1
 
             if (Materials.Count > 0)
             {
-                if (Materials[materialIndex].BlendMode == BlendModes.Opaque)
+                if (Materials[materialIndex].BlendMode == BlendMode.Opaque)
                     OpaqueFacesIndices.Add(faceIndex);
                 else
                     TransparentFacesIndices.Add(faceIndex);
@@ -146,7 +146,8 @@ namespace lab1
                 Vector3 t = (e1 * y2 - e2 * y1) * r;
                 Vector3 b = (e2 * x1 - e1 * x2) * r;
 
-                if (r == PositiveInfinity || r == NegativeInfinity)
+                if (r == float.PositiveInfinity ||
+                    r == float.NegativeInfinity)
                 {
                     t = Zero;
                     b = Zero;

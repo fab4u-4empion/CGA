@@ -41,7 +41,7 @@ namespace lab1.Shaders
 
                 Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 5f;
 
-                color += (baseColor * opacity / Pi + specular) * Lights[i].GetIrradiance(p) * intensity * Max(Dot(N, L), 0);
+                color += (baseColor * opacity / float.Pi + specular) * Lights[i].GetIrradiance(p) * intensity * Max(Dot(N, L), 0);
             }
 
             return color * dissolve;

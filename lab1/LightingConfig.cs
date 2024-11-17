@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using lab1.Effects;
+using System.Collections.Generic;
 using System.Numerics;
 using static lab1.Utils;
 using static System.Numerics.Vector3;
@@ -6,7 +7,7 @@ using static System.Single;
 
 namespace lab1
 {
-    public enum LampTypes
+    public enum LampType
     {
         Point,
         Directional
@@ -20,13 +21,13 @@ namespace lab1
         public string Name = "";
         public float Theta = 45;
         public float Phi = 45;
-        public LampTypes Type = LampTypes.Point;
+        public LampType Type = LampType.Point;
         public float Radius = 0;
         public float Angle = 0.526f;
 
         public Vector3 GetIrradiance(Vector3 point)
         {
-            if (Type == LampTypes.Directional)
+            if (Type == LampType.Directional)
                 return Intensity * Color;
 
             float distance = Distance(Position, point);
@@ -36,7 +37,7 @@ namespace lab1
 
         public Vector3 GetL(Vector3 point)
         {
-            if (Type == LampTypes.Directional)
+            if (Type == LampType.Directional)
                 return SphericalToCartesian(DegreesToRadians(Phi), DegreesToRadians(Theta), 1);
 
             return Normalize(Position - point);
@@ -45,7 +46,7 @@ namespace lab1
 
     public class LightingConfig
     {
-        public static Vector3 AmbientColor { get; set; } = ToneMapping.SrgbToLinear(new(0.3f, 0.3f, 0.3f));
+        public static Vector3 AmbientColor { get; set; } = ToneMapping.SrgbToLinear(Create(0.251f));
 
         public static float EmissionIntensity { get; set; } = 100;
 
@@ -80,7 +81,7 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                if (Lights[CurrentLamp].Type == LampTypes.Directional)
+                if (Lights[CurrentLamp].Type == LampType.Directional)
                     Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta / 10, 0);
                 else
                     Lights[CurrentLamp].Intensity = Max(Lights[CurrentLamp].Intensity + delta, 0);
@@ -91,7 +92,7 @@ namespace lab1
         {
             if (CurrentLamp > -1)
             {
-                if (Lights[CurrentLamp].Type == LampTypes.Directional)
+                if (Lights[CurrentLamp].Type == LampType.Directional)
                     Lights[CurrentLamp].Angle = Clamp(Lights[CurrentLamp].Angle + deltaAngle, 0, 90);
                 else
                     Lights[CurrentLamp].Radius = Max(Lights[CurrentLamp].Radius + deltaRadius, 0);
@@ -103,7 +104,7 @@ namespace lab1
             if (CurrentLamp > -1)
             {
                 Lamp lamp = Lights[CurrentLamp];
-                if (lamp.Type == LampTypes.Directional)
+                if (lamp.Type == LampType.Directional)
                 {
                     lamp.Theta = Clamp(lamp.Theta + delta.Z * 10, 0, 180);
                     lamp.Phi += delta.X * 10;
@@ -119,7 +120,7 @@ namespace lab1
         public static Vector3 GetIBLDiffuseColor(Vector3 n)
         {
             if (IBLDiffuseMap == null)
-                return Pi * AmbientColor;
+                return float.Pi * AmbientColor;
 
             return IBLDiffuseMap.GetColor(n);
         }
