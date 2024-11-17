@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using lab1.Effects;
+using Microsoft.Win32;
 using System;
 using System.Globalization;
 using System.IO;
@@ -100,7 +101,7 @@ namespace lab1
                 lamp.Intensity = float.Parse(LampInt.Text, CultureInfo.InvariantCulture);
                 lamp.Theta = Clamp(float.Parse(LampDir_T.Text, CultureInfo.InvariantCulture), 0, 180);
                 lamp.Phi = Clamp(float.Parse(LampDir_Ph.Text, CultureInfo.InvariantCulture), 0, 360);
-                lamp.Type = (LampTypes)LampType.SelectedIndex;
+                lamp.Type = (LampType)LampType.SelectedIndex;
                 lamp.Angle = Clamp(float.Parse(LampAngle.Text, CultureInfo.InvariantCulture), 0, 90);
                 lamp.Radius = Max(float.Parse(LampRadius.Text, CultureInfo.InvariantCulture), 0);
                 UpdateListBox();
@@ -193,11 +194,11 @@ namespace lab1
                             switch (line[1])
                             {
                                 case "point":
-                                    lamp!.Type = LampTypes.Point;
+                                    lamp!.Type = lab1.LampType.Point;
                                     break;
 
                                 case "directional":
-                                    lamp!.Type = LampTypes.Directional;
+                                    lamp!.Type = lab1.LampType.Directional;
                                     break;
                             }
 

@@ -13,7 +13,7 @@ namespace lab1
         public Vector3 Target { get; set; } = Zero;
         public Vector3 Position { get; set; }
         public Vector3 Up { get; set; } = UnitY;
-        public float FoV { get; set; } = Pi / 4f;
+        public float FoV { get; set; } = float.Pi / 4f;
         public CameraMode Mode { get; set; } = CameraMode.Arcball;
 
         public float Yaw { get => DegreesToRadians(f); }
@@ -71,7 +71,7 @@ namespace lab1
             o = 90;
             f = 0;
             Mode = CameraMode.Arcball;
-            FoV = Pi / 4f;
+            FoV = float.Pi / 4f;
             Target = target;
             UpdatePosition(0, 0, 0);
         }

@@ -1,4 +1,5 @@
-﻿using Rasterization;
+﻿using lab1.Effects;
+using Rasterization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using static System.Single;
 
 namespace lab1
 {
-    public enum BlendModes
+    public enum BlendMode
     {
         Opaque,
         AlphaBlending
@@ -39,7 +40,7 @@ namespace lab1
         public float Pcr = 0;
         public float D = 1;
 
-        public BlendModes BlendMode = BlendModes.Opaque;
+        public BlendMode BlendMode = BlendMode.Opaque;
         public bool UseORM = false;
 
         public static bool UsingMIPMapping { get; set; } = true;

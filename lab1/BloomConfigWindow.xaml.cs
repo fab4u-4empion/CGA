@@ -52,7 +52,7 @@ namespace lab1
             preview.Source.Lock();
             for (int x = 0; x < bmp.PixelWidth; x++)
                 for (int y = 0; y < bmp.PixelHeight; y++)
-                    preview.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AcesFilmic(bmpBuf[x, y] + bloomBuf[x, y])));
+                    preview.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(bmpBuf[x, y] + bloomBuf[x, y])));
             preview.Source.AddDirtyRect(new(0, 0, bmp.PixelWidth, bmp.PixelHeight));
             preview.Source.Unlock();
         }
