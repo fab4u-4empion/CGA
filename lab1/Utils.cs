@@ -19,12 +19,6 @@ namespace lab1
             return a.X * b.Y - a.Y * b.X;
         }
 
-        public static float Smoothstep(float a, float b, float x)
-        {
-            float t = Clamp((x - a) / (b - a), 0, 1);
-            return t * t * (3 - 2 * t);
-        }
-
         public static Color Vector3ToColor(Vector3 color)
         {
             color *= 255f;

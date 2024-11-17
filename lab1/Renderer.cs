@@ -442,7 +442,7 @@ namespace lab1
                             backColor = IBLSpecularMap[0].GetColor(Normalize(p));
                         }
 
-                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + bloomBuffer[x, y]) * Exposure));
+                        Bitmap.SetPixel(x, y, ToneMapping.CompressColor((BufferHDR[x, y] + backColor * (1f - AlphaBuffer[x, y]) + 0.01f * bloomBuffer[x, y]) * Exposure));
                     }
                 });
             }

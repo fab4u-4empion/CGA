@@ -1,8 +1,8 @@
 ﻿using Rasterization;
+using System;
 using System.Collections.Concurrent;
 using System.Numerics;
 using System.Threading.Tasks;
-using static lab1.Utils;
 using static System.Int32;
 using static System.Numerics.Vector3;
 using static System.Single;
@@ -17,15 +17,7 @@ namespace lab1.Effects
                 return new(width, height);
 
             Buffer<Vector3> tmp = new(width, height);
-            Parallel.For(0, width, (x) =>
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    Vector3 color = src[x, y];
-                    float luminance = 0.299f * color.X + 0.587f * color.Y + 0.114f * color.Z;
-                    tmp[x, y] = Min(new(100f), color * Smoothstep(0, 100, luminance));
-                }
-            });
+            Array.Copy(src.Array, tmp.Array, src.Array.Length);
 
             if (BloomConfig.KernelImg == null)
             {
