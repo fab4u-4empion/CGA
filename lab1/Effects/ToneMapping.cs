@@ -67,68 +67,26 @@ namespace lab1.Effects
 
         #pragma warning disable format
 
-        private static readonly Matrix4x4 LinearRec2020ToLinearSrgb = new
+        private static readonly Matrix4x4 LinearRec709ToLinearFilmLightEGamut = new
         (
-             1.6605f, -0.1246f, -0.0182f, 0f,
-            -0.5876f,  1.1329f, -0.1006f, 0f,
-            -0.0728f, -0.0083f,  1.1187f, 0f,
-                  0f,       0f,       0f, 1f
-        );
-
-        private static readonly Matrix4x4 LinearSrgbToLinearRec2020 = new
-        (
-            0.6274f, 0.0691f, 0.0164f, 0f,
-            0.3293f, 0.9195f, 0.0880f, 0f,
-            0.0433f, 0.0113f, 0.8956f, 0f,
-                 0f,      0f,      0f, 1f
-        );
-
-        private static readonly Matrix4x4 AgXInsetMatrix = new
-        (
-            0.8566271533159830f, 0.1373189729298470f, 0.1118982129999500f, 0f,
-            0.0951212405381588f, 0.7612419906025910f, 0.0767994186031903f, 0f,
-            0.0482516061458583f, 0.1014390364675620f, 0.8113023683968590f, 0f,
+            0.5594630473276861f, 0.0762332608733703f, 0.0655375095152927f, 0f,
+            0.3047758110283366f, 0.7879523952184488f, 0.1645427298716744f, 0f,
+            0.1358129414038276f, 0.1357748488287584f, 0.7697415276874705f, 0f,
                              0f,                  0f,                  0f, 1f
         );
 
-        private static readonly Matrix4x4 AgXOutsetMatrix = new
-        (
-             1.1271005818144368f, -0.1413297634984383f, -0.1413297634984383f, 0f,
-            -0.1106066430966032f,  1.1578237022162720f, -0.1106066430966029f, 0f,
-            -0.0164939387178346f, -0.0164939387178343f,  1.2519364065950405f, 0f,
-                              0f,                   0f,                   0f, 1f
-        );
+        #pragma warning restore format
 
         private static readonly Vector3 AgXMinEV = Create(-12.47393f);
-        private static readonly Vector3 AgXMaxEV = Create(4.026069f);
-
-        private static Vector3 AgXDefaultContrastApprox(Vector3 x)
-        {
-            Vector3 x2 = x * x;
-            Vector3 x4 = x2 * x2;
-            Vector3 x6 = x4 * x2;
-            return - 17.860f * x6 * x
-                   + 78.010f * x6
-                   - 126.70f * x4 * x
-                   + 92.060f * x4
-                   - 28.720f * x2 * x
-                   + 4.3610f * x2
-                   - 0.1718f * x
-                   + Create(0.002857f);
-        }
-
-        #pragma warning restore format
+        private static readonly Vector3 AgXMaxEV = Create(12.5260688117f);
+        private static readonly Lut3D AgXBaseSrgb = new("AgX_Base_sRGB.cube");
 
         public static Vector3 AgX(Vector3 color)
         {
-            color = Transform(color, LinearSrgbToLinearRec2020);
-            color = Transform(Max(Zero, color), AgXInsetMatrix);
+            color = Max(Zero, Transform(color, LinearRec709ToLinearFilmLightEGamut));
             color = Clamp((Log2(color) - AgXMinEV) / (AgXMaxEV - AgXMinEV), Zero, One);
-            color = AgXDefaultContrastApprox(color);
-            color = Transform(color, AgXOutsetMatrix);
+            color = AgXBaseSrgb.TetrahedralSample(color);
             color = Create(Pow(color.X, 2.4f), Pow(color.Y, 2.4f), Pow(color.Z, 2.4f));
-            color = Transform(color, LinearRec2020ToLinearSrgb);
-            color = Clamp(color, Zero, One);
             return color;
         }
 
