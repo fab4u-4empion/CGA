@@ -49,14 +49,15 @@ namespace lab1.Shaders
             float clearCoat,
             float clearCoatRougness,
             Vector3 camera,
-            Vector3 p
+            Vector3 p,
+            Vector3 o
         )
         {
             Vector3 F0 = Lerp(new(0.04f), baseColor, metallic);
 
             baseColor *= (1 - metallic);
 
-            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p);
+            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p, o);
         }
 
         public static Vector3 GetPixelColorSpecular(
@@ -72,7 +73,8 @@ namespace lab1.Shaders
             float clearCoat,
             float clearCoatRougness,
             Vector3 camera,
-            Vector3 p
+            Vector3 p,
+            Vector3 o
         )
         {
             float r2 = roughness * roughness;
@@ -100,7 +102,7 @@ namespace lab1.Shaders
 
                 Vector3 H = Normalize(V + L);
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f, N) : 1;
+                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], o, N) : 1;
 
                 float CNdotL = Max(Dot(CN, L), 0);
                 float NdotH = Max(Dot(N, H), 0);
@@ -151,7 +153,7 @@ namespace lab1.Shaders
             brdf = BRDFLLUT.GetColor(CNdotV, 1 - clearCoatRougness);
             Vector3 clearCoatSpecularIBL = coatSpecularLight * (clearCoatReflectanceIBL * brdf.X + new Vector3(brdf.Y) * clearCoat);
 
-            if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(p + N * 0.01f, N);
+            if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(o, N);
             color += (((One - ambientReflectance) * ambientDiffuse * ambientIrradiance + ambientSpecular) * (One - clearCoatReflectanceIBL) + clearCoatSpecularIBL) * ao;
 
             color += emission * EmissionIntensity;
