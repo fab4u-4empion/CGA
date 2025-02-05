@@ -212,7 +212,7 @@ namespace lab1
             float w1 = 1f - u1 - v1;
             float w2 = 1f - u2 - v2;
 
-            bool isBackFace = det1 <= 0;
+            bool isBackFace = det1 < 0;
 
             Vector3 n1 = model.Normals[model.NormalIndices[index]];
             Vector3 n2 = model.Normals[model.NormalIndices[index + 1]];
@@ -233,6 +233,12 @@ namespace lab1
             Vector3 oN = u * n1 + v * n2 + w * n3;
 
             Vector3 pw = u * aw + v * bw + w * cw;
+
+            Vector3 tmpu = Min(0, Dot(pw - aw, n1)) * n1;
+            Vector3 tmpv = Min(0, Dot(pw - bw, n2)) * n2;
+            Vector3 tmpw = Min(0, Dot(pw - cw, n3)) * n3;
+            Vector3 offset = u * tmpu + v * tmpv + w * tmpw;
+            Vector3 o = pw - (isBackFace ? -offset : offset);
 
             Vector3 T = (u * t1 + v * t2 + w * t3);
             Vector3 B = Cross(oN, T) * model.Signs[faceIndex];
@@ -273,7 +279,7 @@ namespace lab1
             switch (CurrentShader)
             {
                 case ShaderType.MetallicPBR:
-                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
+                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, o);
                     break;
 
                 case ShaderType.Phong:
@@ -281,7 +287,7 @@ namespace lab1
                     break;
 
                 case ShaderType.SpecularPBR:
-                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw);
+                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, o);
                     break;
 
                 case ShaderType.Toon:
