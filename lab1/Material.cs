@@ -32,10 +32,10 @@ namespace lab1
         public List<Buffer<Vector3>>? ClearCoatNormals = null;
 
         public float Pm = 0;
-        public float Pr = 1;
+        public float Pr = 0.5f;
         public float Tr = 0;
-        public Vector3 Kd = Zero;
-        public Vector3 Ks = One;
+        public Vector3 Kd = One;
+        public Vector3 Ks = Create(0.04f);
         public float Pc = 0;
         public float Pcr = 0;
         public float D = 1;

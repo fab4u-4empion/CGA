@@ -19,50 +19,22 @@ namespace lab1.Shaders
         private static float Distribution(float NdotH, float roughness)
         {
             float a2 = roughness * roughness;
-
             float k = NdotH * NdotH * (a2 - 1) + 1;
-            float d = a2 / (float.Pi * k * k);
-
-            return d < 1e12f ? d : 1e12f;
+            return MinNumber(1e8f, a2 / (float.Pi * k * k));
         }
 
         private static float Visibility(float NdotV, float NdotL, float roughness)
         {
             float a2 = roughness * roughness;
-
             float v = NdotL * Sqrt(NdotV * NdotV * (1 - a2) + a2);
             float l = NdotV * Sqrt(NdotL * NdotL * (1 - a2) + a2);
-
-            return Min(1e12f, 0.5f / (v + l));
+            return Min(1e8f, 0.5f / (v + l));
         }
 
-        public static Vector3 GetPixelColorMetallic(
-            Vector3 baseColor,
-            float metallic,
-            float roughness,
-            float ao,
-            float opacity,
-            float dissolve,
-            Vector3 emission,
-            Vector3 n,
-            Vector3 clearCoatN,
-            float clearCoat,
-            float clearCoatRougness,
-            Vector3 camera,
-            Vector3 p,
-            Vector3 o
-        )
-        {
-            Vector3 F0 = Lerp(new(0.04f), baseColor, metallic);
-
-            baseColor *= (1 - metallic);
-
-            return GetPixelColorSpecular(baseColor, F0, roughness, ao, opacity, dissolve, emission, n, clearCoatN, clearCoat, clearCoatRougness, camera, p, o);
-        }
-
-        public static Vector3 GetPixelColorSpecular(
+        public static Vector3 GetPixelColor(
             Vector3 baseColor,
             Vector3 F0,
+            float metallic,
             float roughness,
             float ao,
             float opacity,
@@ -89,7 +61,9 @@ namespace lab1.Shaders
 
             Vector3 color = Zero;
 
-            Vector3 diffuse = baseColor / float.Pi * opacity;
+            F0 = Lerp(F0, baseColor, metallic);
+            Vector3 albedo = (1 - metallic) * baseColor;
+            Vector3 diffuse = albedo / float.Pi * opacity;
 
             for (int i = 0; i < Lights.Count; i++)
             {
@@ -126,7 +100,7 @@ namespace lab1.Shaders
             }
 
             Vector3 ambientReflectance = F0;
-            Vector3 ambientDiffuse = baseColor / float.Pi * opacity;
+            Vector3 ambientDiffuse = albedo / float.Pi * opacity;
             Vector3 ambientIrradiance = GetIBLDiffuseColor(N);
 
             float lod = roughness * (IBLSpecularMap.Count - 1);

@@ -23,8 +23,7 @@ namespace lab1
 
     public enum ShaderType
     {
-        MetallicPBR,
-        SpecularPBR,
+        PBR,
         Phong,
         Toon
     }
@@ -37,7 +36,7 @@ namespace lab1
 
         public static Model? Sphere { get; set; }
 
-        public static ShaderType CurrentShader { get; set; } = ShaderType.MetallicPBR;
+        public static ShaderType CurrentShader { get; set; } = ShaderType.PBR;
         public static bool UseSkyBox { get; set; } = true;
 
         public static bool BackfaceCulling { get; set; } = true;
@@ -278,16 +277,12 @@ namespace lab1
 
             switch (CurrentShader)
             {
-                case ShaderType.MetallicPBR:
-                    color = PBR.GetPixelColorMetallic(baseColor, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, o);
+                case ShaderType.PBR:
+                    color = PBR.GetPixelColor(baseColor, specular, MRAO.X, MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, o);
                     break;
 
                 case ShaderType.Phong:
                     color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
-                    break;
-
-                case ShaderType.SpecularPBR:
-                    color = PBR.GetPixelColorSpecular(baseColor, specular, 1 - MRAO.Y, MRAO.Z, opacity, dissolve, emission, n, nc, clearCoat, clearCoatRougness, Camera.Position, pw, o);
                     break;
 
                 case ShaderType.Toon:
