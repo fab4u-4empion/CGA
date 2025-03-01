@@ -2,7 +2,6 @@
 using lab1.Shaders;
 using Rasterization;
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
@@ -71,7 +70,7 @@ namespace lab1
             Matrix4x4 viewMatrix = CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
             Matrix4x4 projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / height, 0.1f, 500f);
 
-            Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix;
+            Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix * viewportMatrix;
 
             for (int i = 0; i < model.ProjectionVertices!.Length; i++)
             {
@@ -83,56 +82,70 @@ namespace lab1
         {
             Parallel.ForEach(Partitioner.Create(0, facesIndices.Count), (range) =>
             {
-                Vector4[] result = ArrayPool<Vector4>.Shared.Rent(4);
-
                 for (int i = range.Item1; i < range.Item2; i++)
                 {
                     int index = facesIndices[i] * 3;
-                    byte count = 0;
 
                     Vector4 v1 = model.ProjectionVertices![model.PositionIndices[index]];
                     Vector4 v2 = model.ProjectionVertices![model.PositionIndices[index + 1]];
                     Vector4 v3 = model.ProjectionVertices![model.PositionIndices[index + 2]];
 
-                    if (v1.Z >= 0)
-                        result[count++] = v1;
-
-                    if (v1.Z < 0 != v2.Z < 0)
+                    if (v1.Z >= 0 && v2.Z >= 0 && v3.Z >= 0)
                     {
-                        float t = -v1.Z / (v2.Z - v1.Z);
-                        result[count++] = Lerp(v1, v2, t);
+                        v1 /= v1.W; v2 /= v2.W; v3 /= v3.W;
+                        DrawTriangle(v1, v2, v3);
+                    }
+                    else if (v1.Z >= 0 && v2.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v1, v3, -v1.Z / (v3.Z - v1.Z));
+                        Vector4 v5 = Lerp(v2, v3, -v2.Z / (v3.Z - v2.Z));
+                        v1 /= v1.W; v2 /= v2.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v1, v5, v4);
+                        DrawTriangle(v1, v2, v5);
+                    }
+                    else if (v1.Z >= 0 && v3.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v1, v2, -v1.Z / (v2.Z - v1.Z));
+                        Vector4 v5 = Lerp(v3, v2, -v3.Z / (v2.Z - v3.Z));
+                        v1 /= v1.W; v3 /= v3.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v1, v4, v5);
+                        DrawTriangle(v1, v5, v3);
+                    }
+                    else if (v2.Z >= 0 && v3.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v2, v1, -v2.Z / (v1.Z - v2.Z));
+                        Vector4 v5 = Lerp(v3, v1, -v3.Z / (v1.Z - v3.Z));
+                        v2 /= v2.W; v3 /= v3.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v2, v5, v4);
+                        DrawTriangle(v2, v3, v5);
+                    }
+                    else if (v1.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v1, v2, -v1.Z / (v2.Z - v1.Z));
+                        Vector4 v5 = Lerp(v1, v3, -v1.Z / (v3.Z - v1.Z));
+                        v1 /= v1.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v1, v4, v5);
+                    }
+                    else if (v2.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v2, v1, -v2.Z / (v1.Z - v2.Z));
+                        Vector4 v5 = Lerp(v2, v3, -v2.Z / (v3.Z - v2.Z));
+                        v2 /= v2.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v2, v5, v4);
+                    }
+                    else if (v3.Z >= 0)
+                    {
+                        Vector4 v4 = Lerp(v3, v1, -v3.Z / (v1.Z - v3.Z));
+                        Vector4 v5 = Lerp(v3, v2, -v3.Z / (v2.Z - v3.Z));
+                        v3 /= v3.W; v4 /= v4.W; v5 /= v5.W;
+                        DrawTriangle(v3, v4, v5);
                     }
 
-                    if (v2.Z >= 0)
-                        result[count++] = v2;
-
-                    if (v2.Z < 0 != v3.Z < 0)
+                    void DrawTriangle(Vector4 a, Vector4 b, Vector4 c)
                     {
-                        float t = -v2.Z / (v3.Z - v2.Z);
-                        result[count++] = Lerp(v2, v3, t);
-                    }
-
-                    if (v3.Z >= 0)
-                        result[count++] = v3;
-
-                    if (v1.Z < 0 != v3.Z < 0)
-                    {
-                        float t = -v1.Z / (v3.Z - v1.Z);
-                        result[count++] = Lerp(v1, v3, t);
-                    }
-
-                    for (int j = 0; j < count; j++)
-                        result[j] = Transform(result[j] / result[j].W, viewportMatrix);
-
-                    for (int j = 1; j < count - 1; j++)
-                    {
-                        Vector4 a = result[0];
-                        Vector4 b = result[j];
-                        Vector4 c = result[j + 1];
-
-                        if ((c.X - a.X) * (b.Y - a.Y) - (c.Y - a.Y) * (b.X - a.X) > 0 || blendMode == BlendMode.AlphaBlending || !BackfaceCulling)
+                        if (blendMode == BlendMode.AlphaBlending || !BackfaceCulling ||
+                            (c - a).X * (b - a).Y - (c - a).Y * (b - a).X > 0)
                         {
-
                             if (b.X < a.X)
                                 (a, b) = (b, a);
 
@@ -168,8 +181,6 @@ namespace lab1
                         }
                     }
                 }
-
-                ArrayPool<Vector4>.Shared.Return(result);
             });
         }
 
@@ -481,7 +492,7 @@ namespace lab1
 
                     TransformCoordinates(Sphere);
 
-                    Rasterize(Sphere.OpaqueFacesIndices, Sphere, (int x, int y, float z, int unused) =>
+                    Rasterize(Sphere.OpaqueFacesIndices, Sphere, (x, y, z, unused) =>
                     {
                         bool gotLock = false;
                         Spins[x, y].Enter(ref gotLock);
