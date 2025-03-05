@@ -41,6 +41,8 @@ namespace lab1
 
         public Vector3 TetrahedralSample(Vector3 color)
         {
+            color = Clamp(color, Zero, One);
+
             float r = color.X * (Size - 1);
             float g = color.Y * (Size - 1);
             float b = color.Z * (Size - 1);

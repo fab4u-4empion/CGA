@@ -8,8 +8,9 @@ namespace lab1.Effects
     {
         Linear,
         Reinhard,
-        ACES,
+        TonyMcMapface,
         AgX,
+        ACES,
         PBRNeutral
     }
 
@@ -26,6 +27,15 @@ namespace lab1.Effects
         public static Vector3 Reinhard(Vector3 color)
         {
             return color / (One + color);
+        }
+
+        private static readonly Lut3D TonyMcMapfaceSrgb = new("Effects/LUTs/tony_mc_mapface.cube");
+
+        public static Vector3 TonyMcMapface(Vector3 color)
+        {
+            color = Reinhard(color);
+            color = TonyMcMapfaceSrgb.TetrahedralSample(color);
+            return color;
         }
 
         #pragma warning disable format
@@ -79,11 +89,11 @@ namespace lab1.Effects
 
         private static readonly Vector3 AgXMinEV = Create(-12.47393f);
         private static readonly Vector3 AgXMaxEV = Create(12.5260688117f);
-        private static readonly Lut3D AgXBaseSrgb = new("AgX_Base_sRGB.cube");
+        private static readonly Lut3D AgXBaseSrgb = new("Effects/LUTs/AgX_Base_sRGB.cube");
 
         public static Vector3 AgX(Vector3 color)
         {
-            color = Max(Zero, Transform(color, LinearRec709ToLinearFilmLightEGamut));
+            color = Transform(color, LinearRec709ToLinearFilmLightEGamut);
             color = Clamp((Log2(color) - AgXMinEV) / (AgXMaxEV - AgXMinEV), Zero, One);
             color = AgXBaseSrgb.TetrahedralSample(color);
             color = Create(Pow(color.X, 2.4f), Pow(color.Y, 2.4f), Pow(color.Z, 2.4f));
@@ -130,8 +140,9 @@ namespace lab1.Effects
             color = ToneMapper switch
             {
                 ToneMapper.Reinhard => Reinhard(color),
-                ToneMapper.ACES => AcesFilmic(color),
+                ToneMapper.TonyMcMapface => TonyMcMapface(color),
                 ToneMapper.AgX => AgX(color),
+                ToneMapper.ACES => AcesFilmic(color),
                 ToneMapper.PBRNeutral => PBRNeutral(color),
                 ToneMapper.Linear or _ => Linear(color)
             };
