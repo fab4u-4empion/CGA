@@ -39,7 +39,7 @@ namespace lab1.Shaders
 
                 float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], p + N * 0.01f, N) : 1;
 
-                Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 5f;
+                Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 100f;
 
                 color += (baseColor * opacity / float.Pi + specular) * Lights[i].GetIrradiance(p) * intensity * Max(Dot(N, L), 0);
             }
