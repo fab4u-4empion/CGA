@@ -27,7 +27,7 @@ namespace lab1
 
         public static (double, double) FibonacciLattice(double seed, int i, int n)
         {
-            return ((seed + i * 0.61803398874989484821) % 1, (i + 0.5) / n);
+            return ((seed + (i + 1) * 0.61803398874989484821) % 1, (i + 0.5) / n);
         }
 
         public static Matrix4x4 CreateWorldMatrix(Vector3 yAxis)
