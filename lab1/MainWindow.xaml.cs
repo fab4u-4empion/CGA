@@ -221,6 +221,7 @@ namespace lab1
             BloomInfo.Text = $"{(Renderer.UseBloom ? "On" : "Off")}";
             RTAOInfo.Text = $"{(LightingConfig.UseRTAO ? "On" : "Off")}";
             ShadowsInfo.Text = $"{(LightingConfig.UseShadow ? "On" : "Off")}";
+            GroundInfo.Text = $"{(LightingConfig.DrawGround ? "On" : "Off")}";
             LampsInfo.Text = $"{(LightingConfig.DrawLamps ? "On" : "Off")}";
             BackfaceInfo.Text = $"{(Renderer.BackfaceCulling ? "On" : "Off")}";
 
@@ -377,7 +378,9 @@ namespace lab1
                 case Key.F7:
                     if (!e.IsRepeat)
                     {
-                        if (Keyboard.Modifiers == ModifierKeys.Control)
+                        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+                            LightingConfig.DrawGround = !LightingConfig.DrawGround;
+                        else if (Keyboard.Modifiers == ModifierKeys.Control)
                             LightingConfig.UseRTAO = !LightingConfig.UseRTAO;
                         else
                             LightingConfig.UseShadow = !LightingConfig.UseShadow;
