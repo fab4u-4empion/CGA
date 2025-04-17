@@ -293,7 +293,7 @@ namespace lab1
                     break;
 
                 case ShaderType.Phong:
-                    color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
+                    color = Phong.GetPixelColor(baseColor, n, specular, Camera.Position, pw, o, emission, opacity, dissolve, MRAO.Z, 1f - MRAO.Y);
                     break;
 
                 case ShaderType.Toon:
