@@ -40,19 +40,19 @@ namespace lab1
 
         public static bool BackfaceCulling { get; set; } = true;
 
-        public Buffer<Vector3> BufferHDR = new(0, 0);
-        public Buffer<float> AlphaBuffer = new(0, 0);
-        public Buffer<SpinLock> Spins = new(0, 0);
-        public Buffer<int> ViewBuffer = new(0, 0);
-        public Buffer<float> ZBuffer = new(0, 0);
+        public Buffer<Vector3> BufferHDR = null!;
+        public Buffer<float> AlphaBuffer = null!;
+        public Buffer<SpinLock> Spins = null!;
+        public Buffer<int> ViewBuffer = null!;
+        public Buffer<float> ZBuffer = null!;
 
-        public Buffer<int> OffsetBuffer = new(0, 0);
-        public Buffer<byte> CountBuffer = new(0, 0);
-        public Layer[] LayersBuffer = [];
+        public Buffer<int> OffsetBuffer = null!;
+        public Buffer<byte> CountBuffer = null!;
+        public Layer[] LayersBuffer = null!;
 
         public Camera Camera = new();
 
-        public Pbgra32Bitmap Bitmap = new(1, 1);
+        public Pbgra32Bitmap Bitmap = null!;
 
         private int width;
         private int height;
@@ -614,16 +614,9 @@ namespace lab1
             ViewBuffer = new(this.width, this.height);
             CountBuffer = new(this.width, this.height);
             OffsetBuffer = new(this.width, this.height);
-            for (int i = 0; i < this.width; i++)
-            {
-                for (int j = 0; j < this.height; j++)
-                {
-                    Spins[i, j] = new(false);
-                    BufferHDR[i, j] = AmbientColor;
-                }
-            }
             ZBuffer = new(this.width, this.height);
-        }
 
+            Array.Fill(Spins.Array, new(false));
+        }
     }
 }
