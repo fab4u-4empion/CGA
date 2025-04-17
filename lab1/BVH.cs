@@ -23,7 +23,7 @@ namespace lab1
 
     public class BVH
     {
-        private static BVHNode[]? nodes;
+        public static BVHNode[]? Nodes { get; set; }
         public static Tri[]? Tris { get; set; }
 
         private static int rootNodeIndx = 0, nodesUsed = 1;
@@ -31,7 +31,7 @@ namespace lab1
         public static void Destroy()
         {
             Tris = null;
-            nodes = null;
+            Nodes = null;
             rootNodeIndx = 0;
             nodesUsed = 1;
         }
@@ -39,13 +39,13 @@ namespace lab1
         public static void Build(List<Vector3> vertices, List<int> opaqueFacesIndexes, List<int> verticesIndices)
         {
             Tris = new Tri[opaqueFacesIndexes.Count];
-            nodes = new BVHNode[opaqueFacesIndexes.Count * 2 - 1];
+            Nodes = new BVHNode[opaqueFacesIndexes.Count * 2 - 1];
             rootNodeIndx = 0;
             nodesUsed = 1;
 
-            for (int i = 0; i < nodes.Length; i++)
+            for (int i = 0; i < Nodes.Length; i++)
             {
-                nodes[i] = new();
+                Nodes[i] = new();
             }
 
             for (int i = 0; i < opaqueFacesIndexes.Count; i++)
@@ -64,7 +64,7 @@ namespace lab1
                 tri.Centroid = (tri.v0 + tri.v1 + tri.v2) * 0.3333f;
                 Tris[i] = tri;
             }
-            BVHNode root = nodes[rootNodeIndx];
+            BVHNode root = Nodes[rootNodeIndx];
             root.leftNode = 0;
             root.firstTri = 0;
             root.triCount = Tris.Length;
@@ -74,7 +74,7 @@ namespace lab1
 
         private static void UpdateNodeBounds(int nodeIndx)
         {
-            BVHNode node = nodes![nodeIndx];
+            BVHNode node = Nodes![nodeIndx];
             node.aabbMin = new(1e30f);
             node.aabbMax = new(-1e30f);
             for (int first = node.firstTri, i = 0; i < node.triCount; i++)
@@ -91,7 +91,7 @@ namespace lab1
 
         private static void Subdivide(int nodeIndx)
         {
-            BVHNode node = nodes![nodeIndx];
+            BVHNode node = Nodes![nodeIndx];
             Vector3 extent = node.aabbMax - node.aabbMin;
             int[] axes = [0, 1, 2];
             if (extent.Y > extent.X)
@@ -121,10 +121,10 @@ namespace lab1
 
                 int leftChild = nodesUsed++;
                 int rightChild = nodesUsed++;
-                nodes[leftChild].firstTri = node.firstTri;
-                nodes[leftChild].triCount = leftCount;
-                nodes[rightChild].firstTri = i;
-                nodes[rightChild].triCount = node.triCount - leftCount;
+                Nodes[leftChild].firstTri = node.firstTri;
+                Nodes[leftChild].triCount = leftCount;
+                Nodes[rightChild].firstTri = i;
+                Nodes[rightChild].triCount = node.triCount - leftCount;
                 node.leftNode = leftChild;
                 node.triCount = 0;
 
@@ -140,9 +140,9 @@ namespace lab1
 
         public static bool IntersectBVH(Vector3 orig, Vector3 dir, float dist, int nodeIndx)
         {
-            if (nodes == null) return false;
+            if (Nodes == null) return false;
 
-            BVHNode node = nodes[nodeIndx];
+            BVHNode node = Nodes[nodeIndx];
             if (!RTX.IntersectAABB(orig, dir, node.aabbMin, node.aabbMax)) return false;
             if (node.IsLeaf())
             {
@@ -150,7 +150,7 @@ namespace lab1
                 {
                     Tri tri = Tris![node.firstTri + i];
                     float d = RTX.IntersectTriangle(orig, dir, tri.v0, tri.v1, tri.v2);
-                    if (d > 1e-4f && (dist - d) > 1e-4f) return true;
+                    if (d > 1e-4f && d < dist) return true;
                 }
                 return false;
             }

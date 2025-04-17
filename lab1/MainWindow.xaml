@@ -48,7 +48,11 @@
                         <Run x:Name="ShadowsInfo" Text="text"/>
                     </TextBlock>
                     <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
-                        <Run Text="Visible lamps: " Foreground="Gray"/>
+                        <Run Text="Ground: " Foreground="Gray"/>
+                        <Run x:Name="GroundInfo" Text="text"/>
+                    </TextBlock>
+                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">
+                        <Run Text="Lamps: " Foreground="Gray"/>
                         <Run x:Name="LampsInfo" Text="text"/>
                     </TextBlock>
                     <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}">

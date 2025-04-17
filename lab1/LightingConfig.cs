@@ -54,6 +54,8 @@ namespace lab1
 
         public static bool DrawLamps { get; set; } = true;
 
+        public static bool DrawGround { get; set; } = false;
+
         public static bool UseShadow { get; set; } = false;
 
         public static bool UseRTAO { get; set; } = false;

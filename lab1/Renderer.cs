@@ -1,5 +1,6 @@
 ﻿using lab1.Effects;
 using lab1.Shaders;
+using lab1.Shadow;
 using Rasterization;
 using System;
 using System.Collections.Concurrent;
@@ -57,6 +58,8 @@ namespace lab1
         private int width;
         private int height;
 
+        private Matrix4x4 viewMatrix;
+        private Matrix4x4 projectionMatrix;
         private Matrix4x4 viewportMatrix;
 
         Vector3 p0, dpdx, dpdy;
@@ -67,8 +70,9 @@ namespace lab1
             Matrix4x4 rotationMatrix = CreateFromYawPitchRoll(model.Yaw, model.Pitch, model.Roll);
             Matrix4x4 translationMatrix = CreateTranslation(model.Translation);
             Matrix4x4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-            Matrix4x4 viewMatrix = CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
-            Matrix4x4 projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / height, 0.1f, 500f);
+
+            viewMatrix = CreateLookAt(Camera.Position, Camera.Target, Camera.Up);
+            projectionMatrix = CreatePerspectiveFieldOfView(Camera.FoV, (float)width / height, 0.1f, 500f);
 
             Matrix4x4 matrix = modelMatrix * viewMatrix * projectionMatrix * viewportMatrix;
 
@@ -186,6 +190,16 @@ namespace lab1
 
         private Color GetPixelColor(int faceIndex, int x, int y, Model model)
         {
+            if (faceIndex == -1000)
+            {
+                Vector3 dir = Normalize(p0 + x * dpdx + y * dpdy);
+                float t = (BVH.Nodes![0].aabbMin.Y - Camera.Position.Y) / dir.Y;
+                Vector3 p = Camera.Position + t * dir;
+
+                float ao = RTX.GetAmbientOcclusionBVH(p, Vector3.UnitY);
+                return (Vector3.Zero, 1, 1 - ao);
+            }
+
             int materialIndex = model.MaterialIndices[faceIndex];
             int index = faceIndex * 3;
 
@@ -511,6 +525,28 @@ namespace lab1
             }
         }
 
+        private void DrawGround(Action<int, int, float, int> action)
+        {
+            Matrix4x4 matrix = viewMatrix * projectionMatrix * viewportMatrix;
+
+            Parallel.For(0, width, (x) =>
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Vector3 dir = Normalize(p0 + x * dpdx + y * dpdy);
+                    float t = (BVH.Nodes![0].aabbMin.Y - Camera.Position.Y) / dir.Y;
+
+                    if (IsFinite(t) && t > 0)
+                    {
+                        Vector3 pw = Camera.Position + t * dir;
+                        Vector4 p = Vector4.Transform(pw, matrix); p /= p.W;
+
+                        action(x, y, p.Z, -1000);
+                    }
+                }
+            });
+        }
+
         private void DrawScene(Model model)
         {
             TransformCoordinates(model);
@@ -520,9 +556,13 @@ namespace lab1
 
             DrawLamps();
 
-            if (model.TransparentFacesIndices.Count > 0)
+            if (model.TransparentFacesIndices.Count > 0 || LightingConfig.DrawGround)
             {
-                Rasterize(model.TransparentFacesIndices, model, IncDepth, BlendMode.AlphaBlending);
+                if (model.TransparentFacesIndices.Count > 0)
+                    Rasterize(model.TransparentFacesIndices, model, IncDepth, BlendMode.AlphaBlending);
+
+                if (LightingConfig.DrawGround)
+                    DrawGround(IncDepth);
 
                 int prefixSum = 0;
                 int depth = 0;
@@ -541,7 +581,11 @@ namespace lab1
                 {
                     LayersBuffer = new Layer[prefixSum];
 
-                    Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendMode.AlphaBlending);
+                    if (model.TransparentFacesIndices.Count > 0)
+                        Rasterize(model.TransparentFacesIndices, model, DrawPixelIntoLayers, BlendMode.AlphaBlending);
+
+                    if (LightingConfig.DrawGround)
+                        DrawGround(DrawPixelIntoLayers);
 
                     DrawLayers(model);
                 }
@@ -587,8 +631,6 @@ namespace lab1
                 DrawScene(model);
             else
                 DrawLamps();
-
-            (p0, dpdx, dpdy) = GetViewportToWorldParams(float.Pi / 4);
 
             Bitmap.Source.Lock();
 

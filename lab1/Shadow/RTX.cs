@@ -117,7 +117,15 @@ namespace lab1.Shadow
                 float phi = float.Tau * (float)x, theta = Asin(Sqrt((float)y));
                 Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
 
-                result += BVH.IntersectBVH(orig, dir, RTAORayDistance, 0) ? 0 : 1;
+                bool intersects = BVH.IntersectBVH(orig, dir, RTAORayDistance, 0);
+
+                if (!intersects && LightingConfig.DrawGround)
+                {
+                    float t = (BVH.Nodes![0].aabbMin.Y - orig.Y) / dir.Y;
+                    intersects = IsFinite(t) && t > 1e-4f && t < RTAORayDistance;
+                }
+
+                result += intersects ? 0 : 1;
             }
 
             return result / RTAORayCount;
