@@ -1,9 +1,9 @@
 ﻿using lab1.Effects;
 using Rasterization;
+using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,14 +22,15 @@ namespace lab1
 
         public static float Angle { get; set; } = 0;
 
-        private static string ReadLine(BinaryReader reader)
+        private static float ReadSingle(StreamReader reader)
         {
-            StringBuilder sb = new();
-
-            while (reader.ReadChar() is char c && c != '\n')
-                sb.Append(c);
-
-            return sb.ToString();
+            return BitConverter.ToSingle(
+            [
+                (byte)reader.Read(),
+                (byte)reader.Read(),
+                (byte)reader.Read(),
+                (byte)reader.Read()
+            ]);
         }
 
         private static unsafe float ChangeEndianness(float f)
@@ -42,27 +43,24 @@ namespace lab1
 
         public void Open(string filename)
         {
-            using Stream stream = File.OpenRead(filename);
-            using BinaryReader reader = new(stream, Encoding.Default, true);
+            using StreamReader reader = new(filename, Encoding.Latin1);
 
-            ReadLine(reader);
+            reader.ReadLine();
 
-            int[] size = ReadLine(reader)
-                .Split(" ")
-                .Select(e => int.Parse(e))
-                .ToArray();
-            Source = new(size[0], size[1]);
-            (Width, Height) = (size[0], size[1]);
+            string[] size = reader.ReadLine()!.Split(" ");
+            Width = int.Parse(size[0]);
+            Height = int.Parse(size[1]);
+            Source = new(Width, Height);
 
-            float order = float.Parse(ReadLine(reader), CultureInfo.InvariantCulture);
+            float order = float.Parse(reader.ReadLine()!, CultureInfo.InvariantCulture);
 
-            for (int y = Height - 1; y > -1; y--)
+            for (int y = Height - 1; y >= 0; y--)
             {
-                for (int x = 0; x < Width; x++)
+                for (int x = 0; x <= Width - 1; x++)
                 {
-                    float r = reader.ReadSingle();
-                    float g = reader.ReadSingle();
-                    float b = reader.ReadSingle();
+                    float r = ReadSingle(reader);
+                    float g = ReadSingle(reader);
+                    float b = ReadSingle(reader);
 
                     if (order == 1)
                     {
