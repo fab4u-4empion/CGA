@@ -109,6 +109,7 @@ namespace lab1
             ImgKernel.Source = null;
             KernelImg = null;
             UpdateListBox();
+            GC.Collect();
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
@@ -122,6 +123,7 @@ namespace lab1
                 KernelImg = new(new BitmapImage(new Uri(ofd.FileName)));
                 ImgKernel.Source = KernelImg.Source;
                 UpdateListBox();
+                GC.Collect();
             }
         }
     }

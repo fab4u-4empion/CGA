@@ -1,5 +1,6 @@
 ﻿using lab1.Effects;
 using Microsoft.Win32;
+using System;
 using System.IO;
 using System.Windows;
 using static lab1.LightingConfig;
@@ -51,6 +52,8 @@ namespace lab1
                 }
 
                 EnvironmentPreview.Source = IBLSpecularMap[0].ToLDR().Source;
+
+                GC.Collect();
             }
         }
 
@@ -69,6 +72,8 @@ namespace lab1
             IBLDiffuseMap = null;
             EnvironmentPreview.Source = null;
             IBLSpecularMap.Clear();
+
+            GC.Collect();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

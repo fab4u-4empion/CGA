@@ -659,6 +659,8 @@ namespace lab1
             ZBuffer = new(this.width, this.height);
 
             Array.Fill(Spins.Array, new(false));
+
+            GC.Collect();
         }
     }
 }

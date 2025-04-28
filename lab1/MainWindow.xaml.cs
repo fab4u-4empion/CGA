@@ -666,6 +666,8 @@ namespace lab1
 
                             Renderer.Camera.Reset(MainModel.GetCenter());
 
+                            GC.Collect();
+
                             Draw();
                         }
                     }
