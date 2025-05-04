@@ -27,7 +27,7 @@
         </Grid.RowDefinitions>
         <Label Content="Environment preview" Foreground="LightGray" HorizontalAlignment="Center"/>
         <Border Grid.Row="2" Background="#404040">
-            <Image x:Name="EnvironmentPreview" RenderOptions.BitmapScalingMode="Fant" Width="600" Height="300"/>
+            <Image x:Name="EnvironmentPreview" RenderOptions.BitmapScalingMode="Fant" Width="1024" Height="512"/>
         </Border>
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>

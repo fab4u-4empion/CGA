@@ -1,8 +1,5 @@
 ﻿using lab1.Effects;
 using Rasterization;
-using System;
-using System.Collections.Concurrent;
-using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -22,56 +19,71 @@ namespace lab1
 
         public static float Angle { get; set; } = 0;
 
-        private static float ReadSingle(StreamReader reader)
-        {
-            return BitConverter.ToSingle(
-            [
-                (byte)reader.Read(),
-                (byte)reader.Read(),
-                (byte)reader.Read(),
-                (byte)reader.Read()
-            ]);
-        }
-
-        private static unsafe float ChangeEndianness(float f)
-        {
-            uint i = *(uint*)&f;
-            i = (i & 0x000000FFU) << 24 | (i & 0x0000FF00U) << 8 |
-                (i & 0x00FF0000U) >> 8 | (i & 0xFF000000U) >> 24;
-            return *(float*)&i;
-        }
-
         public void Open(string filename)
         {
-            using StreamReader reader = new(filename, Encoding.Latin1);
-
-            reader.ReadLine();
-
-            string[] size = reader.ReadLine()!.Split(" ");
-            Width = int.Parse(size[0]);
-            Height = int.Parse(size[1]);
-            Source = new(Width, Height);
-
-            float order = float.Parse(reader.ReadLine()!, CultureInfo.InvariantCulture);
-
-            for (int y = Height - 1; y >= 0; y--)
+            static Vector3 RgbeToFloat(byte r, byte g, byte b, byte e)
             {
-                for (int x = 0; x <= Width - 1; x++)
+                float v = Pow(2, e - 128 - 8);
+                float red = (r + 0.5f) * v;
+                float green = (g + 0.5f) * v;
+                float blue = (b + 0.5f) * v;
+                return Create(red, green, blue);
+            }
+
+            Buffer<byte> rgbe = null!;
+
+            using (StreamReader reader = new(filename, Encoding.Latin1))
+            {
+                while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                string[] resolution = reader.ReadLine()!.Split(" ");
+                Height = int.Parse(resolution[1]);
+                Width = int.Parse(resolution[3]);
+                rgbe = new(4 * Width, Height);
+
+                for (int y = 0; y < rgbe.Height; y++)
                 {
-                    float r = ReadSingle(reader);
-                    float g = ReadSingle(reader);
-                    float b = ReadSingle(reader);
+                    reader.Read();
+                    reader.Read();
+                    reader.Read();
+                    reader.Read();
 
-                    if (order == 1)
+                    for (int x = 0; x < rgbe.Width;)
                     {
-                        r = ChangeEndianness(r);
-                        g = ChangeEndianness(g);
-                        b = ChangeEndianness(b);
-                    }
+                        int length = reader.Read();
 
-                    Source[x, y] = new(r, g, b);
+                        if (length > 128)
+                        {
+                            byte value = (byte)reader.Read();
+
+                            while (length-- > 128)
+                            {
+                                rgbe[x++, y] = value;
+                            }
+                        }
+                        else
+                        {
+                            while (length-- > 0)
+                            {
+                                rgbe[x++, y] = (byte)reader.Read();
+                            }
+                        }
+                    }
                 }
             }
+
+            Source = new(Width, Height);
+
+            Parallel.For(0, Width, x =>
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    byte r = rgbe[x, y];
+                    byte g = rgbe[x + Width, y];
+                    byte b = rgbe[x + 2 * Width, y];
+                    byte e = rgbe[x + 3 * Width, y];
+                    Source[x, y] = RgbeToFloat(r, g, b, e);
+                }
+            });
         }
 
         public Pbgra32Bitmap ToLDR()
@@ -80,11 +92,10 @@ namespace lab1
 
             bmp.Source.Lock();
 
-            Parallel.ForEach(Partitioner.Create(0, Width), range =>
+            Parallel.For(0, Width, x =>
             {
-                for (int x = range.Item1; x < range.Item2; x++)
-                    for (int y = 0; y < Height; y++)
-                        bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(Source![x, y])));
+                for (int y = 0; y < Height; y++)
+                    bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(Source![x, y])));
             });
 
             bmp.Source.AddDirtyRect(new(0, 0, Width, Height));

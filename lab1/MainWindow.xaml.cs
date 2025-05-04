@@ -270,7 +270,7 @@ namespace lab1
             Renderer.Sphere = new Model();
             LoadModel(Path.Combine(Directory.GetCurrentDirectory(), "model.obj"), Renderer.Sphere);
 
-            LightingConfig.BRDFLLUT.Open("BRDFIntegrationMap.pfm");
+            LightingConfig.BRDFLLUT.Open("BRDFIntegrationMap.hdr");
 
             Draw();
         }
