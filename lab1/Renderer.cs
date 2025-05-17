@@ -618,12 +618,12 @@ namespace lab1
 
         public void Draw(Model? model)
         {
-            Array.Fill(ZBuffer.Array, 1);
-            Array.Fill(ViewBuffer.Array, -1);
-            Array.Fill(CountBuffer.Array, (byte)0);
-            Array.Fill(OffsetBuffer.Array, 0);
-            Array.Fill(BufferHDR.Array, Vector3.Zero);
-            Array.Fill(AlphaBuffer.Array, 0);
+            Array.Fill(ZBuffer, 1f);
+            Array.Fill(ViewBuffer, -1);
+            Array.Fill(CountBuffer, (byte)0);
+            Array.Fill(OffsetBuffer, 0);
+            Array.Fill(BufferHDR, Vector3.Zero);
+            Array.Fill(AlphaBuffer, 0f);
 
             (p0, dpdx, dpdy) = GetViewportToWorldParams(Camera.FoV / 2);
 
@@ -658,7 +658,7 @@ namespace lab1
             OffsetBuffer = new(this.width, this.height);
             ZBuffer = new(this.width, this.height);
 
-            Array.Fill(Spins.Array, new(false));
+            Array.Fill(Spins, new SpinLock(false));
 
             GC.Collect();
         }

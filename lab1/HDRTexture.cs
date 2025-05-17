@@ -107,7 +107,7 @@ namespace lab1
         public Vector3 GetColor(Vector3 N)
         {
             float theta = Acos(Clamp(N.Y, -1, 1));
-            float phi = Atan2(N.X, -N.Z) + float.Pi + Angle;
+            float phi = -Atan2(N.X, N.Z) + Angle;
 
             float x = phi / float.Tau * Width - 0.5f;
             float y = theta / float.Pi * Height - 0.5f;

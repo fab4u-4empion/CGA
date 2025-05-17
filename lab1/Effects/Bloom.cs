@@ -17,7 +17,7 @@ namespace lab1.Effects
                 return new(width, height);
 
             Buffer<Vector3> tmp = new(width, height);
-            Array.Copy(src.Array, tmp.Array, src.Array.Length);
+            Array.Copy(src, tmp, src.Length);
 
             if (BloomConfig.KernelImg == null)
             {
