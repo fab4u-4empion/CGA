@@ -1,5 +1,4 @@
-﻿using Rasterization;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -94,8 +93,8 @@ namespace lab1.Effects
 
                 float denom = kernel.Intensity / Pow(2 * r + 1, 2 * 4);
 
-                for (int x = 0; x < width; x++)
-                    for (int y = 0; y < height; y++)
+                for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
                         dest[x, y] += tmp1[x, y] * denom;
             }
 
@@ -111,38 +110,38 @@ namespace lab1.Effects
 
             (int w, int h) = (Max(wp, wk), Max(hp, hk));
 
-            float[,] R = new float[w, h];
-            float[,] G = new float[w, h];
-            float[,] B = new float[w, h];
+            float[,] R = new float[h, w];
+            float[,] G = new float[h, w];
+            float[,] B = new float[h, w];
 
-            float[,] Kr = new float[w, h];
-            float[,] Kg = new float[w, h];
-            float[,] Kb = new float[w, h];
+            float[,] Kr = new float[h, w];
+            float[,] Kg = new float[h, w];
+            float[,] Kb = new float[h, w];
 
             Vector3 sum = Zero;
 
-            Parallel.For(0, w, (i) =>
+            Parallel.For(0, h, (j) =>
             {
-                for (int j = 0; j < h; j++)
+                for (int i = 0; i < w; i++)
                 {
-                    R[i, j] = i < width && j < height ? src[i, j].X : 0;
-                    G[i, j] = i < width && j < height ? src[i, j].Y : 0;
-                    B[i, j] = i < width && j < height ? src[i, j].Z : 0;
+                    R[j, i] = i < width && j < height ? src[i, j].X : 0;
+                    G[j, i] = i < width && j < height ? src[i, j].Y : 0;
+                    B[j, i] = i < width && j < height ? src[i, j].Z : 0;
                 }
             });
 
-            for (int i = 0; i < kernel.PixelWidth; i++)
-                for (int j = 0; j <= kernel.PixelHeight; j++)
+            for (int j = 0; j <= kernel.PixelHeight; j++)
+                for (int i = 0; i < kernel.PixelWidth; i++)
                     sum += kernel.GetPixel(i, j);
 
-            for (int a = w / 2 - kernel.PixelWidth / 2, i = 0; i < kernel.PixelWidth; i++, a++)
+            for (int b = h / 2 - kernel.PixelHeight / 2, j = 0; j < kernel.PixelHeight; j++, b++)
             {
-                for (int b = h / 2 - kernel.PixelHeight / 2, j = 0; j < kernel.PixelHeight; j++, b++)
+                for (int a = w / 2 - kernel.PixelWidth / 2, i = 0; i < kernel.PixelWidth; i++, a++)
                 {
                     Vector3 color = kernel.GetPixel(i, j) / sum;
-                    Kr[a, b] = color.X;
-                    Kg[a, b] = color.Y;
-                    Kb[a, b] = color.Z;
+                    Kr[b, a] = color.X;
+                    Kg[b, a] = color.Y;
+                    Kb[b, a] = color.Z;
                 }
             }
 
@@ -154,13 +153,13 @@ namespace lab1.Effects
             Complex[,] Kgc = FFT.DFFT_2D(Kg, w, h);
             Complex[,] Kbc = FFT.DFFT_2D(Kb, w, h);
 
-            Parallel.For(0, w, (i) =>
+            Parallel.For(0, h, (j) =>
             {
-                for (int j = 0; j < h; j++)
+                for (int i = 0; i < w; i++)
                 {
-                    Rc[i, j] *= Krc[i, j];
-                    Gc[i, j] *= Kgc[i, j];
-                    Bc[i, j] *= Kbc[i, j];
+                    Rc[j, i] *= Krc[j, i];
+                    Gc[j, i] *= Kgc[j, i];
+                    Bc[j, i] *= Kbc[j, i];
                 }
             });
 
@@ -168,13 +167,13 @@ namespace lab1.Effects
             Gc = FFT.IFFT_2D(Gc, w, h);
             Bc = FFT.IFFT_2D(Bc, w, h);
 
-            Parallel.For(0, width, (i) =>
+            Parallel.For(0, height, (j) =>
             {
-                for (int j = 0; j < height; j++)
+                for (int i = 0; i < width; i++)
                 {
-                    src[i, j].X = Max((float)Rc[i, j].Magnitude, 0);
-                    src[i, j].Y = Max((float)Gc[i, j].Magnitude, 0);
-                    src[i, j].Z = Max((float)Bc[i, j].Magnitude, 0);
+                    src[i, j].X = Max((float)Rc[j, i].Magnitude, 0);
+                    src[i, j].Y = Max((float)Gc[j, i].Magnitude, 0);
+                    src[i, j].Z = Max((float)Bc[j, i].Magnitude, 0);
                 }
             });
 

@@ -1,5 +1,4 @@
-﻿using Rasterization;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace lab1
 {

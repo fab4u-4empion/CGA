@@ -1,6 +1,5 @@
 ﻿using lab1.Effects;
 using Microsoft.Win32;
-using Rasterization;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -42,16 +41,16 @@ namespace lab1
 
             Buffer<Vector3> bmpBuf = new(bmp.PixelWidth, bmp.PixelHeight);
 
-            for (int x = 0; x < bmp.PixelWidth; x++)
-                for (int y = 0; y < bmp.PixelHeight; y++)
+            for (int y = 0; y < bmp.PixelHeight; y++)
+                for (int x = 0; x < bmp.PixelWidth; x++)
                     bmpBuf[x, y] = bmp.GetPixel(x, y) * 10;
             Buffer<Vector3> bloomBuf = KernelImg == null ?
                 Bloom.GetGaussianClassicBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1)
                 : Bloom.GetImageBasedBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight);
 
             preview.Source.Lock();
-            for (int x = 0; x < bmp.PixelWidth; x++)
-                for (int y = 0; y < bmp.PixelHeight; y++)
+            for (int y = 0; y < bmp.PixelHeight; y++)
+                for (int x = 0; x < bmp.PixelWidth; x++)
                     preview.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(bmpBuf[x, y] + bloomBuf[x, y])));
             preview.Source.AddDirtyRect(new(0, 0, bmp.PixelWidth, bmp.PixelHeight));
             preview.Source.Unlock();

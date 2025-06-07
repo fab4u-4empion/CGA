@@ -1,29 +1,29 @@
 ﻿using System.Numerics;
 using static lab1.LightingConfig;
+using static System.Int32;
 using static System.Numerics.Vector3;
 using static System.Single;
-using static System.Int32;
 
 namespace lab1.Shaders
 {
     public class Toon
     {
         public static Vector3 GetPixelColor(
-            Vector3 baseColor, 
-            Vector3 n, 
-            Vector3 p, 
-            Vector3 emission, 
-            int d, 
-            Buffer<int> ViewBuffer, 
-            Buffer<byte> CountBuffer, 
-            int x, 
+            Vector3 baseColor,
+            Vector3 n,
+            Vector3 p,
+            Vector3 emission,
+            int d,
+            Buffer<int> ViewBuffer,
+            Buffer<byte> CountBuffer,
+            int x,
             int y
         )
         {
             Vector3 color = Zero;
 
-            for (int i = -d; i <= d; i++)
-                for (int j = -d; j <= d; j++)
+            for (int j = -d; j <= d; j++)
+                for (int i = -d; i <= d; i++)
                     if (
                         ViewBuffer[Clamp(x + i, 0, ViewBuffer.Width - 1), Clamp(y + j, 0, ViewBuffer.Height - 1)] == -1
                         &&

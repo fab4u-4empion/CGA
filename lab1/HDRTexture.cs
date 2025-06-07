@@ -1,5 +1,4 @@
 ﻿using lab1.Effects;
-using Rasterization;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -73,9 +72,9 @@ namespace lab1
 
             Source = new(Width, Height);
 
-            Parallel.For(0, Width, x =>
+            Parallel.For(0, Height, y =>
             {
-                for (int y = 0; y < Height; y++)
+                for (int x = 0; x < Width; x++)
                 {
                     byte r = rgbe[x, y];
                     byte g = rgbe[x + Width, y];
@@ -92,9 +91,9 @@ namespace lab1
 
             bmp.Source.Lock();
 
-            Parallel.For(0, Width, x =>
+            Parallel.For(0, Height, y =>
             {
-                for (int y = 0; y < Height; y++)
+                for (int x = 0; x < Width; x++)
                     bmp.SetPixel(x, y, ToneMapping.LinearToSrgb(ToneMapping.AgX(Source![x, y])));
             });
 

@@ -1,7 +1,6 @@
 ﻿using lab1.Effects;
 using lab1.Shaders;
 using lab1.Shadow;
-using Rasterization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -395,9 +394,9 @@ namespace lab1
 
         private void DrawViewBuffer(Model model)
         {
-            Parallel.For(0, width, (x) =>
+            Parallel.For(0, height, (y) =>
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
                     if (ViewBuffer[x, y] != -1)
                     {
@@ -411,9 +410,9 @@ namespace lab1
 
         private void DrawLayers(Model model)
         {
-            Parallel.For(0, width, (x) =>
+            Parallel.For(0, height, (y) =>
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
                     Color color = (Vector3.Zero, 0f, 0f);
 
@@ -454,9 +453,9 @@ namespace lab1
             if (UseBloom)
             {
                 Buffer<Vector3> bloomBuffer = Bloom.GetBloomBuffer(BufferHDR, width, height, Scaling);
-                Parallel.For(0, width, (x) =>
+                Parallel.For(0, height, (y) =>
                 {
-                    for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
                     {
                         Vector3 backColor = AmbientColor;
                         if (UseSkyBox && IBLSpecularMap.Count > 0)
@@ -471,9 +470,9 @@ namespace lab1
             }
             else
             {
-                Parallel.For(0, width, (x) =>
+                Parallel.For(0, height, (y) =>
                 {
-                    for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
                     {
                         Vector3 backColor = AmbientColor;
                         if (UseSkyBox && IBLSpecularMap.Count > 0)
@@ -567,9 +566,9 @@ namespace lab1
                 int prefixSum = 0;
                 int depth = 0;
 
-                for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
                 {
-                    for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
                     {
                         depth = OffsetBuffer[x, y];
                         OffsetBuffer[x, y] = prefixSum;

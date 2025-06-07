@@ -53,19 +53,19 @@ namespace lab1
 
         public static Complex[,] DFFT_2D(float[,] data, int W, int H)
         {
-            Complex[,] X = new Complex[W, H];
+            Complex[,] X = new Complex[H, W];
 
             Parallel.For(0, W, (w) =>
             {
                 Complex[] temp = new Complex[H];
 
                 for (int h = 0; h < H; h++)
-                    temp[h] = data[w, h];
+                    temp[h] = data[h, w];
 
                 Complex[] tempFT = NFFT(DFFT(temp));
 
                 for (int h = 0; h < H; h++)
-                    X[w, h] = tempFT[h];
+                    X[h, w] = tempFT[h];
             });
 
             Parallel.For(0, H, (h) =>
@@ -73,12 +73,12 @@ namespace lab1
                 Complex[] temp = new Complex[W];
 
                 for (int w = 0; w < W; w++)
-                    temp[w] = X[w, h];
+                    temp[w] = X[h, w];
 
                 Complex[] tempFT = NFFT(DFFT(temp));
 
                 for (int w = 0; w < W; w++)
-                    X[w, h] = tempFT[w];
+                    X[h, w] = tempFT[w];
             });
 
             return X;
@@ -86,19 +86,19 @@ namespace lab1
 
         public static Complex[,] IFFT_2D(Complex[,] data, int W, int H)
         {
-            Complex[,] x = new Complex[W, H];
+            Complex[,] x = new Complex[H, W];
 
             Parallel.For(0, W, (w) =>
             {
                 Complex[] temp = new Complex[H];
 
                 for (int h = 0; h < H; h++)
-                    temp[h] = Conjugate(data[w, h]);
+                    temp[h] = Conjugate(data[h, w]);
 
                 Complex[] tempFT = NFFT(DFFT(temp));
 
                 for (int h = 0; h < H; h++)
-                    x[w, h] = Conjugate(tempFT[h]) / H;
+                    x[h, w] = Conjugate(tempFT[h]) / H;
             });
 
             Parallel.For(0, H, (h) =>
@@ -106,12 +106,12 @@ namespace lab1
                 Complex[] temp = new Complex[W];
 
                 for (int w = 0; w < W; w++)
-                    temp[w] = Conjugate(x[w, h]);
+                    temp[w] = Conjugate(x[h, w]);
 
                 Complex[] tempFT = NFFT(DFFT(temp));
 
                 for (int w = 0; w < W; w++)
-                    x[w, h] = Conjugate(tempFT[w]) / W;
+                    x[h, w] = Conjugate(tempFT[w]) / W;
             });
 
             return x;

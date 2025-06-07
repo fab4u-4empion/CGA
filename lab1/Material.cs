@@ -1,5 +1,4 @@
 ﻿using lab1.Effects;
-using Rasterization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -52,11 +51,11 @@ namespace lab1
 
             Buffer<Vector3> mainLvl = new(src.PixelWidth, src.PixelHeight);
 
-            Parallel.ForEach(Partitioner.Create(0, src.PixelWidth), (range) =>
+            Parallel.ForEach(Partitioner.Create(0, src.PixelHeight), (range) =>
             {
-                for (int x = range.Item1; x < range.Item2; x++)
+                for (int y = range.Item1; y < range.Item2; y++)
                 {
-                    for (int y = 0; y < src.PixelHeight; y++)
+                    for (int x = 0; x < src.PixelWidth; x++)
                     {
                         mainLvl[x, y] = useSrgbToLinearTransform ? ToneMapping.SrgbToLinear(src.GetPixel(x, y)) : src.GetPixel(x, y);
                         if (isNormal)
@@ -78,11 +77,11 @@ namespace lab1
 
                 Buffer<Vector3> nextLvl = new(sizeW, sizeH);
 
-                Parallel.ForEach(Partitioner.Create(0, nextLvl.Width), (range) =>
+                Parallel.ForEach(Partitioner.Create(0, nextLvl.Height), (range) =>
                 {
-                    for (int x = range.Item1; x < range.Item2; x++)
+                    for (int y = range.Item1; y < range.Item2; y++)
                     {
-                        for (int y = 0; y < nextLvl.Height; y++)
+                        for (int x = 0; x < nextLvl.Width; x++)
                         {
                             int px = x * 2;
                             int py = y * 2;

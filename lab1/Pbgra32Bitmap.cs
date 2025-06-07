@@ -2,7 +2,7 @@
 using System.Windows.Media.Imaging;
 using static System.Windows.Media.PixelFormats;
 
-namespace Rasterization
+namespace lab1
 {
     public unsafe class Pbgra32Bitmap
     {
@@ -18,14 +18,6 @@ namespace Rasterization
         {
             Source = new(pixelWidth, pixelHeight, 96, 96, Pbgra32, null);
             InitializeProperties();
-        }
-
-        public void Clear()
-        {
-            for (int i = 0; i < PixelHeight * PixelWidth; i++)
-            {
-                *(int*)(BackBuffer + i * BytesPerPixel) = 0;
-            }
         }
 
         public Pbgra32Bitmap(BitmapSource source)
@@ -64,11 +56,6 @@ namespace Rasterization
             pixel[1] = (byte)(255 * color.Y);
             pixel[2] = (byte)(255 * color.X);
             pixel[3] = 255;
-        }
-
-        public void ClearPixel(int x, int y)
-        {
-            *(int*)GetPixelAddress(x, y) = 0;
         }
     }
 }

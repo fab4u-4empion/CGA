@@ -13,7 +13,7 @@ namespace lab1
 
         public ref T this[int x, int y]
         {
-            get => ref Array[x * Height + y];
+            get => ref Array[y * Width + x];
         }
 
         public static implicit operator T[](Buffer<T> buffer) => buffer.Array;
