@@ -195,7 +195,8 @@ namespace lab1
                 float t = (BVH.Nodes![0].aabbMin.Y - Camera.Position.Y) / dir.Y;
                 Vector3 p = Camera.Position + t * dir;
 
-                float ao = RTX.GetAmbientOcclusionBVH(p, Vector3.UnitY);
+                float ao = RTX.GetAmbientOcclusionBVH(p, p, Vector3.UnitY, Camera.Position,
+                    Vector3.One, Vector3.Create(0.04f), 0, 0.8f, 1, true).X;
                 return (Vector3.Zero, 1, 1 - ao);
             }
 

@@ -1,4 +1,5 @@
 ﻿using lab1.Effects;
+using System;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -12,6 +13,10 @@ namespace lab1
     public class HDRTexture
     {
         private Buffer<Vector3>? Source;
+
+        public Buffer<float>? JointPdf;
+        public float[]? MarginalCdf;
+        public Buffer<float>? ConditionalCdf;
 
         public int Width { get; set; }
         public int Height { get; set; }
@@ -85,6 +90,84 @@ namespace lab1
             });
         }
 
+        public void CalculateDistributions()
+        {
+            float dPhi = float.Tau / Width;
+            float dTheta = float.Pi / Height;
+
+            JointPdf = new(Width, Height);
+
+            Parallel.For(0, Height, y =>
+            {
+                float sin = Sin((y + 0.5f) * dTheta);
+
+                for (int x = 0; x < Width; x++)
+                {
+                    JointPdf[x, y] = Dot(Source![x, y], One) * sin;
+                }
+            });
+
+            Vector<float> sum = Vector<float>.Zero;
+
+            for (int i = 0; i < JointPdf.Length; i += Vector<float>.Count)
+            {
+                sum += new Vector<float>(JointPdf, i);
+            }
+
+            float I = Vector.Dot(sum, Vector<float>.One) * (dPhi * dTheta);
+
+            Parallel.For(0, JointPdf.Length, i =>
+            {
+                JointPdf[i] /= I;
+            });
+
+            float[] marginalPdf = new float[Height];
+
+            Parallel.For(0, Height, y =>
+            {
+                Span<float> row = JointPdf.GetRow(y);
+                Vector<float> sum = Vector<float>.Zero;
+
+                for (int x = 0; x < Width; x += Vector<float>.Count)
+                {
+                    sum += new Vector<float>(row[x..]);
+                }
+
+                marginalPdf[y] = Vector.Dot(sum, Vector<float>.One) * dPhi;
+            });
+
+            MarginalCdf = new float[Height + 1];
+
+            for (int y = 1; y < Height; y++)
+            {
+                MarginalCdf[y] = MarginalCdf[y - 1] + marginalPdf[y - 1] * dTheta;
+            }
+
+            MarginalCdf[Height] = 1;
+
+            Buffer<float> conditionalPdf = new(Width, Height);
+
+            Parallel.For(0, Height, y =>
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    conditionalPdf[x, y] = JointPdf[x, y] / marginalPdf[y];
+                }
+            });
+
+            ConditionalCdf = new(Width + 1, Height);
+
+            Parallel.For(0, Height, y =>
+            {
+                for (int x = 1; x < Width; x++)
+                {
+                    ConditionalCdf[x, y] = ConditionalCdf[x - 1, y] + conditionalPdf[x - 1, y] * dPhi;
+                }
+
+                ConditionalCdf[Width, y] = 1;
+            });
+        }
+
         public Pbgra32Bitmap ToLDR()
         {
             Pbgra32Bitmap bmp = new(Width, Height);
@@ -101,6 +184,11 @@ namespace lab1
             bmp.Source.Unlock();
 
             return bmp;
+        }
+
+        public Vector3 GetColor(int x, int y)
+        {
+            return Source![x, y];
         }
 
         public Vector3 GetColor(Vector3 N)
@@ -120,17 +208,16 @@ namespace lab1
             float x_ratio = x - x0;
             float y_ratio = y - y0;
 
-            x0 &= (Source!.Width - 1);
-            x1 &= (Source!.Width - 1);
+            x0 &= Width - 1;
+            x1 &= Width - 1;
 
-            y0 = Max(0, y0);
-            y1 = Min(Source.Height - 1, y1);
+            y0 = Clamp(y0, 0, Height - 1);
+            y1 = Clamp(y1, 0, Height - 1);
 
             return Lerp(
-                Lerp(Source[x0, y0], Source[x1, y0], x_ratio),
-                Lerp(Source[x0, y1], Source[x1, y1], x_ratio),
-                y_ratio
-            );
+                Lerp(Source![x0, y0], Source![x1, y0], x_ratio),
+                Lerp(Source![x0, y1], Source![x1, y1], x_ratio),
+                y_ratio);
         }
 
         public Vector3 GetColor(float u, float v)
@@ -147,17 +234,16 @@ namespace lab1
             float x_ratio = x - x0;
             float y_ratio = y - y0;
 
-            x0 = Max(0, x0); ;
-            x1 = Min(Source.Width - 1, x1);
+            x0 = Clamp(x0, 0, Width - 1);
+            x1 = Clamp(x1, 0, Width - 1);
 
-            y0 = Max(0, y0);
-            y1 = Min(Source.Height - 1, y1);
+            y0 = Clamp(y0, 0, Height - 1);
+            y1 = Clamp(y1, 0, Height - 1);
 
             return Lerp(
-                Lerp(Source[x0, y0], Source[x1, y0], x_ratio),
-                Lerp(Source[x0, y1], Source[x1, y1], x_ratio),
-                y_ratio
-            );
+                Lerp(Source![x0, y0], Source![x1, y0], x_ratio),
+                Lerp(Source![x0, y1], Source![x1, y1], x_ratio),
+                y_ratio);
         }
     }
 }

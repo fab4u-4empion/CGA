@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Numerics;
+using static lab1.HDRTexture;
+using static lab1.LightingConfig;
 using static lab1.Utils;
+using static System.Numerics.Matrix4x4;
 using static System.Numerics.Vector3;
 using static System.Single;
 
@@ -105,30 +108,196 @@ namespace lab1.Shadow
             return MaxNumber(0, Min(1, result / total));
         }
 
-        public static float GetAmbientOcclusionBVH(Vector3 orig, Vector3 normal)
+        private static Vector3 FresnelSchlick(float VdotH, Vector3 F0)
         {
-            float result = 0;
-            double seed = Random.Shared.NextDouble();
+            float t = 1 - VdotH;
+            float t2 = t * t;
+            float t5 = t2 * t2 * t;
+            return F0 + (One - F0) * t5;
+        }
+
+        private static float Distribution(float NdotH, float a2)
+        {
+            float k = NdotH * NdotH * (a2 - 1) + 1;
+            return MinNumber(1e8f, a2 / (float.Pi * k * k));
+        }
+
+        private static float Visibility(float NdotV, float NdotL, float a2)
+        {
+            float v = NdotL * Sqrt(NdotV * NdotV * (1 - a2) + a2);
+            float l = NdotV * Sqrt(NdotL * NdotL * (1 - a2) + a2);
+            return Min(1e8f, 0.5f / (v + l));
+        }
+
+        private static bool IntersectGround(Vector3 orig, Vector3 dir)
+        {
+            float t = (BVH.Nodes![0].aabbMin.Y - orig.Y) / dir.Y;
+            return IsFinite(t) && t > 1e-4f && t < RTAORayDistance;
+        }
+
+        public static Vector3 GetAmbientOcclusionBVH(
+            Vector3 origin,
+            Vector3 point,
+            Vector3 normal,
+            Vector3 camera,
+            Vector3 baseColor,
+            Vector3 F0,
+            float metallic,
+            float roughness,
+            float opacity,
+            bool shadowCatcher)
+        {
+            Vector3 radiance = Zero;
+            Vector3 totalRadiance = Zero;
             Matrix4x4 worldMatrix = CreateWorldMatrix(normal);
 
-            for (int j = 0; j < RTAORayCount; j++)
+            HDRTexture envMap = IBLSpecularMap[0];
+            Buffer<float> p = envMap.JointPdf!;
+            float[] Pv = envMap.MarginalCdf!;
+            Buffer<float> Pu = envMap.ConditionalCdf!;
+
+            float dPhi = float.Tau / envMap.Width;
+            float dTheta = float.Pi / envMap.Height;
+
+            F0 = Lerp(F0, baseColor, metallic);
+            float a = roughness * roughness, a2 = a * a;
+            Vector3 albedo = (1 - metallic) * baseColor;
+            Vector3 diffuse = albedo / float.Pi * opacity;
+
+            Vector3 V = Normalize(camera - point);
+            float NdotV = Abs(Dot(normal, V));
+
+            float k1 = 0.5f * (1 - roughness) * (1 + metallic);
+            float k2 = 0.25f * (1 - metallic + roughness * (1 + metallic));
+
+            for (int i = 0; i < RTAORayCount; i++)
             {
-                (double x, double y) = FibonacciLattice(seed, j, RTAORayCount);
-                float phi = float.Tau * (float)x, theta = Asin(Sqrt((float)y));
-                Vector3 dir = Transform(SphericalToCartesian(phi, theta, 1), worldMatrix);
+                float u = Random.Shared.NextSingle();
+                float v = Random.Shared.NextSingle();
+                float w = Random.Shared.NextSingle();
 
-                bool intersects = BVH.IntersectBVH(orig, dir, RTAORayDistance, 0);
-
-                if (!intersects && LightingConfig.DrawGround)
+                if (w < k1)
                 {
-                    float t = (BVH.Nodes![0].aabbMin.Y - orig.Y) / dir.Y;
-                    intersects = IsFinite(t) && t > 1e-4f && t < RTAORayDistance;
-                }
+                    float NdotH = Sqrt((1 - v) / (v * (a2 - 1) + 1));
+                    float phiH = float.Tau * u;
+                    float thetaH = Acos(NdotH);
 
-                result += intersects ? 0 : 1;
+                    Vector3 H = TransformNormal(SphericalToCartesian(-phiH + Angle, thetaH, 1), worldMatrix);
+                    Vector3 L = Reflect(-V, H);
+
+                    if (Dot(normal, L) is float NdotL && NdotL > 0)
+                    {
+                        bool vis = !BVH.IntersectBVH(origin, L, float.PositiveInfinity, 0) &&
+                                   !(DrawGround && IntersectGround(origin, L));
+
+                        if (vis || shadowCatcher)
+                        {
+                            float VdotH = Abs(Dot(V, H));
+
+                            Vector3 fresnel = FresnelSchlick(VdotH, F0);
+                            float distribution = Distribution(NdotH, a2);
+                            float visibility = Visibility(NdotV, NdotL, a2);
+                            Vector3 specular = One * distribution * visibility;
+                            Vector3 brdf = Lerp(diffuse, specular, fresnel);
+
+                            float phi = -Atan2(L.X, L.Z) + Angle;
+                            float theta = Acos(Clamp(L.Y, -1, 1));
+                            int x = (int)Floor(phi / dPhi) & (envMap.Width - 1);
+                            int y = (int)Floor(theta / dTheta) & (envMap.Height - 1);
+
+                            float pdf1 = NdotL / float.Pi;
+                            float pdf2 = p[x, y] / Sin(theta);
+                            float pdf3 = distribution * NdotH / (4 * Abs(VdotH));
+                            Vector3 estimate = brdf * envMap.GetColor(x, y) * NdotL;
+                            Vector3 value = estimate / (k2 * (pdf1 + pdf2) + k1 * pdf3);
+
+                            radiance += vis ? value : Zero;
+                            totalRadiance += value;
+                        }
+                    }
+                }
+                else if (w < k1 + k2)
+                {
+                    int y = (y = Array.BinarySearch(Pv, v)) < 0 ? ~y - 1 : y;
+                    int x = (x = Pu.GetRow(y).BinarySearch(u)) < 0 ? ~x - 1 : x;
+                    float theta = (y + (v - Pv[y]) / (Pv[y + 1] - Pv[y])) * dTheta;
+                    float phi = (x + (u - Pu[x, y]) / (Pu[x + 1, y] - Pu[x, y])) * dPhi;
+
+                    Vector3 L = SphericalToCartesian(-phi + Angle, theta, 1);
+
+                    if (Dot(normal, L) is float NdotL && NdotL > 0)
+                    {
+                        bool vis = !BVH.IntersectBVH(origin, L, float.PositiveInfinity, 0) &&
+                                   !(DrawGround && IntersectGround(origin, L));
+
+                        if (vis || shadowCatcher)
+                        {
+                            Vector3 H = Normalize(L + V);
+
+                            float NdotH = Abs(Dot(normal, H));
+                            float VdotH = Abs(Dot(V, H));
+
+                            Vector3 fresnel = FresnelSchlick(VdotH, F0);
+                            float distribution = Distribution(NdotH, a2);
+                            float visibility = Visibility(NdotV, NdotL, a2);
+                            Vector3 specular = One * distribution * visibility;
+                            Vector3 brdf = Lerp(diffuse, specular, fresnel);
+
+                            float pdf1 = NdotL / float.Pi;
+                            float pdf2 = p[x, y] / Sin(theta);
+                            float pdf3 = distribution * NdotH / (4 * Abs(VdotH));
+                            Vector3 estimate = brdf * envMap.GetColor(x, y) * NdotL;
+                            Vector3 value = estimate / (k2 * (pdf1 + pdf2) + k1 * pdf3);
+
+                            radiance += vis ? value : Zero;
+                            totalRadiance += value;
+                        }
+                    }
+                }
+                else
+                {
+                    float phiL = float.Tau * u;
+                    float thetaL = Asin(Sqrt(v));
+
+                    Vector3 L = TransformNormal(SphericalToCartesian(-phiL + Angle, thetaL, 1), worldMatrix);
+
+                    if (Dot(normal, L) is float NdotL && NdotL > 0)
+                    {
+                        bool vis = !BVH.IntersectBVH(origin, L, float.PositiveInfinity, 0) &&
+                                   !(DrawGround && IntersectGround(origin, L));
+
+                        if (vis || shadowCatcher)
+                        {
+                            Vector3 H = Normalize(L + V);
+
+                            float NdotH = Abs(Dot(normal, H));
+                            float VdotH = Abs(Dot(V, H));
+
+                            Vector3 fresnel = FresnelSchlick(VdotH, F0);
+                            float distribution = Distribution(NdotH, a2);
+                            float visibility = Visibility(NdotV, NdotL, a2);
+                            Vector3 specular = One * distribution * visibility;
+                            Vector3 brdf = Lerp(diffuse, specular, fresnel);
+
+                            float phi = -Atan2(L.X, L.Z) + Angle;
+                            float theta = Acos(Clamp(L.Y, -1, 1));
+                            int x = (int)Floor(phi / dPhi) & (envMap.Width - 1);
+                            int y = (int)Floor(theta / dTheta) & (envMap.Height - 1);
+
+                            float pdf1 = NdotL / float.Pi;
+                            float pdf2 = p[x, y] / Sin(theta);
+                            float pdf3 = distribution * NdotH / (4 * Abs(VdotH));
+                            Vector3 estimate = brdf * envMap.GetColor(x, y) * NdotL;
+                            Vector3 value = estimate / (k2 * (pdf1 + pdf2) + k1 * pdf3);
+
+                            radiance += vis ? value : Zero;
+                            totalRadiance += value;
+                        }
+                    }
+                }
             }
 
-            return result / RTAORayCount;
+            return shadowCatcher ? Vector3.Create(MaxNumber(0, Min(1, Dot(radiance, One) / Dot(totalRadiance, One)))) : radiance / RTAORayCount;
         }
     }
 }

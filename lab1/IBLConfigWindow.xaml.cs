@@ -38,19 +38,20 @@ namespace lab1
                         if (str!.StartsWith("irradiance"))
                         {
                             IBLDiffuseMap = new();
-                            IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 10).Trim()));
+                            IBLDiffuseMap.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str[10..].Trim()));
                         }
 
                         if (str.StartsWith("specular"))
                         {
                             HDRTexture texture = new();
-                            texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str.Remove(0, 8).Trim()));
+                            texture.Open(Path.Combine(Path.GetDirectoryName(ofd.FileName)!, str[8..].Trim()));
 
                             IBLSpecularMap.Add(texture);
                         }
                     }
                 }
 
+                IBLSpecularMap[0].CalculateDistributions();
                 EnvironmentPreview.Source = IBLSpecularMap[0].ToLDR().Source;
 
                 GC.Collect();

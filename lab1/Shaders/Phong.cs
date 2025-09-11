@@ -27,7 +27,7 @@ namespace lab1.Shaders
             float a2 = glossiness * glossiness;
             float a4 = a2 * a2;
 
-            if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(o, N);
+            //if (UseRTAO) ao = RTX.GetAmbientOcclusionBVH(o, N);
             Vector3 color = baseColor * AmbientColor * ao * opacity + emission * EmissionIntensity;
 
             for (int i = 0; i < Lights.Count; i++)
@@ -38,7 +38,7 @@ namespace lab1.Shaders
                 if (Dot(N, L) <= 0)
                     continue;
 
-                float intensity = UseShadow ? RTX.GetLightIntensityBVH(Lights[i], o, N) : 1;
+                float intensity = UseShadow ? 0 : 1;
 
                 Vector3 specular = spec * a4 * Pow(Max(Dot(H, N), 0), a4 * 1024f) * 100f;
 

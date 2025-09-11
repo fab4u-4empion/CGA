@@ -107,29 +107,28 @@ namespace lab1
 
         private static Vector3 GetColor(Buffer<Vector3> src, Vector2 uv)
         {
-            float u = uv.X * src.Width - 0.5f;
-            float v = uv.Y * src.Height - 0.5f;
+            float x = uv.X * src.Width - 0.5f;
+            float y = uv.Y * src.Height - 0.5f;
 
-            int x0 = (int)Floor(u);
-            int y0 = (int)Floor(v);
+            int x0 = (int)Floor(x);
+            int y0 = (int)Floor(y);
 
             int x1 = x0 + 1;
             int y1 = y0 + 1;
 
-            float u_ratio = u - x0;
-            float v_ratio = v - y0;
+            float x_ratio = x - x0;
+            float y_ratio = y - y0;
 
-            x0 &= (src.Width - 1);
-            x1 &= (src.Width - 1);
+            x0 &= src.Width - 1;
+            x1 &= src.Width - 1;
 
-            y0 &= (src.Height - 1);
-            y1 &= (src.Height - 1);
+            y0 &= src.Height - 1;
+            y1 &= src.Height - 1;
 
             return Lerp(
-                Lerp(src[x0, y0], src[x1, y0], u_ratio),
-                Lerp(src[x0, y1], src[x1, y1], u_ratio),
-                v_ratio
-            );
+                Lerp(src[x0, y0], src[x1, y0], x_ratio),
+                Lerp(src[x0, y1], src[x1, y1], x_ratio),
+                y_ratio);
         }
 
         private static Vector3 GetColorFromTexture(List<Buffer<Vector3>>? src, Vector2 uv, Vector3 def, Vector2 uv1, Vector2 uv2)

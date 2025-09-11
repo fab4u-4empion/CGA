@@ -67,7 +67,7 @@ namespace lab1
 
         public void Reset(Vector3 target)
         {
-            r = 25;
+            r = 3;
             o = 90;
             f = 0;
             Mode = CameraMode.Arcball;
