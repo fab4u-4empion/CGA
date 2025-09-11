@@ -130,7 +130,7 @@ namespace lab1.Effects
                 }
             });
 
-            for (int j = 0; j <= kernel.PixelHeight; j++)
+            for (int j = 0; j < kernel.PixelHeight; j++)
                 for (int i = 0; i < kernel.PixelWidth; i++)
                     sum += kernel.GetPixel(i, j);
 
