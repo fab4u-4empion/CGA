@@ -12,12 +12,15 @@ namespace lab1
     public class BloomConfig
     {
         public static List<Kernel> Kernels { get; set; } = [
-            new() { Radius = 2, Intensity = 1f, Name = "Default 0" },
-            new() { Radius = 4, Intensity = 1f, Name = "Default 1" },
-            new() { Radius = 8, Intensity = 1f, Name = "Default 2" },
-            new() { Radius = 16, Intensity = 1f, Name = "Default 3" },
-            new() { Radius = 32, Intensity = 1f, Name = "Default 4" },
-            new() { Radius = 64, Intensity = 1f, Name = "Default 5" },
+            new() { Radius = 1, Intensity = 1f, Name = "Default 0" },
+            new() { Radius = 2, Intensity = 1f, Name = "Default 1" },
+            new() { Radius = 4, Intensity = 1f, Name = "Default 2" },
+            new() { Radius = 8, Intensity = 1f, Name = "Default 3" },
+            new() { Radius = 16, Intensity = 1f, Name = "Default 4" },
+            new() { Radius = 32, Intensity = 1f, Name = "Default 5" },
+            new() { Radius = 64, Intensity = 1f, Name = "Default 6" },
+            new() { Radius = 128, Intensity = 1f, Name = "Default 7" },
+            new() { Radius = 256, Intensity = 1f, Name = "Default 8" }
         ];
 
         public static Pbgra32Bitmap? KernelImg { get; set; } = null;
