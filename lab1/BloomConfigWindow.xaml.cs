@@ -44,9 +44,7 @@ namespace lab1
             for (int y = 0; y < bmp.PixelHeight; y++)
                 for (int x = 0; x < bmp.PixelWidth; x++)
                     bmpBuf[x, y] = bmp.GetPixel(x, y) * 10;
-            Buffer<Vector3> bloomBuf = KernelImg == null ?
-                Bloom.GetGaussianClassicBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1)
-                : Bloom.GetImageBasedBlur(bmpBuf, bmp.PixelWidth, bmp.PixelHeight);
+            Buffer<Vector3> bloomBuf = Bloom.GetBloomBuffer(bmpBuf, bmp.PixelWidth, bmp.PixelHeight, 1);
 
             preview.Source.Lock();
             for (int y = 0; y < bmp.PixelHeight; y++)

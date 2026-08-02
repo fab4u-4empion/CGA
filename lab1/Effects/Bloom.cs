@@ -8,22 +8,19 @@ using static System.Single;
 
 namespace lab1.Effects
 {
-    public class Bloom
+    public static class Bloom
     {
         public static Buffer<Vector3> GetBloomBuffer(Buffer<Vector3> src, int width, int height, float scaling)
         {
             if (BloomConfig.Kernels.Count == 0 && BloomConfig.KernelImg == null)
                 return new(width, height);
 
-            Buffer<Vector3> tmp = new(width, height);
-            Array.Copy(src, tmp, src.Length);
-
             if (BloomConfig.KernelImg == null)
             {
-                return GetGaussianClassicBlur(tmp, width, height, scaling);
+                return GetGaussianClassicBlur(src, width, height, scaling);
             }
 
-            return GetImageBasedBlur(tmp, width, height);
+            return GetImageBasedBlur(src, width, height);
         }
 
         private static (int, int) GetRealSize(int w, int h)
@@ -48,7 +45,7 @@ namespace lab1.Effects
             return (rW + 1, rH + 1);
         }
 
-        public static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float scaling)
+        private static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float scaling)
         {
             Buffer<Vector3> tmp1 = new(width, height);
             Buffer<Vector3> tmp2 = new(width, height);
@@ -56,52 +53,86 @@ namespace lab1.Effects
 
             foreach (Kernel kernel in BloomConfig.Kernels)
             {
-                int r = (int)(kernel.Radius * scaling);
+                int r = (int)(kernel.Radius * scaling + 0.5f);
 
-                for (int b = 0; b < 4; b++)
+                Buffer<Vector3> read = src;
+                Buffer<Vector3> write = tmp1;
+
+                for (int pass = 0; pass < 4; pass++)
                 {
-                    Buffer<Vector3> read = b == 0 ? src : tmp1;
-
-                    Parallel.ForEach(Partitioner.Create(0, height), (range) =>
+                    Parallel.ForEach(Partitioner.Create(0, height), range =>
                     {
                         for (int y = range.Item1; y < range.Item2; y++)
                         {
-                            tmp2[0, y] = Zero;
+                            Span<Vector3> readRow = read.GetRow(y);
+                            Span<Vector3> writeRow = write.GetRow(y);
 
-                            for (int x = -r; x <= r; x++)
-                                tmp2[0, y] += read[Clamp(x, 0, width - 1), y];
+                            writeRow[0] = (r + 1) * readRow[0];
+
+                            for (int x = 1; x <= r; x++)
+                                writeRow[0] += readRow[Min(x, width - 1)];
 
                             for (int x = 1; x < width; x++)
-                                tmp2[x, y] = tmp2[x - 1, y] + read[Clamp(x + r, 0, width - 1), y] - read[Clamp(x - r - 1, 0, width - 1), y];
+                                writeRow[x] = writeRow[x - 1] + readRow[Min(x + r, width - 1)] - readRow[Max(x - r - 1, 0)];
                         }
                     });
 
-                    Parallel.ForEach(Partitioner.Create(0, width), (range) =>
+                    read = write;
+                    write = tmp2;
+
+                    Parallel.ForEach(Partitioner.Create(0, width), range =>
                     {
+                        Span<Vector3> readRow0 = read.GetRow(0);
+                        Span<Vector3> writeRow0 = write.GetRow(0);
+
                         for (int x = range.Item1; x < range.Item2; x++)
                         {
-                            tmp1[x, 0] = Zero;
+                            writeRow0[x] = (r + 1) * readRow0[x];
+                        }
 
-                            for (int y = -r; y <= r; y++)
-                                tmp1[x, 0] += tmp2[x, Clamp(y, 0, height - 1)];
+                        for (int y = 1; y <= r; y++)
+                        {
+                            Span<Vector3> readRow = read.GetRow(Min(y, height - 1));
 
-                            for (int y = 1; y < height; y++)
-                                tmp1[x, y] = tmp1[x, y - 1] + tmp2[x, Clamp(y + r, 0, height - 1)] - tmp2[x, Clamp(y - r - 1, 0, height - 1)];
+                            for (int x = range.Item1; x < range.Item2; x++)
+                            {
+                                writeRow0[x] += readRow[x];
+                            }
+                        }
+
+                        for (int y = 1; y < height; y++)
+                        {
+                            Span<Vector3> readRow1 = read.GetRow(Min(y + r, height - 1));
+                            Span<Vector3> readRow2 = read.GetRow(Max(y - r - 1, 0));
+                            Span<Vector3> writeRow1 = write.GetRow(y);
+                            Span<Vector3> writeRow2 = write.GetRow(y - 1);
+
+                            for (int x = range.Item1; x < range.Item2; x++)
+                            {
+                                writeRow1[x] = writeRow2[x] + readRow1[x] - readRow2[x];
+                            }
                         }
                     });
+
+                    read = write;
+                    write = tmp1;
                 }
 
-                float denom = kernel.Intensity / Pow(2 * r + 1, 2 * 4);
+                float factor = kernel.Intensity / Pow(2 * r + 1, 2 * 4);
 
-                for (int y = 0; y < height; y++)
-                    for (int x = 0; x < width; x++)
-                        dest[x, y] += tmp1[x, y] * denom;
+                Parallel.ForEach(Partitioner.Create(0, src.Length), range =>
+                {
+                    for (int i = range.Item1; i < range.Item2; i++)
+                    {
+                        dest[i] += tmp2[i] * factor;
+                    }
+                });
             }
 
             return dest;
         }
 
-        public static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
+        private static Buffer<Vector3> GetImageBasedBlur(Buffer<Vector3> src, int width, int height)
         {
             Pbgra32Bitmap kernel = BloomConfig.KernelImg!;
 
@@ -167,17 +198,19 @@ namespace lab1.Effects
             Gc = FFT.IFFT_2D(Gc, w, h);
             Bc = FFT.IFFT_2D(Bc, w, h);
 
+            Buffer<Vector3> dest = new(width, height);
+
             Parallel.For(0, height, (j) =>
             {
                 for (int i = 0; i < width; i++)
                 {
-                    src[i, j].X = Max((float)Rc[j, i].Magnitude, 0);
-                    src[i, j].Y = Max((float)Gc[j, i].Magnitude, 0);
-                    src[i, j].Z = Max((float)Bc[j, i].Magnitude, 0);
+                    dest[i, j].X = Max((float)Rc[j, i].Magnitude, 0);
+                    dest[i, j].Y = Max((float)Gc[j, i].Magnitude, 0);
+                    dest[i, j].Z = Max((float)Bc[j, i].Magnitude, 0);
                 }
             });
 
-            return src;
+            return dest;
         }
     }
 }

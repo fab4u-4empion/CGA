@@ -11,9 +11,19 @@ namespace lab1
         public Vector2 Size { get; } = new(width, height);
         private T[] Array { get; } = new T[width * height];
 
+        public ref T this[int i]
+        {
+            get => ref Array[i];
+        }
+
         public ref T this[int x, int y]
         {
             get => ref Array[y * Width + x];
+        }
+
+        public Span<T> GetRow(int y)
+        {
+            return Array.AsSpan(y * Width, Width);
         }
 
         public static implicit operator T[](Buffer<T> buffer) => buffer.Array;
