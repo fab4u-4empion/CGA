@@ -659,6 +659,8 @@ namespace lab1
 
             Array.Fill(Spins, new SpinLock(false));
 
+            Bloom.CreateBuffers(this.width, this.height);
+
             GC.Collect();
         }
     }

@@ -346,6 +346,7 @@ namespace lab1
                     {
                         BloomConfigWindow bloomConfigWindow = new();
                         bloomConfigWindow.ShowDialog();
+                        Bloom.CreateBuffers(Renderer.Bitmap.PixelWidth, Renderer.Bitmap.PixelHeight);
                         Draw();
                     }
                     break;

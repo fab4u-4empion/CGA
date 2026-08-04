@@ -27,6 +27,7 @@ namespace lab1
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            Bloom.CreateBuffers(bmp.PixelWidth, bmp.PixelHeight);
             ImgPreview.Source = preview.Source;
             ImgKernel.Source = KernelImg?.Source;
             UpdateListBox();

@@ -10,10 +10,23 @@ namespace lab1.Effects
 {
     public static class Bloom
     {
+        private static Buffer<Vector3> tmp1 = null!;
+        private static Buffer<Vector3> tmp2 = null!;
+        private static Buffer<Vector3> dest = null!;
+
+        public static void CreateBuffers(int width, int height)
+        {
+            tmp1 = new(width, height);
+            tmp2 = new(width, height);
+            dest = new(width, height);
+        }
+
         public static Buffer<Vector3> GetBloomBuffer(Buffer<Vector3> src, int width, int height, float scaling)
         {
+            Array.Fill(dest, Zero);
+
             if (BloomConfig.Kernels.Count == 0 && BloomConfig.KernelImg == null)
-                return new(width, height);
+                return dest;
 
             if (BloomConfig.KernelImg == null)
             {
@@ -47,10 +60,6 @@ namespace lab1.Effects
 
         private static Buffer<Vector3> GetGaussianClassicBlur(Buffer<Vector3> src, int width, int height, float scaling)
         {
-            Buffer<Vector3> tmp1 = new(width, height);
-            Buffer<Vector3> tmp2 = new(width, height);
-            Buffer<Vector3> dest = new(width, height);
-
             foreach (Kernel kernel in BloomConfig.Kernels)
             {
                 int r = (int)(kernel.Radius * scaling + 0.5f);
@@ -197,8 +206,6 @@ namespace lab1.Effects
             Rc = FFT.IFFT_2D(Rc, w, h);
             Gc = FFT.IFFT_2D(Gc, w, h);
             Bc = FFT.IFFT_2D(Bc, w, h);
-
-            Buffer<Vector3> dest = new(width, height);
 
             Parallel.For(0, height, (j) =>
             {
