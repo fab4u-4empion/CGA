@@ -29,12 +29,12 @@ namespace lab1.Effects
             return color / (One + color);
         }
 
-        private static readonly Lut3D TonyMcMapfaceSrgb = new("Effects/LUTs/tony_mc_mapface.cube");
+        private static readonly Lut3D TonyMcMapfaceLut = new("Effects/LUTs/tony_mc_mapface.cube");
 
         public static Vector3 TonyMcMapface(Vector3 color)
         {
             color = Reinhard(color);
-            color = TonyMcMapfaceSrgb.TetrahedralSample(color);
+            color = TonyMcMapfaceLut.TetrahedralSample(color);
             return color;
         }
 
@@ -67,7 +67,6 @@ namespace lab1.Effects
 
         public static Vector3 AcesFilmic(Vector3 color)
         {
-            color /= 0.6f;
             color = Transform(color, ACESInputMat);
             color = RRTAndODTFit(color);
             color = Transform(color, ACESOutputMat);
@@ -79,10 +78,10 @@ namespace lab1.Effects
 
         private static readonly Matrix4x4 LinearRec709ToLinearFilmLightEGamut = new
         (
-            0.5594630473276861f, 0.0762332608733703f, 0.0655375095152927f, 0f,
-            0.3047758110283366f, 0.7879523952184488f, 0.1645427298716744f, 0f,
-            0.1358129414038276f, 0.1357748488287584f, 0.7697415276874705f, 0f,
-                             0f,                  0f,                  0f, 1f
+            0.559371133310077f, 0.076220705483506f, 0.065526711778770f, 0f,
+            0.304783346623009f, 0.787971770102846f, 0.164546754603724f, 0f,
+            0.135845560480477f, 0.135807466174722f, 0.769926501650375f, 0f,
+                            0f,                 0f,                 0f, 1f
         );
 
         #pragma warning restore format
